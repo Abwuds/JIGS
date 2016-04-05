@@ -1,4 +1,4 @@
-# Goal : Generic specialization, from JAVA 10 to JAVA 8
+# Generic specialization, from JAVA 10 to JAVA 8
 
 * What we don't care about : The syntax.
 * What is interesting for us : How are we going to implement it.
