@@ -3,8 +3,8 @@
 * What we don't care about : The syntax.
 * What is interesting for us : How are we going to implement it.
 
-Actually nearly everything is planned at ORACLE for JAVA 10. 
-**But** they plan to modificate the JVM's specification.
+Actually nearly everything is planned at ORACLE for JAVA 10. <br>
+But they plan to modificate the JVM's specification.
 
 ### Main reasons why we think this is bad (in fact only 1) :
 We usually want to specialize only a restricted part of our program, not the whole structure.
@@ -116,8 +116,7 @@ note : [static] is more easy to handle.
 #### Question 6.1 :
 Do we have to create one class per method ? Because there are not in the constant pool (aka dictionary). To study.
 
-
-## 3 Main things to produce :
+## 3 Main productions :
 1. A specification of our solution.
-2. A program capable to transform JAVA10 classes into JAVA8 ones.
+2. A program capable to transform JAVA 10 classes into JAVA 8 ones.
 3. A program to specialize the resulting code at runtime (by using some BSM and InvokeDynamic to specialize).
