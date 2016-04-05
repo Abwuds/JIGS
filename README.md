@@ -5,7 +5,7 @@ My goal is to implement a solution allowing the backport of Generic Specializati
 
 ## 3 Main productions :
 1. A specification of our solution.
-2. A program capable to transform JAVA10 classes into JAVA8 ones.
+2. A program capable to transform JAVA 10 classes into JAVA 8 ones.
 3. A program to specialize the resulting code at runtime (by using some BSM and InvokeDynamic, to specialize).
 
 ## Internship road map
