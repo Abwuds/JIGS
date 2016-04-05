@@ -1,12 +1,12 @@
 # JIGS
-Java Internship on Generic Specialization
+Java Internship on Generic Specialization.
 
-My goal is to implement a solution allowing the backport of Generic Specialization from JAVA 10 to 8 (or even 7).
+My goal is to implement a solution allowing the backport of generic specialization from JAVA 10 to 8 (or even 7).
 
 ## 3 Main productions :
 1. A specification of our solution.
 2. A program capable to transform JAVA 10 classes into JAVA 8 ones.
-3. A program to specialize the resulting code at runtime (by using some BSM and InvokeDynamic, to specialize).
+3. A program to specialize the resulting code at runtime (by using BSM and InvokeDynamic, to perform the specialization).
 
 ## Internship road map
 1. ~~[Read Interoperation between Miniboxing and other Generics Translations](http://infoscience.epfl.ch/record/210236/files/Thesis%20Report%20%28Milos%20Stojanovic%29_1.pdf)~~
