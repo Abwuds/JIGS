@@ -14,8 +14,8 @@ My goal is to implement a solution allowing the backport of generic specializati
 3. ~~[Watch Brian Goetz on Generic Specialization](https://www.youtube.com/watch?v=TkpcuL1t1lY)~~
 4. ~~Translate everything on a new github repository~~
 5. ~~[Read Compiling Generics Through User-Directed TypeSpecialization](http://infoscience.epfl.ch/record/150134/files/p42-dragos.pdf)~~
-6. Download the source code from Valhalla's workspace
-7. Create an image of the JDK
+6. ~~Download the source code from Valhalla's workspace~~
+7. ~~Create an image of the JDK~~
 8. Study the ORACLE's syntax
 9. Resolve the question : " How can we treat the problem ? "
 X . Patch ASM into JAVA 10 to read ORACLE's sources.
