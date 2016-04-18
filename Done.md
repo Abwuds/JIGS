@@ -1,1 +1,1 @@
-18th April - Submit for the JVM Summit written and [posted](https://www.regonline.com/register/confirmation.aspx?cmpreg=1&EventId=1832741&RegisterId=xnjyYN8dhryOdjdU20kB8g==&AttendeeId=lIpbdUoMY1ZvyZd+on0C+A==).
+18th April - Submit for the JVM Summit written and [posted](https://www.regonline.com/register/confirmation.aspx?cmpreg=1&EventId=1832741&RegisterId=xnjyYN8dhryOdjdU20kB8g==&AttendeeId=lIpbdUoMY1ZvyZd+on0C+A==). This was my first abstract and it went well. Rémi helped me after I wrote itt to enhenced the style and then was quite happy of the result.
