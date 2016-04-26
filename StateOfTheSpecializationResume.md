@@ -7,13 +7,13 @@ To do so, a hybrid homogeneous-heteregeneous translation is used.
 The main advantage is to avoid boxing issues, when using huge collections of primitive values.
 
 ## Vocabulary (restricted to this document)
-**Homogeneous translation** : Using erasured implementation to produce one class for all reference instantiations (not supporting primitive instantiations because of starred **a** bytecode).
-**Heteregeneous translation** : Creation of different instantiations of a parametric type in the source language corresponding to different runtime classes.
-**Specialization** : For each primitive type declared by the JAVA specification, production from an erased class file a specialized version manipulating this primitive type.
-**Erasure** : //TODO
-**Explicit type for a class or method** : Type variables declared with a class or method.
-**Implicit type variable** : Any type variables associated with an enclosing generic class or method.
-**avars** : **any** type variables.
+- **Homogeneous translation** : Using erasured implementation to produce one class for all reference instantiations (not supporting primitive instantiations because of starred **a** bytecode).
+- **Heteregeneous translation** : Creation of different instantiations of a parametric type in the source language corresponding to different runtime classes.
+- **Specialization** : For each primitive type declared by the JAVA specification, production from an erased class file a specialized version manipulating this primitive type.
+- **Erasure** : //TODO
+- **Explicit type for a class or method** : Type variables declared with a class or method.
+- **Implicit type variable** : Any type variables associated with an enclosing generic class or method.
+- **avars** : **any** type variables.
 
 
 ## Existing problems
