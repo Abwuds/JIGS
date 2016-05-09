@@ -8,7 +8,6 @@ My goal is to implement a solution allowing the backport of generic specializati
 2. A program capable to transform JAVA 10 classes into JAVA 8 ones.
 3. A program to specialize the resulting code at runtime (by using BSM and InvokeDynamic, to perform the specialization).
 
-## Weekly planning
 # Weekly planning
 
 | Week        | Task           |
