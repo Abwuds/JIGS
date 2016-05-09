@@ -11,14 +11,14 @@ My goal is to implement a solution allowing the backport of generic specializati
 # Weekly planning
 
 | Week        | Task           |
-| ------------- |:-------------:|
-| 9 - 13 May      | Finish the first version of the specification  |
-| 16 - 20 May      | Modificate the ASM code to handle the last version of Valhalla Model 3|
-| 23 - 27 May | Modificate the ASM code to handle the last version of Valhalla Model 3 |
-| 30 - 3 June      | Implement the specification |
-| 6 - 10 June | Implement the specification      |
-| 13 - 17 June | Apply UT      |
-| 20 - 24 June | Pass all UT      |
+| ------------- |-------------|
+| 9 - 13 May      | Finish the first version of the specification.  |
+| 16 - 20 May      | Modificate the ASM code to handle the last version of Valhalla Model 3. |
+| 23 - 27 May | Modificate the ASM code to handle the last version of Valhalla Model 3. |
+| 30 - 3 June      | Implement the specification. |
+| 6 - 10 June | Implement the specification.      |
+| 13 - 17 June | Apply UT.      |
+| 20 - 24 June | Pass all UT.      |
 
 ## Internship road map
 1. ~~[Read Interoperation between Miniboxing and other Generics Translations](http://infoscience.epfl.ch/record/210236/files/Thesis%20Report%20%28Milos%20Stojanovic%29_1.pdf)~~
