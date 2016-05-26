@@ -218,6 +218,17 @@ public class ClassReader {
                 // }
                 size = 7 + readByte(index + 6) * 2;
                 break;
+            case ClassWriter.METHOD_DESCRIPTOR:
+                // System.out.println("MethodDescriptor : " + readByte(index));
+                //  System.out.println("Params length : " + readByte(index + 1));
+                //  System.out.println("ReturnedType index : " + readShort(index + 2));
+                //  System.out.println("Param list : ");
+                //  for (int ii = 0; i < readByte(index + 1); ii++) {
+                //      char c = (char) readShort(index + 4 + ii * 2);
+                //     System.out.print(c);
+                // }
+                size = 4 + readByte(index + 1) * 2;
+                break;
             // case ClassWriter.CLASS:
             // case ClassWriter.STR:
             // case ClassWriter.MTYPE
