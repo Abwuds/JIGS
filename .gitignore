@@ -1,4 +1,5 @@
-*.class
+# Class files compiled in Java#Valhalla are needed.
+#*.class
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
