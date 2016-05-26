@@ -243,6 +243,26 @@ public class ClassWriter extends ClassVisitor {
     static final int INDY = 18;
 
     /**
+     * The type of CONSTANT_TypeVar constant pool items.
+     */
+    static final int TYPE_VAR = 19;
+
+    /**
+     * The type of CONSTANT_ParameterizedType constant pool items.
+     */
+    static final int PARAMETERIZED_TYPE = 20;
+
+    /**
+     * The type of CONSTANT_ArrayType constant pool items.
+     */
+    static final int ARRAY_TYPE = 21;
+
+    /**
+     * The type of CONSTANT_Descriptor constant pool items.
+     */
+    static final int METHOD_DESCRIPTOR = 22;
+
+    /**
      * The base value for all CONSTANT_MethodHandle constant pool items.
      * Internally, ASM store the 9 variations of CONSTANT_MethodHandle into 9
      * different items.
