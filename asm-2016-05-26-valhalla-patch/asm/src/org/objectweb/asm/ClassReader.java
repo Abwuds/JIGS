@@ -31,6 +31,7 @@ package org.objectweb.asm;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.stream.IntStream;
 
 /**
  * A Java class parser to make a {@link ClassVisitor} visit an existing class.
@@ -203,6 +204,19 @@ public class ClassReader {
             case ClassWriter.HANDLE:
             case ClassWriter.TYPE_VAR:
                 size = 4;
+                break;
+            case ClassWriter.PARAMETERIZED_TYPE:
+                // System.out.println("ParameterizedType : " + readByte(index));
+                // System.out.println("Enclosing type : " + readShort(index + 1));
+                // System.out.println("Type referenced : " + (char)readByte(index + 3));
+                // System.out.println("Template Class Name : " + readShort(index + 4));
+                // System.out.println("Params length : " + (readByte(index + 6)));
+                // System.out.println("Param list : ");
+                // for (int ii = 0; i < readByte(index + 6); ii++) {
+                //     char c = (char) readShort(index + 7 + ii * 2);
+                //     System.out.print(c);
+                // }
+                size = 7 + readByte(index + 6) * 2;
                 break;
             // case ClassWriter.CLASS:
             // case ClassWriter.STR:
