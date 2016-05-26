@@ -195,11 +195,13 @@ public class ClassReader {
                 break;
             case ClassWriter.UTF8:
                 size = 3 + readUnsignedShort(index + 1);
+                System.out.println("Size UTF8 : " + (size - 3));
                 if (size > max) {
                     max = size;
                 }
                 break;
             case ClassWriter.HANDLE:
+            case ClassWriter.TYPE_VAR:
                 size = 4;
                 break;
             // case ClassWriter.CLASS:
