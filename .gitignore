@@ -1,4 +1,8 @@
-*.class
+# Allowing the class files to commit Valhalla files 
+#*.class
+
+# IntellIJ config files
+.idea
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
