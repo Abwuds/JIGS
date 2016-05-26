@@ -29,11 +29,13 @@
  */
 package org.objectweb.asm.test.cases;
 
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.test.cases.specialization.Reader;
+import org.objectweb.asm.test.cases.specialization.TypeVar;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-
-import org.objectweb.asm.Opcodes;
 
 /**
  * Generates classes designed so that the "conform" test suite, applied to these
@@ -48,7 +50,8 @@ public class Generator implements Opcodes {
                 new Annotation(), new TypeAnnotation(),
                 new Attribute(), new Debug(), new Enum(), new Frames(),
                 new Insns(), new Interface(), new Invalid(), new JSR(),
-                new Outer(), new Wide(), new InvokeDynamic() };
+                new Outer(), new Wide(), new InvokeDynamic(), new TypeVar(),
+                new Reader() };
         for (int i = 0; i < generators.length; ++i) {
             generators[i].generate(args[0]);
         }
@@ -65,6 +68,7 @@ public class Generator implements Opcodes {
                     + f.getParentFile());
         }
         FileOutputStream o = new FileOutputStream(f);
+        System.out.println(f);
         o.write(clazz);
         o.close();
     }
