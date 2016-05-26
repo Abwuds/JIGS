@@ -10,9 +10,9 @@ import java.io.IOException;
 /**
  * Created by Jefferson Mangue on 26/05/2016.
  */
-public class Writter extends Generator {
+public class Writer extends Generator {
 
-    private static final String CLASS = "Writter";
+    private static final String CLASS = "Writer";
     private static final String PKG_SPECIALIZATION = "pkg/specialization/";
 
     @Override
@@ -30,7 +30,7 @@ public class Writter extends Generator {
         mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "main", "([Ljava/lang/String;)V", null, null);
         mv.visitCode();
         mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
-        mv.visitMethodInsn(INVOKESTATIC, "pkg/specialization/Writter", "foo", "()Ljava/lang/String;", false);
+        mv.visitMethodInsn(INVOKESTATIC, "pkg/specialization/Writer", "foo", "()Ljava/lang/String;", false);
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
         mv.visitInsn(RETURN);
         mv.visitEnd();

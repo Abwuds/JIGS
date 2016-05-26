@@ -31,7 +31,6 @@ package org.objectweb.asm.test.cases;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.test.cases.specialization.Reader;
-import org.objectweb.asm.test.cases.specialization.Writter;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -50,7 +49,7 @@ public class Generator implements Opcodes {
                 new Annotation(), new TypeAnnotation(),
                 new Attribute(), new Debug(), new Enum(), new Frames(),
                 new Insns(), new Interface(), new Invalid(), new JSR(),
-                new Outer(), new Wide(), new InvokeDynamic(), new Writter(),
+                new Outer(), new Wide(), new InvokeDynamic(), new Writer(),
                 new Reader() };*/
         Generator generators[] = { new Reader() };
         for (int i = 0; i < generators.length; ++i) {
