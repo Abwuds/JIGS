@@ -31,7 +31,6 @@ package org.objectweb.asm;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.stream.IntStream;
 
 /**
  * A Java class parser to make a {@link ClassVisitor} visit an existing class.
@@ -196,7 +195,6 @@ public class ClassReader {
                 break;
             case ClassWriter.UTF8:
                 size = 3 + readUnsignedShort(index + 1);
-                System.out.println("Size UTF8 : " + (size - 3));
                 if (size > max) {
                     max = size;
                 }
@@ -741,7 +739,11 @@ public class ClassReader {
         char[] c = context.buffer;
         int access = readUnsignedShort(u);
         String name = readUTF8(u + 2, c);
-        String desc = readUTF8(u + 4, c);
+        // The descriptor can be either in an UTF8 or in a TypeVar attribute.
+        // Getting the tag to chose which one contains desc.
+        int descIndex = u + 4;
+        int descTag = readByte(items[readUnsignedShort(descIndex)] - 1);
+        String desc = (descTag == ClassWriter.UTF8) ? readUTF8(descIndex, c) : readTypeVar(descIndex, c);
         u += 6;
 
         // reads the field attributes
@@ -859,6 +861,7 @@ public class ClassReader {
         char[] c = context.buffer;
         context.access = readUnsignedShort(u);
         context.name = readUTF8(u + 2, c);
+        // System.out.println("Reading method : " + context.access + ' ' + context.name);
         context.desc = readUTF8(u + 4, c);
         u += 6;
 
@@ -2444,6 +2447,7 @@ public class ClassReader {
             case 0:
                 c = c & 0xFF;
                 if (c < 0x80) { // 0xxxxxxx
+                    // System.out.println("Size : " + utfLen + " index : " + index + new String(buf, 0, strLen));
                     buf[strLen++] = (char) c;
                 } else if (c < 0xE0 && c > 0xBF) { // 110x xxxx 10xx xxxx
                     cc = (char) (c & 0x1F);
@@ -2466,6 +2470,26 @@ public class ClassReader {
             }
         }
         return new String(buf, 0, strLen);
+    }
+
+    /**
+     * Reads a TypeVar constant pool item in {@link #b b}. <i>This method is
+     * intended for {@link Attribute} sub classes, and is normally not needed by
+     * class generators or adapters.</i>
+     *
+     * @param index
+     *            the start index of an unsigned short value in {@link #b b},
+     *            whose value is the index of a class constant pool item.
+     * @param buf
+     *            buffer to be used to read the item. This buffer must be
+     *            sufficiently large. It is not automatically resized.
+     * @return the String corresponding to the specified TypeVar item.
+     */
+    public String readTypeVar(final int index, final char[] buf) {
+        // computes the start index of the CONSTANT_TypeVar item in b
+        // and reads the CONSTANT_Utf8 item designated by
+        // the second and third bytes of this CONSTANT_TypeVar item
+        return readUTF8(items[readUnsignedShort(index)] + 1, buf);
     }
 
     /**
