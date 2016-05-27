@@ -2487,10 +2487,7 @@ public class ClassReader {
         // computes the start index of the CONSTANT_TypeVar item in b
         // and reads the CONSTANT_Utf8 item designated by
         // the second and third bytes of this CONSTANT_TypeVar item
-        System.out.println("index : " + index);
-        System.out.println(" items : " + items[readUnsignedShort(index)]);
         int tag = readByte(items[readUnsignedShort(index)] - 1);
-        System.out.println("tag : " + tag);
         return tag == ClassWriter.UTF8 ? readUTF8(index, buf) : readTypeVar(index, buf);
     }
 
