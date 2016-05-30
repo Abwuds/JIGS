@@ -533,17 +533,25 @@ public class ClassWriter extends ClassVisitor {
      */
     static {
         int i;
-        byte[] b = new byte[220];
-        String s = "AAAAAAAAAAAAAAAABCLMMDDDDDEEEEEEEEEEEEEEEEEEEEAAAAAAAADD"
+        byte[] b = new byte[232];
+        /*String s = "AAAAAAAAAAAAAAAABCLMMDDDDDEEEEEEEEEEEEEEEEEEEEAAAAAAAADD"
                 + "DDDEEEEEEEEEEEEEEEEEEEEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                 + "AAAAAAAAAAAAAAAAANAAAAAAAAAAAAAAAAAAAAJJJJJJJJJJJJJJJJDOPAA"
-                + "AAAAGGGGGGGHIFBFAAFFAARQJJKKJJJJJJJJJJJJJJJJJJ";
+                + "AAAAGGGGGGGHIFBFAAFFAARQJJKKJJJJJJJJJJJJJJJJJJ";*/
+        String s = "AAAAAAAAAAAAAAAABCLMMDDDDDEEEEEEEEEEEEEEEEEEEEAAAAAAAADDD" +
+                "DDEEEEEEEEEEEEEEEEEEEEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+                "AAAAAAAAAAAAAAANAAAAAAAAAAAAAAAAAAAAJJJJJJJJJJJJJJJJDOPAAAAA" +
+                "AGGGGGGGHIFBFAAFFAARQJJKKAAAAAAAAAAFJJJJJJJJJJJJJJJJJJA";
+
         for (i = 0; i < b.length; ++i) {
             b[i] = (byte) (s.charAt(i) - 'A');
         }
         TYPE = b;
 
         // code to generate the above string
+        //
+        // NOTE : To handle new Valhalla instructions, this code as been replaced by the
+        // code inside test/resources/TypeGenerator#generate.
         //
         // // SBYTE_INSN instructions
         // b[Constants.NEWARRAY] = SBYTE_INSN;

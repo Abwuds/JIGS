@@ -10,6 +10,10 @@ public class ContainerJava10<any T> {
         this.v = v;
     }
 
+    public ContainerJava10<T> clone() {
+        return new ContainerJava10<T>(v);
+    }
+
     public T getV() {
         return v;
     }

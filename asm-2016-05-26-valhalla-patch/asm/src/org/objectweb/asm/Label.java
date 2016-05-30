@@ -395,11 +395,11 @@ public class Label {
                      */
                     int opcode = data[reference - 1] & 0xFF;
                     if (opcode <= Opcodes.JSR) {
-                        // changes IFEQ ... JSR to opcodes 202 to 217
-                        data[reference - 1] = (byte) (opcode + 49);
+                        // changes IFEQ ... JSR to opcodes 213 to 228 (used to be 202 to 217)
+                        data[reference - 1] = (byte) (opcode + 60);
                     } else {
-                        // changes IFNULL and IFNONNULL to opcodes 218 and 219
-                        data[reference - 1] = (byte) (opcode + 20);
+                        // changes IFNULL and IFNONNULL to opcodes 229 and 230 (used to be 218 and 219)
+                        data[reference - 1] = (byte) (opcode + 31);
                     }
                     needUpdate = true;
                 }

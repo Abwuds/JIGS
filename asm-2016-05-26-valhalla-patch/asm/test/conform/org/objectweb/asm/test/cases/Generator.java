@@ -31,6 +31,7 @@ package org.objectweb.asm.test.cases;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.test.cases.specialization.Reader;
+import org.objectweb.asm.test.cases.specialization.Writer;
 
 import java.io.File;
 import java.io.FileOutputStream;

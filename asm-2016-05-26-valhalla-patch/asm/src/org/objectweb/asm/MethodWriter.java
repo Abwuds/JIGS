@@ -2423,10 +2423,10 @@ class MethodWriter extends MethodVisitor {
                     break;
                 case ClassWriter.LABEL_INSN:
                     if (opcode > 201) {
-                        // converts temporary opcodes 202 to 217, 218 and
-                        // 219 to IFEQ ... JSR (inclusive), IFNULL and
-                        // IFNONNULL
-                        opcode = opcode < 218 ? opcode - 49 : opcode - 20;
+                        // converts temporary opcodes 213 to 228 (used to be 202 to 217) (inclusive),
+                        // 229 and 230 (used to be 218 and 219) to IFEQ ... JSR (inclusive),
+                        // IFNULL and IFNONNULL
+                        opcode = opcode < 229 ? opcode - 60 : opcode - 31;
                         label = u + readUnsignedShort(b, u + 1);
                     } else {
                         label = u + readShort(b, u + 1);
@@ -2561,10 +2561,10 @@ class MethodWriter extends MethodVisitor {
                 break;
             case ClassWriter.LABEL_INSN:
                 if (opcode > 201) {
-                    // changes temporary opcodes 202 to 217 (inclusive), 218
-                    // and 219 to IFEQ ... JSR (inclusive), IFNULL and
-                    // IFNONNULL
-                    opcode = opcode < 218 ? opcode - 49 : opcode - 20;
+                    // changes temporary opcodes 213 to 228 (used to be 202 to 217)
+                    // (inclusive), 229 and 230 (used to be 218 and 219)
+                    // to IFEQ ... JSR (inclusive), IFNULL and IFNONNULL
+                    opcode = opcode < 229 ? opcode - 60 : opcode - 31;
                     label = u + readUnsignedShort(b, u + 1);
                 } else {
                     label = u + readShort(b, u + 1);
