@@ -123,11 +123,16 @@ public class TypeGenerator {
      */
     static final int WIDE_INSN = 17;
 
+    /**
+     * The type of the TYPED instruction.
+     */
+    static final int TYPED_INSN = 18;
+
     public static void generate() {
         // code to generate the above string
 
         int i = 0;
-        byte[] b = new byte[232];
+        byte[] b = new byte[231];
         // SBYTE_INSN instructions
         b[NEWARRAY] = SBYTE_INSN;
         b[BIPUSH] = SBYTE_INSN;
@@ -184,7 +189,7 @@ public class TypeGenerator {
         b[210] = NOARG_INSN;        // VRETURN
         b[211] = NOARG_INSN;        // VGETFIELD
         // This instruction is the only one added for the Valhalla project.
-        b[212] = TYPE_INSN;         // TYPED
+        b[212] = TYPED_INSN;         // TYPED
 
         // temporary opcodes used internally by ASM - see Label and MethodWriter
         // Used to be from 202 to 219. Was shifted by 12 since we added 203 -> 212.

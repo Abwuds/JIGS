@@ -2510,6 +2510,7 @@ class MethodWriter extends MethodVisitor {
                 case ClassWriter.LDCW_INSN:
                 case ClassWriter.FIELDORMETH_INSN:
                 case ClassWriter.TYPE_INSN:
+                case ClassWriter.TYPED_INSN:
                 case ClassWriter.IINC_INSN:
                     u += 3;
                     break;

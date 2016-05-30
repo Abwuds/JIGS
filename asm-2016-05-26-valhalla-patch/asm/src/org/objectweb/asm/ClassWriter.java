@@ -168,6 +168,11 @@ public class ClassWriter extends ClassVisitor {
     static final int WIDE_INSN = 17;
 
     /**
+     * The type of the TYPED instruction.
+     */
+    static final int TYPED_INSN = 18;
+
+    /**
      * The instruction types of all JVM opcodes.
      */
     static final byte[] TYPE;
@@ -533,7 +538,7 @@ public class ClassWriter extends ClassVisitor {
      */
     static {
         int i;
-        byte[] b = new byte[232];
+        byte[] b = new byte[231];
         /*String s = "AAAAAAAAAAAAAAAABCLMMDDDDDEEEEEEEEEEEEEEEEEEEEAAAAAAAADD"
                 + "DDDEEEEEEEEEEEEEEEEEEEEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                 + "AAAAAAAAAAAAAAAAANAAAAAAAAAAAAAAAAAAAAJJJJJJJJJJJJJJJJDOPAA"
@@ -541,7 +546,7 @@ public class ClassWriter extends ClassVisitor {
         String s = "AAAAAAAAAAAAAAAABCLMMDDDDDEEEEEEEEEEEEEEEEEEEEAAAAAAAADDD" +
                 "DDEEEEEEEEEEEEEEEEEEEEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
                 "AAAAAAAAAAAAAAANAAAAAAAAAAAAAAAAAAAAJJJJJJJJJJJJJJJJDOPAAAAA" +
-                "AGGGGGGGHIFBFAAFFAARQJJKKAAAAAAAAAAFJJJJJJJJJJJJJJJJJJA";
+                "AGGGGGGGHIFBFAAFFAARQJJKKAAAAAAAAAASJJJJJJJJJJJJJJJJJJ\n";
 
         for (i = 0; i < b.length; ++i) {
             b[i] = (byte) (s.charAt(i) - 'A');

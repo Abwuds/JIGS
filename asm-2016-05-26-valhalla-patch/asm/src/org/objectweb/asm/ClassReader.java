@@ -1130,6 +1130,7 @@ public class ClassReader {
             case ClassWriter.LDCW_INSN:
             case ClassWriter.FIELDORMETH_INSN:
             case ClassWriter.TYPE_INSN:
+            case ClassWriter.TYPED_INSN:
             case ClassWriter.IINC_INSN:
                 u += 3;
                 break;
@@ -1483,6 +1484,10 @@ public class ClassReader {
             }
             case ClassWriter.TYPE_INSN:
                 mv.visitTypeInsn(opcode, readClass(u + 1, c));
+                u += 3;
+                break;
+            case ClassWriter.TYPED_INSN:
+                mv.visitTypeInsn(opcode, readTypeVar(u + 1, c));
                 u += 3;
                 break;
             case ClassWriter.IINC_INSN:
