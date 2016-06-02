@@ -635,6 +635,7 @@ public class ClassReader {
                 }
                 context.bootstrapMethods = bootstrapMethods;
             } else if ("TypeVariablesMap".equals(attrName)) {
+                System.out.println("TypeVariablesMap inside the class");
                 // Allocating an array for each enclosing class and the current one, having a type
                 // (represented by a TypeVariablesEntry) appearing inside this classfile.
                 TypeVariablesEntry[][] typeVariablesEntries = new TypeVariablesEntry[readByte(u + 8)][];
@@ -651,7 +652,6 @@ public class ClassReader {
             } else {
                 Attribute attr = readAttribute(attrs, attrName, u + 8,
                         readInt(u + 4), c, -1, null);
-                System.out.println("Unknown attribut : " + attrName);
                 if (attr != null) {
                     attr.next = attributes;
                     attributes = attr;
@@ -709,6 +709,7 @@ public class ClassReader {
         // visits the attributes
         while (attributes != null) {
             Attribute attr = attributes.next;
+            System.out.println("Visiting attributes : " + attributes.type);
             attributes.next = null;
             classVisitor.visitAttribute(attributes);
             attributes = attr;
@@ -757,7 +758,7 @@ public class ClassReader {
         int access = readUnsignedShort(u);
         String name = readUTF8(u + 2, c);
         // The descriptor can be either in an UTF8, in a TypeVar, or a ParameterizedType attribute.
-        String desc = readUTF8OrTypeVarOrParameterizedType(u + 4, c);
+        String desc = readDescription(u + 4, c);
         u += 6;
 
         // reads the field attributes
@@ -940,6 +941,21 @@ public class ClassReader {
                 impanns = u + 8;
             } else if ("MethodParameters".equals(attrName)) {
                 methodParameters = u + 8;
+            } else if ("TypeVariablesMap".equals(attrName)) {
+                System.out.println("TypeVariablesMap inside the class");
+                // Allocating an array for each enclosing class and the current one, having a type
+                // (represented by a TypeVariablesEntry) appearing inside this classfile.
+                TypeVariablesEntry[][] typeVariablesEntries = new TypeVariablesEntry[readByte(u + 8)][];
+                for (int ii = 0, index = u + 8; ii < typeVariablesEntries.length; ii++) {
+                    typeVariablesEntries[ii] = new TypeVariablesEntry[readByte(index + 3)];
+                    for (int jj = 0, mappingIndex = index + 4; jj < typeVariablesEntries[ii].length; jj++) {
+                        typeVariablesEntries[ii][jj] = new TypeVariablesEntry(readByte(mappingIndex),
+                                readUnsignedShort(mappingIndex + 1), readUnsignedShort(mappingIndex + 3));
+                        mappingIndex += 5;
+                    }
+                    index += typeVariablesEntries[ii].length * 5;
+                }
+                context.typeVariablesEntries = typeVariablesEntries;
             } else {
                 Attribute attr = readAttribute(context.attrs, attrName, u + 8,
                         readInt(u + 4), c, -1, null);
@@ -1047,6 +1063,9 @@ public class ClassReader {
         if (ANNOTATIONS && impanns != 0) {
             readParameterAnnotations(mv, context, impanns, false);
         }
+
+        // TODO visitTypeVariablesMap and duplicate this call for the class attribute too.
+        // context.typeVariablesEntries
 
         // visits the method attributes
         while (attributes != null) {
@@ -1468,7 +1487,7 @@ public class ClassReader {
                 String iowner = readClass(cpIndex, c);
                 cpIndex = items[readUnsignedShort(cpIndex + 2)];
                 String iname = readUTF8(cpIndex, c);
-                String idesc = readUTF8OrTypeVarOrParameterizedType(cpIndex + 2, c);
+                String idesc = readDescription(cpIndex + 2, c);
                 if (opcode < Opcodes.INVOKEVIRTUAL) {
                     mv.visitFieldInsn(opcode, iowner, iname, idesc);
                 } else {
@@ -1494,7 +1513,7 @@ public class ClassReader {
                 }
                 cpIndex = items[readUnsignedShort(cpIndex + 2)];
                 String iname = readUTF8(cpIndex, c);
-                String idesc = readUTF8OrTypeVarOrParameterizedType(cpIndex + 2, c);
+                String idesc = readDescription(cpIndex + 2, c);
                 mv.visitInvokeDynamicInsn(iname, idesc, bsm, bsmArgs);
                 u += 5;
                 break;
@@ -2439,9 +2458,8 @@ public class ClassReader {
             return s;
         }
         index = items[item];
-        System.out.println("readUTF8 - index " + index + " item : " + item);
-        String s1 = readUTF(index + 2, readUnsignedShort(index), buf);
-        return strings[item] = s1;
+        // System.out.println("readUTF8 - index " + index + " item : " + item);
+        return strings[item] = readUTF(index + 2, readUnsignedShort(index), buf);
     }
 
     /**
@@ -2507,12 +2525,14 @@ public class ClassReader {
      *            sufficiently large. It is not automatically resized.
      * @return the String corresponding to the specified TypeVar item.
      */
-    public String readUTF8OrTypeVarOrParameterizedType(int index, char[] buf) {
+    public String readDescription(int index, char[] buf) {
         switch (readByte(items[readUnsignedShort(index)] - 1)) {
             case ClassWriter.TYPE_VAR:
                 return readTypeVar(index, buf);
             case ClassWriter.PARAMETERIZED_TYPE:
                 return readParameterizedType(index, buf);
+            case ClassWriter.METHOD_DESCRIPTOR:
+                return readMethodDescriptor(index, buf);
             default: // case ClassWriter.UTF8
                 return readUTF8(index, buf);
         }
@@ -2581,7 +2601,7 @@ public class ClassReader {
         sb.append(readUTF8(item + 3, buf)).append('<');
         int paramsIndex = item + 6;
         for (int i = 0; i < params; i++) {
-            String str = readUTF8OrTypeVarOrParameterizedType(paramsIndex + i * 2, buf);
+            String str = readDescription(paramsIndex + i * 2, buf);
             sb.append(str);
         }
         return sb.append('>').append(';').toString();
@@ -2610,10 +2630,10 @@ public class ClassReader {
         StringBuilder sb = new StringBuilder("(");
         int paramsIndex = item + 3;
         for (int i = 0; i < params; i++) {
-            String str = readUTF8OrTypeVarOrParameterizedType(paramsIndex + i * 2, buf);
+            String str = readDescription(paramsIndex + i * 2, buf);
             sb.append(str);
         }
-        return sb.append(')').append(readUTF8OrTypeVarOrParameterizedType(item + 1, buf)).toString();
+        return sb.append(')').append(readDescription(item + 1, buf)).toString();
     }
 
     /**
