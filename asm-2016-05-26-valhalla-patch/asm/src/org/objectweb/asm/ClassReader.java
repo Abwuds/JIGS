@@ -31,8 +31,6 @@ package org.objectweb.asm;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
-import java.util.HashMap;
 
 /**
  * A Java class parser to make a {@link ClassVisitor} visit an existing class.
@@ -758,8 +756,8 @@ public class ClassReader {
         char[] c = context.buffer;
         int access = readUnsignedShort(u);
         String name = readUTF8(u + 2, c);
-        // The descriptor can be either in an UTF8 or in a TypeVar attribute.
-        String desc = readUTF8OrTypeVar(u + 4, c);
+        // The descriptor can be either in an UTF8, in a TypeVar, or a ParameterizedType attribute.
+        String desc = readUTF8OrTypeVarOrParameterizedType(u + 4, c);
         u += 6;
 
         // reads the field attributes
@@ -2509,12 +2507,15 @@ public class ClassReader {
      *            sufficiently large. It is not automatically resized.
      * @return the String corresponding to the specified TypeVar item.
      */
-    public String readUTF8OrTypeVar(int index, char[] buf) {
-        // computes the start index of the CONSTANT_TypeVar item in b
-        // and reads the CONSTANT_Utf8 item designated by
-        // the second and third bytes of this CONSTANT_TypeVar item
-        int tag = readByte(items[readUnsignedShort(index)] - 1);
-        return tag == ClassWriter.UTF8 ? readUTF8(index, buf) : readTypeVar(index, buf);
+    public String readUTF8OrTypeVarOrParameterizedType(int index, char[] buf) {
+        switch (readByte(items[readUnsignedShort(index)] - 1)) {
+            case ClassWriter.TYPE_VAR:
+                return readTypeVar(index, buf);
+            case ClassWriter.PARAMETERIZED_TYPE:
+                return readParameterizedType(index, buf);
+            default: // case ClassWriter.UTF8
+                return readUTF8(index, buf);
+        }
     }
 
     /**
@@ -2545,7 +2546,7 @@ public class ClassReader {
      *
      * @param index
      *            the start index of an unsigned short value in {@link #b b},
-     *            whose value is the index of a class constant pool item.
+     *            whose value is the index of a TypeVar constant pool item.
      * @param buf
      *            buffer to be used to read the item. This buffer must be
      *            sufficiently large. It is not automatically resized.
@@ -2557,7 +2558,33 @@ public class ClassReader {
         // the second and third bytes of this CONSTANT_TypeVar item
         int offset = readByte(items[readUnsignedShort(index)]);
         // TODO compute offset value in string thanks to the TypeVariablesMap.
-        return "TypeVar " + offset + '/' + readUTF8(items[readUnsignedShort(index)] + 1, buf);
+        return offset + "/" + readUTF8(items[readUnsignedShort(index)] + 1, buf);
+    }
+
+    /**
+     * Reads a ParameterizedType constant pool item in {@link #b b}. <i>This method is
+     * intended for {@link Attribute} sub classes, and is normally not needed by
+     * class generators or adapters.</i>
+     *
+     * @param index
+     *            the start index of an unsigned short value in {@link #b b},
+     *            whose value is the index of a parameterizedType constant pool item.
+     * @param buf
+     *            buffer to be used to read the item. This buffer must be
+     *            sufficiently large. It is not automatically resized.
+     * @return the String corresponding to the specified TypeVar item.
+     */
+    public String readParameterizedType(final int index, final char[] buf) {
+        int item = items[readUnsignedShort(index)];
+        int params = readByte(item + 5);
+        StringBuilder sb = new StringBuilder();
+        sb.append(readUTF8(item + 3, buf)).append('<');
+        int paramsIndex = item + 6;
+        for (int i = 0; i < params; i++) {
+            String str = readUTF8OrTypeVarOrParameterizedType(paramsIndex + i * 2, buf);
+            sb.append(str);
+        }
+        return sb.append('>').append(';').toString();
     }
 
     /**
@@ -2583,10 +2610,10 @@ public class ClassReader {
         StringBuilder sb = new StringBuilder("(");
         int paramsIndex = item + 3;
         for (int i = 0; i < params; i++) {
-            String str = readUTF8OrTypeVar(paramsIndex + i * 2, buf);
+            String str = readUTF8OrTypeVarOrParameterizedType(paramsIndex + i * 2, buf);
             sb.append(str);
         }
-        return sb.append(')').append(readUTF8OrTypeVar(item + 1, buf)).toString();
+        return sb.append(')').append(readUTF8OrTypeVarOrParameterizedType(item + 1, buf)).toString();
     }
 
     /**
