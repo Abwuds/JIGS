@@ -31,6 +31,8 @@ package org.objectweb.asm;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.HashMap;
 
 /**
  * A Java class parser to make a {@link ClassVisitor} visit an existing class.
@@ -177,6 +179,7 @@ public class ClassReader {
         int index = off + 10;
         for (int i = 1; i < n; ++i) {
             items[i] = index + 1;
+            System.out.println("Item : " + i + " index : " + (index + 1));
             int size;
             switch (b[index]) {
             case ClassWriter.FIELD:
@@ -590,6 +593,7 @@ public class ClassReader {
         u = getAttributes();
         for (int i = readUnsignedShort(u); i > 0; --i) {
             String attrName = readUTF8(u + 2, c);
+            // System.out.println("Attribut : " + attrName);
             // tests are sorted in decreasing frequency order
             // (based on frequencies observed on typical classes)
             if ("SourceFile".equals(attrName)) {
@@ -632,9 +636,24 @@ public class ClassReader {
                     v += 2 + readUnsignedShort(v + 2) << 1;
                 }
                 context.bootstrapMethods = bootstrapMethods;
+            } else if ("TypeVariablesMap".equals(attrName)) {
+                // Allocating an array for each enclosing class and the current one, having a type
+                // (represented by a TypeVariablesEntry) appearing inside this classfile.
+                TypeVariablesEntry[][] typeVariablesEntries = new TypeVariablesEntry[readByte(u + 8)][];
+                for (int ii = 0, index = u + 8; ii < typeVariablesEntries.length; ii++) {
+                    typeVariablesEntries[ii] = new TypeVariablesEntry[readByte(index + 3)];
+                    for (int jj = 0, mappingIndex = index + 4; jj < typeVariablesEntries[ii].length; jj++) {
+                        typeVariablesEntries[ii][jj] = new TypeVariablesEntry(readByte(mappingIndex),
+                                readUnsignedShort(mappingIndex + 1), readUnsignedShort(mappingIndex + 3));
+                        mappingIndex += 5;
+                    }
+                    index += typeVariablesEntries[ii].length * 5;
+                }
+                context.typeVariablesEntries = typeVariablesEntries;
             } else {
                 Attribute attr = readAttribute(attrs, attrName, u + 8,
                         readInt(u + 4), c, -1, null);
+                System.out.println("Unknown attribut : " + attrName);
                 if (attr != null) {
                     attr.next = attributes;
                     attributes = attr;
@@ -1451,7 +1470,7 @@ public class ClassReader {
                 String iowner = readClass(cpIndex, c);
                 cpIndex = items[readUnsignedShort(cpIndex + 2)];
                 String iname = readUTF8(cpIndex, c);
-                String idesc = readUTF8(cpIndex + 2, c);
+                String idesc = readUTF8OrTypeVar(cpIndex + 2, c);
                 if (opcode < Opcodes.INVOKEVIRTUAL) {
                     mv.visitFieldInsn(opcode, iowner, iname, idesc);
                 } else {
@@ -1477,6 +1496,7 @@ public class ClassReader {
                 }
                 cpIndex = items[readUnsignedShort(cpIndex + 2)];
                 String iname = readUTF8(cpIndex, c);
+                // FIXME is it possible to reference a TypeVar description here ?
                 String idesc = readUTF8(cpIndex + 2, c);
                 mv.visitInvokeDynamicInsn(iname, idesc, bsm, bsmArgs);
                 u += 5;
@@ -2422,7 +2442,9 @@ public class ClassReader {
             return s;
         }
         index = items[item];
-        return strings[item] = readUTF(index + 2, readUnsignedShort(index), buf);
+        System.out.println("readUTF8 - index " + index + " item : " + item);
+        String s1 = readUTF(index + 2, readUnsignedShort(index), buf);
+        return strings[item] = s1;
     }
 
     /**
@@ -2534,7 +2556,9 @@ public class ClassReader {
         // computes the start index of the CONSTANT_TypeVar item in b
         // and reads the CONSTANT_Utf8 item designated by
         // the second and third bytes of this CONSTANT_TypeVar item
-        return readUTF8(items[readUnsignedShort(index)] + 1, buf);
+        int offset = readByte(items[readUnsignedShort(index)]);
+        // TODO compute offset value in string thanks to the TypeVariablesMap.
+        return "TypeVar " + offset + '/' + readUTF8(items[readUnsignedShort(index)] + 1, buf);
     }
 
     /**

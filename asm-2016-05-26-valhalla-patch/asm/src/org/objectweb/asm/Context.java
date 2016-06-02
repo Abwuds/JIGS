@@ -142,4 +142,9 @@ class Context {
      * The stack values of the latest stack map frame that has been parsed.
      */
     Object[] stack;
+
+    /**
+     * The type variables entries used inside the class.
+     */
+    TypeVariablesEntry[][] typeVariablesEntries;
 }
