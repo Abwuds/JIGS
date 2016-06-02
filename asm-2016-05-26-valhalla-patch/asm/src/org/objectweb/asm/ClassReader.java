@@ -1468,7 +1468,7 @@ public class ClassReader {
                 String iowner = readClass(cpIndex, c);
                 cpIndex = items[readUnsignedShort(cpIndex + 2)];
                 String iname = readUTF8(cpIndex, c);
-                String idesc = readUTF8OrTypeVar(cpIndex + 2, c);
+                String idesc = readUTF8OrTypeVarOrParameterizedType(cpIndex + 2, c);
                 if (opcode < Opcodes.INVOKEVIRTUAL) {
                     mv.visitFieldInsn(opcode, iowner, iname, idesc);
                 } else {
@@ -1494,7 +1494,7 @@ public class ClassReader {
                 }
                 cpIndex = items[readUnsignedShort(cpIndex + 2)];
                 String iname = readUTF8(cpIndex, c);
-                String idesc = readUTF8OrTypeVar(cpIndex + 2, c);
+                String idesc = readUTF8OrTypeVarOrParameterizedType(cpIndex + 2, c);
                 mv.visitInvokeDynamicInsn(iname, idesc, bsm, bsmArgs);
                 u += 5;
                 break;
