@@ -1496,8 +1496,7 @@ public class ClassReader {
                 }
                 cpIndex = items[readUnsignedShort(cpIndex + 2)];
                 String iname = readUTF8(cpIndex, c);
-                // FIXME is it possible to reference a TypeVar description here ?
-                String idesc = readUTF8(cpIndex + 2, c);
+                String idesc = readUTF8OrTypeVar(cpIndex + 2, c);
                 mv.visitInvokeDynamicInsn(iname, idesc, bsm, bsmArgs);
                 u += 5;
                 break;
