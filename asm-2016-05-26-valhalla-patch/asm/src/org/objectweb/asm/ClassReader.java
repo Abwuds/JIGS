@@ -638,19 +638,7 @@ public class ClassReader {
                 System.out.println("TypeVariablesMap inside the class : " + attrName);
                 // Allocating an array for each enclosing class and the current one, having a type
                 // (represented by a TypeVariablesEntry) appearing inside this classfile.
-                TypeVariablesEntry[][] typeVariablesEntries = new TypeVariablesEntry[readByte(u + 8)][];
-                for (int ii = 0, index = u + 9; ii < typeVariablesEntries.length; ii++) {
-                    typeVariablesEntries[ii] = new TypeVariablesEntry[readByte(index + 2)];
-                    for (int jj = 0, mappingIndex = index + 3; jj < typeVariablesEntries[ii].length; jj++) {
-                        typeVariablesEntries[ii][jj] = new TypeVariablesEntry(
-                                                readByte(mappingIndex),
-                                                readUnsignedShort(mappingIndex + 1),
-                                                readUnsignedShort(mappingIndex + 3));
-                        mappingIndex += 5;
-                    }
-                    index += 3 + typeVariablesEntries[ii].length * 5;
-                }
-                context.typeVariablesEntries = typeVariablesEntries;
+                context.typeVariablesEntries = getTypeVariablesEntries(u + 8);
             } else {
                 Attribute attr = readAttribute(attrs, attrName, u + 8,
                         readInt(u + 4), c, -1, null);
@@ -947,18 +935,7 @@ public class ClassReader {
                 System.out.println("TypeVariablesMap inside the class");
                 // Allocating an array for each enclosing class and the current one, having a type
                 // (represented by a TypeVariablesEntry) appearing inside this classfile.
-                TypeVariablesEntry[][] typeVariablesEntries = new TypeVariablesEntry[readByte(u + 8)][];
-                for (int ii = 0, index = u + 9; ii < typeVariablesEntries.length; ii++) {
-                    typeVariablesEntries[ii] = new TypeVariablesEntry[readByte(index + 2)];
-                    for (int jj = 0, mappingIndex = index + 3; jj < typeVariablesEntries[ii].length; jj++) {
-                        typeVariablesEntries[ii][jj] = new TypeVariablesEntry(
-                                readByte(mappingIndex),
-                                readUnsignedShort(mappingIndex + 1),
-                                readUnsignedShort(mappingIndex + 3));
-                        mappingIndex += 5;
-                    }
-                    index += 3 + typeVariablesEntries[ii].length * 5;
-                }
+                TypeVariablesEntry[][] typeVariablesEntries = getTypeVariablesEntries(u + 8);
                 context.typeVariablesEntries = typeVariablesEntries;
             } else {
                 Attribute attr = readAttribute(context.attrs, attrName, u + 8,
@@ -2284,6 +2261,27 @@ public class ClassReader {
         }
         // the attribute_info structure starts just after the methods
         return u + 2;
+    }
+
+    /**
+     * Computes the type variables map starting at the index u.
+     *
+     * @return type variables map computed.
+     */
+    private TypeVariablesEntry[][] getTypeVariablesEntries(int u) {
+        TypeVariablesEntry[][] typeVariablesEntries = new TypeVariablesEntry[readByte(u)][];
+        for (int ii = 0, index = u + 1; ii < typeVariablesEntries.length; ii++) {
+            typeVariablesEntries[ii] = new TypeVariablesEntry[readByte(index + 2)];
+            for (int jj = 0, mappingIndex = index + 3; jj < typeVariablesEntries[ii].length; jj++) {
+                typeVariablesEntries[ii][jj] = new TypeVariablesEntry(
+                        readByte(mappingIndex),
+                        readUnsignedShort(mappingIndex + 1),
+                        readUnsignedShort(mappingIndex + 3));
+                mappingIndex += 5;
+            }
+            index += 3 + typeVariablesEntries[ii].length * 5;
+        }
+        return typeVariablesEntries;
     }
 
     /**

@@ -24,7 +24,7 @@ public class Reader extends Generator {
     }
 
     private void read() throws IOException {
-        byte[] bytes = Files.readAllBytes(Paths.get("asm/test/resources/Class4$Classe4Inner.class"));
+        byte[] bytes = Files.readAllBytes(Paths.get("asm/test/resources/ContainerJava8.class"));
         ClassReader cr = new ClassReader(bytes);
          cr.accept(new TraceClassVisitor(new PrintWriter(System.out)), 0);
         // Using my own visitor.
