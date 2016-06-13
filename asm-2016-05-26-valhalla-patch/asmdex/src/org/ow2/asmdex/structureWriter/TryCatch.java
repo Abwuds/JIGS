@@ -36,7 +36,7 @@ import java.util.ArrayList;
 import org.ow2.asmdex.structureCommon.Label;
 
 /**
- * Contains the data of a Try/Catch structure <i>for the Writer</i>.
+ * Contains the data of a Try/Catch structure <i>for the Rewriter</i>.
  * 
  * Two structures are considered equals if the Start Label is the same. A structure can't hold more than one
  * CatchAll (ExceptionHandler with a Null Type), and raises an Exception if one try to add more than one.

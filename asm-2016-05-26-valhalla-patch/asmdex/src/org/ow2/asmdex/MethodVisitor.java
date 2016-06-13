@@ -68,7 +68,7 @@ import org.ow2.asmdex.structureCommon.Label;
  * <li> visitMethodInsn: added the registers parameter.</li>
  * <li> visitFieldInsn: added valueRegister and objectRegister.</li>
  * <li> visitJumpInsn: added two registers (registerA, registerB).</li>
- * <li> visitTableSwitchInsn: added a register. Max value and Default Label are ignored by the Writer,
+ * <li> visitTableSwitchInsn: added a register. Max value and Default Label are ignored by the Rewriter,
  *   as they are not used in the encoded table. The Reader generates them, though.</li>
  * <li> visitLookupSwitchInsn: added a register. Default Label is ignored, it doesn't appear in
  *   the table. The Reader generates it, though.</li>
@@ -449,8 +449,8 @@ public abstract class MethodVisitor {
      * 
      * @param register the register to test.
      * @param min the minimum key value.
-     * @param max the maximum key value (ignored by the Writer).
-     * @param dflt beginning of the default handler block (ignored by the Writer).
+     * @param max the maximum key value (ignored by the Rewriter).
+     * @param dflt beginning of the default handler block (ignored by the Rewriter).
      * @param labels beginnings of the handler blocks. <tt>labels[i]</tt> is
      *        the beginning of the handler block for the <tt>min + i</tt> key.
      */
@@ -464,7 +464,7 @@ public abstract class MethodVisitor {
      * Visits a LOOKUPSWITCH instruction.
      * 
      * @param register the register to test.
-     * @param dflt beginning of the default handler block (ignored by the Writer).
+     * @param dflt beginning of the default handler block (ignored by the Rewriter).
      * @param keys the values of the keys.
      * @param labels beginnings of the handler blocks. <tt>labels[i]</tt> is
      *        the beginning of the handler block for the <tt>keys[i]</tt> key.

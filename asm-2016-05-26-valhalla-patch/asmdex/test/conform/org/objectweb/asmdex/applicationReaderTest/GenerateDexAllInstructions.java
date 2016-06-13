@@ -44,10 +44,10 @@ import org.ow2.asmdex.structureCommon.Label;
  * to the ApplicationWriter. The generated file hasn't the necessary classes to make it run
  * on hardware, it only consists in a class having one method having all the instructions.
  * <br/><br/>
- * As it uses the Writer, some register combinations can't be obtained (like 0 for a
+ * As it uses the Rewriter, some register combinations can't be obtained (like 0 for a
  * CONST/16 as it will be optimized into a CONST).
  * <br/><br/>
- * Logically, we shouldn't use the Writer to test the Reader, and we don't do that in the
+ * Logically, we shouldn't use the Rewriter to test the Reader, and we don't do that in the
  * other tests (they use dex files compiled by dx). But getting all the instructions only
  * through a Java code would be too complicated, and wouldn't be as accurate.
  * 

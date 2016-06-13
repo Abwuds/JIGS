@@ -150,7 +150,7 @@ public class ApplicationReader {
     
     /**
      * True to enable bytecode writing support. This consists in copying the Constant Pool and the bytecode
-     * of the methods directly to the output if the Reader is linked to the Writer. That is, if the methods
+     * of the methods directly to the output if the Reader is linked to the Rewriter. That is, if the methods
      * aren't modified by an Adapter.
      */
     private static final boolean WRITER = true;

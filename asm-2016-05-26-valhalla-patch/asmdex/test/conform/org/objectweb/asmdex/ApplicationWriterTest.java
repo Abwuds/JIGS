@@ -47,8 +47,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 /**
- * Tests the Application Writer.
- * This is done by comparing the output of the Writer, fed by the Reader, and the output of Baksmali.
+ * Tests the Application Rewriter.
+ * This is done by comparing the output of the Rewriter, fed by the Reader, and the output of Baksmali.
  * 
  * The dex files comes from the test/case folder. Dex files coming from test/case/skipLineNumbers are
  * treated particularly : the line numbers are skipped. It may useful for some dex files, as in some
@@ -176,7 +176,7 @@ public class ApplicationWriterTest {
 	    TestUtil.baksmali(new String[] { fullDexFileName,
 	            "-o" + TestUtil.TEMP_FOLDER_EXPECTED});
 
-	    // Uses the Reader and Writer to generate our own dex file from the current dex file.
+	    // Uses the Reader and Rewriter to generate our own dex file from the current dex file.
 	    ApplicationReader ar = new ApplicationReader(Opcodes.ASM4, fullDexFileName);
 	    ApplicationWriter aw;
 	    // Use of the shortcut optimization ?

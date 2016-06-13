@@ -36,7 +36,7 @@ package org.ow2.asmdex.structureReader;
  * the data when reading a method_id_item, but nothing else.
  * 
  * Only the classIndex, prototypeIndex and nameIndex are used by the ApplicationReader.
- * The Writer needs all the fields, though.
+ * The Rewriter needs all the fields, though.
  * 
  * @author Julien Névo
  */

@@ -608,7 +608,7 @@ public class ApplicationWriter extends ApplicationVisitor {
 					codeItemOffset = out.getLength();
 				}
 				
-				// Checks if the ConstantPool optimization (Reader-->Writer) is used.
+				// Checks if the ConstantPool optimization (Reader-->Rewriter) is used.
 				int startByteCodeToCopy = method.getStartBytecodeToCopy();
 				if (startByteCodeToCopy == 0) {
 					// No optimization. Parses the code normally.
@@ -1377,8 +1377,8 @@ public class ApplicationWriter extends ApplicationVisitor {
 
 	/**
 	 * When the optimization about the ApplicationReader/ApplicationWriter is enabled, the
-	 * ApplicationReader will want to register Strings into the Constant Pool of the Writer.
-	 * This method is used for that. Note that the String added should be considered by the Writer
+	 * ApplicationReader will want to register Strings into the Constant Pool of the Rewriter.
+	 * This method is used for that. Note that the String added should be considered by the Rewriter
 	 * as symbolic, as more of them can be added later.
 	 * @param string the String to add to the Constant Pool.
 	 */
@@ -1388,8 +1388,8 @@ public class ApplicationWriter extends ApplicationVisitor {
 
 	/**
 	 * When the optimization about the ApplicationReader/ApplicationWriter is enabled, the
-	 * ApplicationReader will want to register Types into the Constant Pool of the Writer.
-	 * This method is used for that. Note that the Type added should be considered by the Writer
+	 * ApplicationReader will want to register Types into the Constant Pool of the Rewriter.
+	 * This method is used for that. Note that the Type added should be considered by the Rewriter
 	 * as symbolic, as more of them can be added later.
 	 * @param type the Type to add to the Constant Pool.
 	 */
@@ -1399,8 +1399,8 @@ public class ApplicationWriter extends ApplicationVisitor {
 
 	/**
 	 * When the optimization about the ApplicationReader/ApplicationWriter is enabled, the
-	 * ApplicationReader will want to register Fields into the Constant Pool of the Writer.
-	 * This method is used for that. Note that the Field added should be considered by the Writer
+	 * ApplicationReader will want to register Fields into the Constant Pool of the Rewriter.
+	 * This method is used for that. Note that the Field added should be considered by the Rewriter
 	 * as symbolic, as more of them can be added later.
 	 * @param className the Class owner name.
 	 * @param type the type of the Field.
@@ -1412,8 +1412,8 @@ public class ApplicationWriter extends ApplicationVisitor {
 
 	/**
 	 * When the optimization about the ApplicationReader/ApplicationWriter is enabled, the
-	 * ApplicationReader will want to register Methods into the Constant Pool of the Writer.
-	 * This method is used for that. Note that the Method added should be considered by the Writer
+	 * ApplicationReader will want to register Methods into the Constant Pool of the Rewriter.
+	 * This method is used for that. Note that the Method added should be considered by the Rewriter
 	 * as symbolic, as more of them can be added later.
 	 * @param className the Class owner name.
 	 * @param prototype the prototype of the method, in TypeDescriptor format.

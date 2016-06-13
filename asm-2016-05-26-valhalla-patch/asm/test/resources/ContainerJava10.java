@@ -9,6 +9,7 @@ public class ContainerJava10<any T, U, any X> {
     public ContainerJava10(T v, X e) {
         this.v = v;
         this.e = e;
+        Object o = new Object();
     }
 
     public T getV() {

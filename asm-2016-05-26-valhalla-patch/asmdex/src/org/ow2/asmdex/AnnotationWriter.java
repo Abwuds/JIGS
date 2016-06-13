@@ -43,7 +43,7 @@ import org.ow2.asmdex.structureWriter.ConstantPool;
 import org.ow2.asmdex.structureWriter.Field;
 
 /**
- * The Annotation Writer. Visits an Annotation and stores its content.
+ * The Annotation Rewriter. Visits an Annotation and stores its content.
  * <br /><br />
  * A visitor can have children when it needs to visit an Array or sub-Annotations. It has no link with them,
  * but a child knows its father, and once the visit of all its elements are over, the child builds a single
@@ -107,7 +107,7 @@ public class AnnotationWriter extends AnnotationVisitor {
 	protected boolean mustSortArray = true;
 	
 	/**
-	 * Constructor of the Annotation Writer.
+	 * Constructor of the Annotation Rewriter.
 	 * @param constantPool the Constant Pool of the Application.
 	 * @param annotationItem the Annotation Item to visit.
 	 */
@@ -349,15 +349,15 @@ public class AnnotationWriter extends AnnotationVisitor {
 	// ------------------------------------------
 	
 	/**
-	 * Creates an Annotation Writer for it to visit a following Annotation. Also registers the
-	 * descriptor to the Constant pool. The Annotation Item created inside the Annotation Writer
+	 * Creates an Annotation Rewriter for it to visit a following Annotation. Also registers the
+	 * descriptor to the Constant pool. The Annotation Item created inside the Annotation Rewriter
 	 * is NOT registered to anything, so the calling Method may want to do it.
 	 * @param desc the class descriptor of the annotation class.
 	 * @param visible true if the annotation is visible at runtime.
 	 * @param constantPool the Constant Pool of the Application.
 	 * @param classDefinitionItem the Class the Annotation is linked to. This is ONLY useful for
 	 * 		  Default Annotation, and must be Null otherwise.
-	 * @return an Annotation Writer for it to visit a following Annotation.
+	 * @return an Annotation Rewriter for it to visit a following Annotation.
 	 */
 	public static AnnotationWriter createAnnotationWriter(String desc, boolean visible,
 			ConstantPool constantPool, ClassDefinitionItem classDefinitionItem) {

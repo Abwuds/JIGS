@@ -34,7 +34,7 @@ public class ApplicationWriterBasicTest {
     }
 
     /**
-     * Tests that a newly created Writer doesn't provide a byte array.
+     * Tests that a newly created Rewriter doesn't provide a byte array.
      */
     @Test
     public void testToByteArrayNull() {
@@ -43,7 +43,7 @@ public class ApplicationWriterBasicTest {
     }
 
     /**
-     * Tests that a newly created Writer provides a byte array.
+     * Tests that a newly created Rewriter provides a byte array.
      */
     @Test
     public void testGetConstantPool() {
@@ -64,7 +64,7 @@ public class ApplicationWriterBasicTest {
     }
     
     /**
-     * Tests that a newly created Writer doesn't provide an Application Reader unless it is given to it.
+     * Tests that a newly created Rewriter doesn't provide an Application Reader unless it is given to it.
      */
     @Test
     public void testGetApplicationReaderNull() {
@@ -73,7 +73,7 @@ public class ApplicationWriterBasicTest {
     }
     
     /**
-     * Tests that a newly created Writer provides an Application Reader if it is given to it.
+     * Tests that a newly created Rewriter provides an Application Reader if it is given to it.
      * @throws IOException 
      */
     @Test

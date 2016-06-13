@@ -48,8 +48,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 /**
- * Tests the Application Writer using the Tree API.
- * This is done by comparing the output of the Writer, fed by the Reader, and the output of Baksmali.
+ * Tests the Application Rewriter using the Tree API.
+ * This is done by comparing the output of the Rewriter, fed by the Reader, and the output of Baksmali.
  * 
  * @author Julien Névo
  */
@@ -150,7 +150,7 @@ public class ApplicationWriterTreeTest {
 		TestUtil.baksmali(new String[] { fullDexFileName,
 		        "-o" + TestUtil.TEMP_FOLDER_EXPECTED});
 
-		// Uses the Tree API with the Reader and Writer to generate our own dex file from the current dex file.
+		// Uses the Tree API with the Reader and Rewriter to generate our own dex file from the current dex file.
 		ApplicationReader ar = new ApplicationReader(Opcodes.ASM4, fullDexFileName);
 		ApplicationNode an = new ApplicationNode(Opcodes.ASM4);
 		ar.accept(an, 0);

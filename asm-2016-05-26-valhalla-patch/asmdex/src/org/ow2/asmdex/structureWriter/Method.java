@@ -84,14 +84,14 @@ public class Method implements Comparable<Method>, IAnnotationsHolder {
 
 	/**
 	 * Start in bytes from the beginning of the Dex file, of the bytecode to copy, in case the
-	 * "ConstantPool" optimization is used if the Writer is directly linked to the Reader.
+	 * "ConstantPool" optimization is used if the Rewriter is directly linked to the Reader.
 	 * It includes the code_item header.
 	 */
 	private int startBytecodeToCopy;
 	
 	/**
 	 * Start in bytes from the beginning of the Dex file, of the debug_info_item to copy, in case the
-	 * "ConstantPool" optimization is used if the Writer is directly linked to the Reader.
+	 * "ConstantPool" optimization is used if the Rewriter is directly linked to the Reader.
 	 */
 	private int startDebugInfoToCopy;
 	
@@ -365,7 +365,7 @@ public class Method implements Comparable<Method>, IAnnotationsHolder {
 	 * Sets the start of the bytecode to copy from the input Dex file to the
 	 * output. This is only useful when using the optimization that consists in copying part of
 	 * the Constant Pool and the bytecode of methods that doesn't change, if the Reader is linked
-	 * to the Writer with no Adapter to modify the methods in between.
+	 * to the Rewriter with no Adapter to modify the methods in between.
 	 * @param start start in bytes from the beginning of the Dex file where the bytecode is. This
 	 *        includes the code_item header.
 	 */
@@ -377,7 +377,7 @@ public class Method implements Comparable<Method>, IAnnotationsHolder {
 	 * Gets the start in byte of the bytecode to copy from the input Dex file.
 	 * This is only useful when using the optimization that consists in copying part of
 	 * the Constant Pool and the bytecode of methods that doesn't change, if the Reader is linked
-	 * to the Writer with no Adapter to modify the methods in between.
+	 * to the Rewriter with no Adapter to modify the methods in between.
 	 * @return the start in byte of the bytecode, or 0 if the optimization is not used.
 	 */
 	public int getStartBytecodeToCopy() {
@@ -388,7 +388,7 @@ public class Method implements Comparable<Method>, IAnnotationsHolder {
 	 * Sets the start of the debug_info_item to copy from the input Dex file to the
 	 * output. This is only useful when using the optimization that consists in copying part of
 	 * the Constant Pool and the bytecode of methods that doesn't change, if the Reader is linked
-	 * to the Writer with no Adapter to modify the methods in between.
+	 * to the Rewriter with no Adapter to modify the methods in between.
 	 * @param start start in bytes from the beginning of the Dex file where the debug_info_item is.
 	 */
 	public void setStartDebugInfoToCopy(int start) {
@@ -399,7 +399,7 @@ public class Method implements Comparable<Method>, IAnnotationsHolder {
 	 * Gets the start in byte of the debug_info_item to copy from the input Dex file.
 	 * This is only useful when using the optimization that consists in copying part of
 	 * the Constant Pool and the bytecode of methods that doesn't change, if the Reader is linked
-	 * to the Writer with no Adapter to modify the methods in between.
+	 * to the Rewriter with no Adapter to modify the methods in between.
 	 * @return the start in byte of the debug_info_item, or 0 if the optimization is not used.
 	 */
 	public int getStartDebugInfoToCopy() {

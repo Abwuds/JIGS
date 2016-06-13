@@ -46,14 +46,14 @@ import org.ow2.asmdex.structureWriter.Field;
 import org.ow2.asmdex.structureWriter.Method;
 
 /**
- * Class that takes care of visiting a Class for the Application Writer to write it.
+ * Class that takes care of visiting a Class for the Application Rewriter to write it.
  * 
  * @author Julien Névo
  */
 public class ClassWriter extends ClassVisitor {
 
     /**
-     * The Application Writer of this Class Writer. It is only useful for the optimization that consists
+     * The Application Rewriter of this Class Rewriter. It is only useful for the optimization that consists
      * in copying the Constant Pool and skips the visit of Methods that aren't transformed by any Adapter.
      */
     private ApplicationWriter applicationWriter;
@@ -77,7 +77,7 @@ public class ClassWriter extends ClassVisitor {
 
     /**
      * Constructor.
-     * @param applicationWriter the Application Writer.
+     * @param applicationWriter the Application Rewriter.
      * @param constantPool the constantPool of the Application.
      * @param access the access flags of the class.
      * @param name the name of the class.
@@ -100,7 +100,7 @@ public class ClassWriter extends ClassVisitor {
     // -----------------------------------------------------
 
     /**
-     * Returns the ApplicationWriter of this Class Writer.
+     * Returns the ApplicationWriter of this Class Rewriter.
      */
     public ApplicationWriter getApplicationWriter() {
         return applicationWriter;

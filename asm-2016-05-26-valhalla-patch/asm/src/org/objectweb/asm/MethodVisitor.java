@@ -387,7 +387,7 @@ public abstract class MethodVisitor {
     /**
      * Visits a type instruction. A type instruction is an instruction that
      * takes the internal name of a class as parameter.
-     * 
+     *
      * @param opcode
      *            the opcode of the type instruction to be visited. This opcode
      *            is either NEW, ANEWARRAY, CHECKCAST or INSTANCEOF.
@@ -399,6 +399,18 @@ public abstract class MethodVisitor {
     public void visitTypeInsn(int opcode, String type) {
         if (mv != null) {
             mv.visitTypeInsn(opcode, type);
+        }
+    }
+
+    /**
+     * Visits a typed instruction. A typed instruction is an instruction that
+     * takes a typevar instance.
+     * @param name
+     * @param typedOpcode
+     */
+    public void visitTypedInsn(String name, int typedOpcode) {
+        if (mv != null) {
+            mv.visitTypedInsn(name, typedOpcode);
         }
     }
 

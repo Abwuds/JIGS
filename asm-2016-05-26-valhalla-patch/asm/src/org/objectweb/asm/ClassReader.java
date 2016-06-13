@@ -177,7 +177,7 @@ public class ClassReader {
         int index = off + 10;
         for (int i = 1; i < n; ++i) {
             items[i] = index + 1;
-            System.out.println("Item : " + i + " index : " + (index + 1));
+            // System.out.println("Item : " + i + " index : " + (index + 1));
             int size;
             switch (b[index]) {
             case ClassWriter.FIELD:
@@ -1504,8 +1504,11 @@ public class ClassReader {
                 u += 3;
                 break;
             case ClassWriter.TYPED_INSN:
-                mv.visitTypeInsn(opcode, readTypeVar(u + 1, c));
+                // TODO send the opcode of the next instruction !!
+                int typedOpcode = b[u + 3] & 0xFF;
+                mv.visitTypedInsn(readTypeVar(u + 1, c), typedOpcode);
                 u += 3;
+                u += 1;
                 break;
             case ClassWriter.IINC_INSN:
                 mv.visitIincInsn(b[u + 1] & 0xFF, b[u + 2]);
@@ -2460,7 +2463,6 @@ public class ClassReader {
             return s;
         }
         index = items[item];
-        // System.out.println("readUTF8 - index " + index + " item : " + item);
         return strings[item] = readUTF(index + 2, readUnsignedShort(index), buf);
     }
 

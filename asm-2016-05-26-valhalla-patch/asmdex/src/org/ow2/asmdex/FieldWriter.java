@@ -49,7 +49,7 @@ public class FieldWriter extends FieldVisitor {
 	private Field field;
 	
 	/**
-	 * Constructor of a Field Writer.
+	 * Constructor of a Field Rewriter.
 	 * @param constantPool the ConstantPool of the Application.
 	 * @param classOwningName the name of the Class owning the Field.
 	 * @param access the access of the Field.

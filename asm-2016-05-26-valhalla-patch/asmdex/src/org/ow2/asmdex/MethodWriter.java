@@ -107,7 +107,7 @@ public class MethodWriter extends MethodVisitor {
 	static final int MAXIMUM_SIGNED_VALUE_32_BITS = 0x7fffffff;
 	
 	/**
-	 * The Class Writer of this Method Writer.
+	 * The Class Rewriter of this Method Rewriter.
 	 */
 	private ClassWriter classWriter;
 	
@@ -136,7 +136,7 @@ public class MethodWriter extends MethodVisitor {
 	private int nextLineNumber = 0;
 
 	/**
-	 * Constructor of the Method Writer. Requires the data of the Method invocation.
+	 * Constructor of the Method Rewriter. Requires the data of the Method invocation.
 	 * @param classWriter the classWriter of the method.
 	 * @param access the access flags of the method.
 	 * @param name the name of the method.
@@ -183,7 +183,7 @@ public class MethodWriter extends MethodVisitor {
 	 * Sets the start of the bytecode to copy from the input Dex file to the output.
 	 * This is only useful when using the optimization that consists in copying part of
 	 * the Constant Pool and the bytecode of methods that doesn't change, if the Reader is linked
-	 * to the Writer with no Adapter to modify the methods in between.
+	 * to the Rewriter with no Adapter to modify the methods in between.
 	 * @param start start in bytes from the beginning of the Dex file where the bytecode is. This
 	 *        includes the code_item header.
 	 */
@@ -192,16 +192,16 @@ public class MethodWriter extends MethodVisitor {
 	}
 	
 	/**
-	 * Returns the Method linked to this Writer.
-	 * @return the Method linked to this Writer.
+	 * Returns the Method linked to this Rewriter.
+	 * @return the Method linked to this Rewriter.
 	 */
 	public Method getMethod() {
 		return method;
 	}
 	
 	/**
-	 * Returns the Code Item linked to this Writer. May be Null if it hasn't any (if abstract or interface).
-	 * @return the Code Item linked to this Writer, or Null.
+	 * Returns the Code Item linked to this Rewriter. May be Null if it hasn't any (if abstract or interface).
+	 * @return the Code Item linked to this Rewriter, or Null.
 	 */
 	public CodeItem getCodeItem() {
 		return method.getCodeItem();

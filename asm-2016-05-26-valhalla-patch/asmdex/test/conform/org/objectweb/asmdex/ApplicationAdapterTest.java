@@ -67,7 +67,7 @@ import org.ow2.asmdex.Opcodes;
 /**
  * Tests the Application Adapter.
  * 
- * The scripts below generate dex files thanks to the Reader, Adapter(s) and Writer.
+ * The scripts below generate dex files thanks to the Reader, Adapter(s) and Rewriter.
  * Each dex file is disassembled thanks to baksmali and compare to its "expected" .smali file.
  * 
  * @author Julien Névo
@@ -97,7 +97,7 @@ public class ApplicationAdapterTest {
 	 */
 	@Test
 	public void testAdapterDoNothing() throws IOException {
-		// Transforms the "original file" thanks to the Reader, Adapter, and Writer,
+		// Transforms the "original file" thanks to the Reader, Adapter, and Rewriter,
 		// and generates an "adapted" dex file.
 		byte[] originalBytes = GenerateBasicDexFile.generate();
 		
@@ -115,7 +115,7 @@ public class ApplicationAdapterTest {
 	 */
 	@Test
 	public void testAdapterSimpleAddInstructions() throws IOException {
-		// Transforms the "original file" thanks to the Reader, Adapter, and Writer,
+		// Transforms the "original file" thanks to the Reader, Adapter, and Rewriter,
 		// and generates an "adapted" dex file.
 		byte[] originalBytes = GenerateBasicDexFile.generate();
 		byte[] expectedBytes = GenerateExpectedDexFileAddCode.generate();

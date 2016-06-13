@@ -588,7 +588,7 @@ public class Processor {
     /**
      * A {@link org.xml.sax.ContentHandler ContentHandler} and
      * {@link org.xml.sax.ext.LexicalHandler LexicalHandler} that serializes XML
-     * from SAX 2.0 events into {@link java.io.Writer Writer}.
+     * from SAX 2.0 events into {@link java.io.Writer Rewriter}.
      * 
      * <i><blockquote> This implementation does not support namespaces, entity
      * definitions (uncluding DTD), CDATA and text elements. </blockquote></i>

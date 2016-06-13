@@ -152,7 +152,7 @@ public class TestUtil {
 	 */
 	public static final String FILENAME_EXPECTED_DEX = "expected.dex";
 	
-	// Temporary folders used by the tests for the Writer. 
+	// Temporary folders used by the tests for the Rewriter.
 	/**
 	 * Folder of generated results
 	 */

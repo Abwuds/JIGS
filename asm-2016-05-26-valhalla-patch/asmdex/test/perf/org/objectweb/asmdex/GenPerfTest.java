@@ -59,7 +59,7 @@ public class GenPerfTest {
 	final static int NB_ITERATIONS_SMALL = 1000;
 	final static int NB_ITERATIONS_SMALLER = 100;
 	
-	/** Filename to test when using both the Reader and Writer. */
+	/** Filename to test when using both the Reader and Rewriter. */
 	private static final String testFilename = TestUtil.PATH_AND_FILENAME_API_DEMOS_DEX;
 	
 	/**
@@ -126,7 +126,7 @@ public class GenPerfTest {
 	            generateLittleApplication(nbClasses);
 	        }
 	        t = System.currentTimeMillis() - t;
-	        System.out.println("AsmDex Writer Only generation time: " + ((float) t) / nbIterations / nbClasses
+	        System.out.println("AsmDex Rewriter Only generation time: " + ((float) t) / nbIterations / nbClasses
 	                + " ms/class");
 		}
     }
@@ -143,7 +143,7 @@ public class GenPerfTest {
 	        	asmDexTestReaderWriterPerform();
 	        }
 	        t = System.currentTimeMillis() - t;
-	        System.out.println("AsmDex Reader/Writer generation time: " + ((float) t) / nbIterations
+	        System.out.println("AsmDex Reader/Rewriter generation time: " + ((float) t) / nbIterations
 	                + " ms/application");
 		}
     }
@@ -161,7 +161,7 @@ public class GenPerfTest {
 	        	asmDexTestReaderWriterTreePerform();
 	        }
 	        t = System.currentTimeMillis() - t;
-	        System.out.println("AsmDex Reader/Writer Tree generation time: " + ((float) t) / nbIterations
+	        System.out.println("AsmDex Reader/Rewriter Tree generation time: " + ((float) t) / nbIterations
 	                + " ms/application");
 		}
     }
@@ -179,7 +179,7 @@ public class GenPerfTest {
 	        	asmDexTestReaderWriterShortCutPerform();
 	        }
 	        t = System.currentTimeMillis() - t;
-	        System.out.println("AsmDex Reader/Writer with ShortCut generation time: " + ((float) t) / nbIterations
+	        System.out.println("AsmDex Reader/Rewriter with ShortCut generation time: " + ((float) t) / nbIterations
 	                + " ms/application");
 		}
     }
@@ -197,7 +197,7 @@ public class GenPerfTest {
 			// Gets the bytecode of the program to test. 
 			byte[] bytes = generateLittleApplication(nbClasses);
 			
-			// Inserts it into a loop of Reader/Writer.
+			// Inserts it into a loop of Reader/Rewriter.
 	        long t = System.currentTimeMillis();
 	        for (int i = 0; i < nbIterations; i++) {
 	        	ApplicationReader ar = new ApplicationReader(Opcodes.ASM4, bytes);
@@ -207,7 +207,7 @@ public class GenPerfTest {
 	        }
 	        t = System.currentTimeMillis() - t;
 	        
-	        System.out.println("AsmDex Reader/Writer in Loop with " + nbClasses +
+	        System.out.println("AsmDex Reader/Rewriter in Loop with " + nbClasses +
 	        		" classe(s) generation time: " + ((float) t) / nbIterations / nbClasses
 	                + " ms/class");
 		}
@@ -260,7 +260,7 @@ public class GenPerfTest {
     }
 	
 	/**
-	 * Performs the Reader/Writer chain from a dex file.
+	 * Performs the Reader/Rewriter chain from a dex file.
 	 * @return the generated dex file as an array.
 	 * @throws IOException
 	 */
@@ -272,7 +272,7 @@ public class GenPerfTest {
 	}
 	
 	/**
-	 * Performs the Reader/Writer chain from a dex file and the Tree API.
+	 * Performs the Reader/Rewriter chain from a dex file and the Tree API.
 	 * @return the generated dex file as an array.
 	 * @throws IOException
 	 */
@@ -287,7 +287,7 @@ public class GenPerfTest {
 	}
 	
 	/**
-	 * Performs the Reader/Writer chain from a dex file and the "Constant Pool" optimization.
+	 * Performs the Reader/Rewriter chain from a dex file and the "Constant Pool" optimization.
 	 * @return the generated dex file as an array.
 	 * @throws IOException
 	 */
