@@ -24,7 +24,7 @@ public class Rewriter extends Generator {
     public byte[] dump() {
 
         try {
-            byte[] bytes = Files.readAllBytes(Paths.get("asm/test/resources/Class2$methodStatic2$1601768860.class"));
+            byte[] bytes = Files.readAllBytes(Paths.get("asm/test/resources/ContainerJava8.class"));
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             new ClassReader(bytes).accept(new RewriterClassVisitor(cw), 0);
 
