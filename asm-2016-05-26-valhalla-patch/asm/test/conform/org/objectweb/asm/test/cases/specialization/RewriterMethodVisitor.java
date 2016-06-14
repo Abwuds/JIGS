@@ -1,14 +1,17 @@
 package org.objectweb.asm.test.cases.specialization;
 
 
-import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-import java.util.*;
 import java.util.AbstractMap.SimpleEntry;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
+ *
  * Created by Jefferson Mangue on 12/06/2016.
  */
 class RewriterMethodVisitor extends MethodVisitor {
@@ -62,14 +65,14 @@ class RewriterMethodVisitor extends MethodVisitor {
                 new SimpleEntry<>("F", Opcodes.FLOAD_2),
                 new SimpleEntry<>("D", Opcodes.DLOAD_2)));
         INSTRS.put(Opcodes.ALOAD_3, Arrays.asList(
-                new SimpleEntry<>("I", Opcodes.ALOAD_3),
-                new SimpleEntry<>("B", Opcodes.ALOAD_3),
-                new SimpleEntry<>("S", Opcodes.ALOAD_3),
-                new SimpleEntry<>("C", Opcodes.ALOAD_3),
-                new SimpleEntry<>("Z", Opcodes.ALOAD_3),
-                new SimpleEntry<>("J", Opcodes.ALOAD_3),
-                new SimpleEntry<>("F", Opcodes.ALOAD_3),
-                new SimpleEntry<>("D", Opcodes.ALOAD_3)));
+                new SimpleEntry<>("I", Opcodes.ILOAD_3),
+                new SimpleEntry<>("B", Opcodes.ILOAD_3),
+                new SimpleEntry<>("S", Opcodes.ILOAD_3),
+                new SimpleEntry<>("C", Opcodes.ILOAD_3),
+                new SimpleEntry<>("Z", Opcodes.ILOAD_3),
+                new SimpleEntry<>("J", Opcodes.LLOAD_3),
+                new SimpleEntry<>("F", Opcodes.FLOAD_3),
+                new SimpleEntry<>("D", Opcodes.DLOAD_3)));
         INSTRS.put(Opcodes.ASTORE, Arrays.asList(
                 new SimpleEntry<>("I", Opcodes.ISTORE),
                 new SimpleEntry<>("B", Opcodes.ISTORE),
@@ -154,6 +157,7 @@ class RewriterMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitTypedInsn(String name, int typedOpcode) {
+        super.visitTypedInsn(name, typedOpcode);/*
         Label end = new Label();
         List<Map.Entry<String, Integer>> tests = INSTRS.get(typedOpcode);
         if (tests == null) {
@@ -175,6 +179,6 @@ class RewriterMethodVisitor extends MethodVisitor {
 
         // If none of them worked, doing the original then.
         visitInsn(typedOpcode);
-        visitLabel(end);
+        visitLabel(end);*/
     }
 }

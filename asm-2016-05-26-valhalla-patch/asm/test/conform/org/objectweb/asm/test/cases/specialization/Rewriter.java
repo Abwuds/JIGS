@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 /**
+ *
  * Created by Jefferson Mangue on 26/05/2016.
  */
 public class Rewriter extends Generator {
@@ -24,7 +25,7 @@ public class Rewriter extends Generator {
     public byte[] dump() {
 
         try {
-            byte[] bytes = Files.readAllBytes(Paths.get("asm/test/resources/ContainerJava8.class"));
+            byte[] bytes = Files.readAllBytes(Paths.get("asm/test/resources/ContainerJava10.class"));
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             new ClassReader(bytes).accept(new RewriterClassVisitor(cw), 0);
 

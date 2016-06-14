@@ -14,9 +14,21 @@ public class TypeVariablesEntry {
         this.boundIndex = boundIndex;
     }
 
+    public int getIsAny() {
+        return isAny;
+    }
+
+    public int gettVarNameIndex() {
+        return tVarNameIndex;
+    }
+
+    public int getBoundIndex() {
+        return boundIndex;
+    }
+
     @Override
     public String toString() {
-        return "[TypeVatiablesEntry - TvarName idx : " + tVarNameIndex +
+        return "[TypeVariablesEntry - TvarName idx : " + tVarNameIndex +
                 " FLAG : " + isAny + " Bound idx : " + boundIndex + ']';
     }
 }

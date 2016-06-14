@@ -102,6 +102,11 @@ public class Type {
     public static final int METHOD = 11;
 
     /**
+     * The sort of type variable. See {@link #getSort getSort}.
+     */
+    public static final int TYPE_VAR = 12;
+
+    /**
      * The <tt>void</tt> type.
      */
     public static final Type VOID_TYPE = new Type(VOID, null, ('V' << 24)
@@ -329,7 +334,7 @@ public class Type {
             char car = buf[off++];
             if (car == ')') {
                 break;
-            } else if (car == 'L') {
+            } else if (car == 'L' || car == 'T') {
                 while (buf[off++] != ';') {
                 }
                 ++size;
@@ -342,7 +347,7 @@ public class Type {
         size = 0;
         while (buf[off] != ')') {
             args[size] = getType(buf, off);
-            off += args[size].len + (args[size].sort == OBJECT ? 2 : 0);
+            off += args[size].len + (args[size].sort == OBJECT || args[size].sort == TYPE_VAR ? 2 : 0);
             size += 1;
         }
         return args;
@@ -382,7 +387,7 @@ public class Type {
             char car = buf[off++];
             if (car == ')') {
                 return getType(buf, off);
-            } else if (car == 'L') {
+            } else if (car == 'L' || car == 'T') {
                 while (buf[off++] != ';') {
                 }
             }
@@ -422,7 +427,7 @@ public class Type {
                 car = desc.charAt(c);
                 return n << 2
                         | (car == 'V' ? 0 : (car == 'D' || car == 'J' ? 2 : 1));
-            } else if (car == 'L') {
+            } else if (car == 'L' || car == 'T') {
                 while (desc.charAt(c++) != ';') {
                 }
                 n += 1;
@@ -491,6 +496,12 @@ public class Type {
                 ++len;
             }
             return new Type(OBJECT, buf, off + 1, len - 1);
+        case 'T':
+            len = 1;
+            while (buf[off + len] != ';') {
+                ++len;
+            }
+            return new Type(TYPE_VAR, buf, off + 1, len - 1);
             // case '(':
         default:
             return new Type(METHOD, buf, off, buf.length - off);
@@ -507,8 +518,8 @@ public class Type {
      * @return {@link #VOID VOID}, {@link #BOOLEAN BOOLEAN}, {@link #CHAR CHAR},
      *         {@link #BYTE BYTE}, {@link #SHORT SHORT}, {@link #INT INT},
      *         {@link #FLOAT FLOAT}, {@link #LONG LONG}, {@link #DOUBLE DOUBLE},
-     *         {@link #ARRAY ARRAY}, {@link #OBJECT OBJECT} or {@link #METHOD
-     *         METHOD}.
+     *         {@link #ARRAY ARRAY}, {@link #OBJECT OBJECT}, {@link #METHOD
+     *         METHOD} or {@link #TYPE_VAR}.
      */
     public int getSort() {
         return sort;
@@ -572,6 +583,8 @@ public class Type {
             return sb.toString();
         case OBJECT:
             return new String(buf, off, len).replace('/', '.');
+        case TYPE_VAR:
+            return new String(buf, off, len);
         default:
             return null;
         }
@@ -676,6 +689,10 @@ public class Type {
             buf.append((char) ((off & 0xFF000000) >>> 24));
         } else if (sort == OBJECT) {
             buf.append('L');
+            buf.append(this.buf, off, len);
+            buf.append(';');
+        } else if (sort == TYPE_VAR) {
+            buf.append('T');
             buf.append(this.buf, off, len);
             buf.append(';');
         } else { // sort == ARRAY || sort == METHOD
@@ -797,6 +814,7 @@ public class Type {
                 }
                 buf.append(';');
                 return;
+                // TypeVar can not exist here.
             }
         }
     }

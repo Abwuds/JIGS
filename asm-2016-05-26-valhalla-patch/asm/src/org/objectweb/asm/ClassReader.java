@@ -177,7 +177,7 @@ public class ClassReader {
         int index = off + 10;
         for (int i = 1; i < n; ++i) {
             items[i] = index + 1;
-            // System.out.println("Item : " + i + " index : " + (index + 1));
+             System.out.println("Item : " + i + " index : " + (index + 1));
             int size;
             switch (b[index]) {
             case ClassWriter.FIELD:
@@ -748,7 +748,7 @@ public class ClassReader {
         int access = readUnsignedShort(u);
         String name = readUTF8(u + 2, c);
         // The descriptor can be either in an UTF8, in a TypeVar, or a ParameterizedType attribute.
-        String desc = readDescription(u + 4, c);
+        String desc = readDescription(context.typeVariablesEntries, u + 4, c);
         u += 6;
 
         // reads the field attributes
@@ -868,7 +868,7 @@ public class ClassReader {
         context.name = readUTF8(u + 2, c);
         // The descriptor can be either in an UTF8
         // or in a MethodDescriptor attribute.
-        context.desc = readUTF8OrMethodDescriptor(u + 4, c);
+        context.desc = readUTF8OrMethodDescriptor(context.typeVariablesEntries, u + 4, c);
         u += 6;
 
         // reads the method attributes
@@ -935,8 +935,7 @@ public class ClassReader {
                 System.out.println("TypeVariablesMap inside the class");
                 // Allocating an array for each enclosing class and the current one, having a type
                 // (represented by a TypeVariablesEntry) appearing inside this classfile.
-                TypeVariablesEntry[][] typeVariablesEntries = getTypeVariablesEntries(u + 8);
-                context.typeVariablesEntries = typeVariablesEntries;
+                context.typeVariablesEntries = getTypeVariablesEntries(u + 8);
             } else {
                 Attribute attr = readAttribute(context.attrs, attrName, u + 8,
                         readInt(u + 4), c, -1, null);
@@ -1468,7 +1467,7 @@ public class ClassReader {
                 String iowner = readClass(cpIndex, c);
                 cpIndex = items[readUnsignedShort(cpIndex + 2)];
                 String iname = readUTF8(cpIndex, c);
-                String idesc = readDescription(cpIndex + 2, c);
+                String idesc = readDescription(context.typeVariablesEntries, cpIndex + 2, c);
                 if (opcode < Opcodes.INVOKEVIRTUAL) {
                     mv.visitFieldInsn(opcode, iowner, iname, idesc);
                 } else {
@@ -1494,7 +1493,7 @@ public class ClassReader {
                 }
                 cpIndex = items[readUnsignedShort(cpIndex + 2)];
                 String iname = readUTF8(cpIndex, c);
-                String idesc = readDescription(cpIndex + 2, c);
+                String idesc = readDescription(context.typeVariablesEntries, cpIndex + 2, c);
                 mv.visitInvokeDynamicInsn(iname, idesc, bsm, bsmArgs);
                 u += 5;
                 break;
@@ -1506,7 +1505,7 @@ public class ClassReader {
             case ClassWriter.TYPED_INSN:
                 // TODO send the opcode of the next instruction !!
                 int typedOpcode = b[u + 3] & 0xFF;
-                mv.visitTypedInsn(readTypeVar(u + 1, c), typedOpcode);
+                mv.visitTypedInsn(readTypeVar(context.typeVariablesEntries, u + 1, c), typedOpcode);
                 u += 3;
                 u += 1;
                 break;
@@ -2271,19 +2270,32 @@ public class ClassReader {
      *
      * @return type variables map computed.
      */
-    private TypeVariablesEntry[][] getTypeVariablesEntries(int u) {
-        TypeVariablesEntry[][] typeVariablesEntries = new TypeVariablesEntry[readByte(u)][];
-        for (int ii = 0, index = u + 1; ii < typeVariablesEntries.length; ii++) {
-            typeVariablesEntries[ii] = new TypeVariablesEntry[readByte(index + 2)];
-            for (int jj = 0, mappingIndex = index + 3; jj < typeVariablesEntries[ii].length; jj++) {
-                typeVariablesEntries[ii][jj] = new TypeVariablesEntry(
+    private TypeVariablesEntry[] getTypeVariablesEntries(int u) {
+        int resultSize = 0;
+        TypeVariablesEntry[][] expandedList = new TypeVariablesEntry[readByte(u)][];
+        for (int i = 0, index = u + 1; i < expandedList.length; i++) {
+            expandedList[i] = new TypeVariablesEntry[readByte(index + 2)];
+            for (int j = 0, mappingIndex = index + 3; j < expandedList[i].length; j++) {
+                expandedList[i][j] = new TypeVariablesEntry(
                         readByte(mappingIndex),
                         readUnsignedShort(mappingIndex + 1),
                         readUnsignedShort(mappingIndex + 3));
                 mappingIndex += 5;
             }
-            index += 3 + typeVariablesEntries[ii].length * 5;
+            resultSize += expandedList[i].length;
+            index += 3 + expandedList[i].length * 5;
         }
+
+        // Flattening the map according to the model 3 convention.
+        TypeVariablesEntry[] typeVariablesEntries = new TypeVariablesEntry[resultSize];
+        int ptr = 0;
+        for (int i = 0; i < expandedList.length; i++) {
+            for (int j = 0; j < expandedList[i].length; j++) {
+                typeVariablesEntries[ptr + j] = expandedList[i][j];
+            }
+            ptr += expandedList[i].length;
+        }
+
         return typeVariablesEntries;
     }
 
@@ -2458,11 +2470,24 @@ public class ClassReader {
         if (index == 0 || item == 0) {
             return null;
         }
+        return readUTF8Item(item, buf);
+    }
+
+    /**
+     * Reads an UTF8 string constant pool item in {@link #b b}. <i>This method
+     * is intended for {@link Attribute} sub classes, and is normally not needed
+     * by class generators or adapters.</i>
+     *
+     * @param item the item whose value is the index of an UTF8 constant pool item.
+     * @param buf buffer to be used to read
+     * @return
+     */
+    private String readUTF8Item(int item, char[] buf) {
         String s = strings[item];
         if (s != null) {
             return s;
         }
-        index = items[item];
+        int index = items[item];
         return strings[item] = readUTF(index + 2, readUnsignedShort(index), buf);
     }
 
@@ -2521,6 +2546,9 @@ public class ClassReader {
      * of the structure pointed. <i>This method is intended for {@link Attribute} sub classes,
      * and is normally not needed by class generators or adapters.</i>
      *
+     * @param typeVariablesEntries
+     *            the array containing type variables used in the class.
+     *
      * @param index
      *            the start index of an unsigned short value in {@link #b b},
      *            whose value is the index of a class constant pool item.
@@ -2529,14 +2557,14 @@ public class ClassReader {
      *            sufficiently large. It is not automatically resized.
      * @return the String corresponding to the specified TypeVar item.
      */
-    public String readDescription(int index, char[] buf) {
+    public String readDescription(final TypeVariablesEntry[] typeVariablesEntries, int index, char[] buf) {
         switch (readByte(items[readUnsignedShort(index)] - 1)) {
             case ClassWriter.TYPE_VAR:
-                return readTypeVar(index, buf);
+                return readTypeVar(typeVariablesEntries, index, buf);
             case ClassWriter.PARAMETERIZED_TYPE:
-                return readParameterizedType(index, buf);
+                return readParameterizedType(typeVariablesEntries, index, buf);
             case ClassWriter.METHOD_DESCRIPTOR:
-                return readMethodDescriptor(index, buf);
+                return readMethodDescriptor(typeVariablesEntries, index, buf);
             default: // case ClassWriter.UTF8
                 return readUTF8(index, buf);
         }
@@ -2547,6 +2575,8 @@ public class ClassReader {
      * of the structure pointed. <i>This method is intended for {@link Attribute} sub classes,
      * and is normally not needed by class generators or adapters.</i>
      *
+     * @param typeVariablesEntries
+     *            the array containing type variables used in the class.
      * @param index
      *            the start index of an unsigned short value in {@link #b b},
      *            whose value is the index of a class constant pool item.
@@ -2555,12 +2585,13 @@ public class ClassReader {
      *            sufficiently large. It is not automatically resized.
      * @return the String corresponding to the specified TypeVar item.
      */
-    public String readUTF8OrMethodDescriptor(int index, char[] buf) {
+    public String readUTF8OrMethodDescriptor(final TypeVariablesEntry[] typeVariablesEntries,
+                                             int index, char[] buf) {
         // computes the start index of the CONSTANT_MethodDescriptor item in b
         // and reads the CONSTANT_Utf8 item designated by
         // the second and third bytes of this CONSTANT_MethodDescriptor item
         int tag = readByte(items[readUnsignedShort(index)] - 1);
-        return tag == ClassWriter.UTF8 ? readUTF8(index, buf) : readMethodDescriptor(index, buf);
+        return tag == ClassWriter.UTF8 ? readUTF8(index, buf) : readMethodDescriptor(typeVariablesEntries, index, buf);
     }
 
     /**
@@ -2568,6 +2599,8 @@ public class ClassReader {
      * intended for {@link Attribute} sub classes, and is normally not needed by
      * class generators or adapters.</i>
      *
+     * @param typeVariablesEntries
+     *            the array containing type variables used in the class.
      * @param index
      *            the start index of an unsigned short value in {@link #b b},
      *            whose value is the index of a TypeVar constant pool item.
@@ -2576,13 +2609,14 @@ public class ClassReader {
      *            sufficiently large. It is not automatically resized.
      * @return the String corresponding to the specified TypeVar item.
      */
-    public String readTypeVar(final int index, final char[] buf) {
+    public String readTypeVar(final TypeVariablesEntry[] typeVariablesEntries, final int index, final char[] buf) {
         // computes the start index of the CONSTANT_TypeVar item in b
         // and reads the CONSTANT_Utf8 item designated by
         // the second and third bytes of this CONSTANT_TypeVar item
+
         int offset = readByte(items[readUnsignedShort(index)]);
-        // TODO compute offset value in string thanks to the TypeVariablesMap.
-        return offset + "/" + readUTF8(items[readUnsignedShort(index)] + 1, buf);
+        int varNameIndex = typeVariablesEntries[offset].gettVarNameIndex();
+        return 'T' + readUTF8Item(varNameIndex, buf) + "/" + readUTF8(items[readUnsignedShort(index)] + 1, buf);
     }
 
     /**
@@ -2590,6 +2624,8 @@ public class ClassReader {
      * intended for {@link Attribute} sub classes, and is normally not needed by
      * class generators or adapters.</i>
      *
+     * @param typeVariablesEntries
+     *            the array containing type variables used in the class.
      * @param index
      *            the start index of an unsigned short value in {@link #b b},
      *            whose value is the index of a parameterizedType constant pool item.
@@ -2598,14 +2634,15 @@ public class ClassReader {
      *            sufficiently large. It is not automatically resized.
      * @return the String corresponding to the specified TypeVar item.
      */
-    public String readParameterizedType(final int index, final char[] buf) {
+    public String readParameterizedType(final TypeVariablesEntry[] typeVariablesEntries,
+                                        final int index, final char[] buf) {
         int item = items[readUnsignedShort(index)];
         int params = readByte(item + 5);
         StringBuilder sb = new StringBuilder();
         sb.append(readUTF8(item + 3, buf)).append('<');
         int paramsIndex = item + 6;
         for (int i = 0; i < params; i++) {
-            String str = readDescription(paramsIndex + i * 2, buf);
+            String str = readDescription(typeVariablesEntries, paramsIndex + i * 2, buf);
             sb.append(str);
         }
         return sb.append('>').append(';').toString();
@@ -2616,6 +2653,8 @@ public class ClassReader {
      * intended for {@link Attribute} sub classes, and is normally not needed by
      * class generators or adapters.</i>
      *
+     * @param typeVariablesEntries
+     *            the array containing type variables used in the class.
      * @param index
      *            the start index of an unsigned short value in {@link #b b},
      *            whose value is the index of a class constant pool item.
@@ -2624,7 +2663,8 @@ public class ClassReader {
      *            sufficiently large. It is not automatically resized.
      * @return the String corresponding to the specified MethodDescriptor item.
      */
-    public String readMethodDescriptor(final int index, final char[] buf) {
+    public String readMethodDescriptor(final TypeVariablesEntry[] typeVariablesEntries,
+                                       final int index, final char[] buf) {
         // computes the start index of the CONSTANT_MethodDescriptor item in b
         // and reads the number of parameters. Then concatenates '(', the list of
         // parameters which can either be CONSTANT_UTF8 or CONSTANT_TypeVar,
@@ -2634,10 +2674,10 @@ public class ClassReader {
         StringBuilder sb = new StringBuilder("(");
         int paramsIndex = item + 3;
         for (int i = 0; i < params; i++) {
-            String str = readDescription(paramsIndex + i * 2, buf);
+            String str = readDescription(typeVariablesEntries, paramsIndex + i * 2, buf);
             sb.append(str);
         }
-        return sb.append(')').append(readDescription(item + 1, buf)).toString();
+        return sb.append(')').append(readDescription(typeVariablesEntries, item + 1, buf)).toString();
     }
 
     /**

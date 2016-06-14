@@ -146,5 +146,5 @@ class Context {
     /**
      * The type variables entries used inside the class.
      */
-    TypeVariablesEntry[][] typeVariablesEntries;
+    TypeVariablesEntry[] typeVariablesEntries;
 }
