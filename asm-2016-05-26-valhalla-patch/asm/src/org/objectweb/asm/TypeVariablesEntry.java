@@ -5,10 +5,10 @@ package org.objectweb.asm;
  */
 public class TypeVariablesEntry {
     private final int isAny;
-    private final int tVarNameIndex;
-    private final int boundIndex;
+    private final String tVarNameIndex;
+    private final String boundIndex;
 
-    public TypeVariablesEntry(int flag, int tVarNameIndex, int boundIndex) {
+    public TypeVariablesEntry(int flag, String tVarNameIndex, String boundIndex) {
         this.isAny = flag;
         this.tVarNameIndex = tVarNameIndex;
         this.boundIndex = boundIndex;
@@ -18,11 +18,11 @@ public class TypeVariablesEntry {
         return isAny;
     }
 
-    public int gettVarNameIndex() {
+    public String gettVarNameIndex() {
         return tVarNameIndex;
     }
 
-    public int getBoundIndex() {
+    public String getBoundIndex() {
         return boundIndex;
     }
 

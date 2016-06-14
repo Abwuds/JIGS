@@ -638,7 +638,7 @@ public class ClassReader {
                 System.out.println("TypeVariablesMap inside the class : " + attrName);
                 // Allocating an array for each enclosing class and the current one, having a type
                 // (represented by a TypeVariablesEntry) appearing inside this classfile.
-                context.typeVariablesEntries = getTypeVariablesEntries(u + 8);
+                context.typeVariablesEntries = getTypeVariablesEntries(u + 8, c);
             } else {
                 Attribute attr = readAttribute(attrs, attrName, u + 8,
                         readInt(u + 4), c, -1, null);
@@ -935,7 +935,7 @@ public class ClassReader {
                 System.out.println("TypeVariablesMap inside the class");
                 // Allocating an array for each enclosing class and the current one, having a type
                 // (represented by a TypeVariablesEntry) appearing inside this classfile.
-                context.typeVariablesEntries = getTypeVariablesEntries(u + 8);
+                context.typeVariablesEntries = getTypeVariablesEntries(u + 8, c);
             } else {
                 Attribute attr = readAttribute(context.attrs, attrName, u + 8,
                         readInt(u + 4), c, -1, null);
@@ -2270,7 +2270,7 @@ public class ClassReader {
      *
      * @return type variables map computed.
      */
-    private TypeVariablesEntry[] getTypeVariablesEntries(int u) {
+    private TypeVariablesEntry[] getTypeVariablesEntries(int u, char[] buf) {
         int resultSize = 0;
         TypeVariablesEntry[][] expandedList = new TypeVariablesEntry[readByte(u)][];
         for (int i = 0, index = u + 1; i < expandedList.length; i++) {
@@ -2278,8 +2278,8 @@ public class ClassReader {
             for (int j = 0, mappingIndex = index + 3; j < expandedList[i].length; j++) {
                 expandedList[i][j] = new TypeVariablesEntry(
                         readByte(mappingIndex),
-                        readUnsignedShort(mappingIndex + 1),
-                        readUnsignedShort(mappingIndex + 3));
+                        readUTF8(mappingIndex + 1, buf),
+                        readUTF8(mappingIndex + 3, buf));
                 mappingIndex += 5;
             }
             resultSize += expandedList[i].length;
@@ -2615,8 +2615,8 @@ public class ClassReader {
         // the second and third bytes of this CONSTANT_TypeVar item
 
         int offset = readByte(items[readUnsignedShort(index)]);
-        int varNameIndex = typeVariablesEntries[offset].gettVarNameIndex();
-        return 'T' + readUTF8Item(varNameIndex, buf) + "/" + readUTF8(items[readUnsignedShort(index)] + 1, buf);
+        String varNameIndex = typeVariablesEntries[offset].gettVarNameIndex();
+        return 'T' + varNameIndex + "/" + readUTF8(items[readUnsignedShort(index)] + 1, buf);
     }
 
     /**

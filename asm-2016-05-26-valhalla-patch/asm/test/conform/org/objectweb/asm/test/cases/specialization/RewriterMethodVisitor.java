@@ -154,6 +154,10 @@ class RewriterMethodVisitor extends MethodVisitor {
         super(api, mv);
     }
 
+    @Override
+    public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
+        super.visitMethodInsn(opcode, owner, name, desc, itf);
+    }
 
     @Override
     public void visitTypedInsn(String name, int typedOpcode) {
