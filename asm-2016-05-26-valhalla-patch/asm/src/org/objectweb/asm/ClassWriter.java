@@ -529,6 +529,8 @@ public class ClassWriter extends ClassVisitor {
      */
     boolean invalidFrames;
 
+    private final SubstitutionEntry[] subsitutionTable;
+
     // ------------------------------------------------------------------------
     // Static initializer
     // ------------------------------------------------------------------------
@@ -647,6 +649,7 @@ public class ClassWriter extends ClassVisitor {
         key2 = new Item();
         key3 = new Item();
         key4 = new Item();
+        subsitutionTable = new SubstitutionEntry[256]; // TODO detect real size of the CP, nor make it dynamic.
         this.computeMaxs = (flags & COMPUTE_MAXS) != 0;
         this.computeFrames = (flags & COMPUTE_FRAMES) != 0;
     }

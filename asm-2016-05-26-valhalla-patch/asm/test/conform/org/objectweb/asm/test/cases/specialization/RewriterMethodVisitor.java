@@ -1,6 +1,7 @@
 package org.objectweb.asm.test.cases.specialization;
 
 
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
@@ -161,7 +162,7 @@ class RewriterMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitTypedInsn(String name, int typedOpcode) {
-        super.visitTypedInsn(name, typedOpcode);/*
+        super.visitTypedInsn(name, typedOpcode);
         Label end = new Label();
         List<Map.Entry<String, Integer>> tests = INSTRS.get(typedOpcode);
         if (tests == null) {
@@ -183,6 +184,6 @@ class RewriterMethodVisitor extends MethodVisitor {
 
         // If none of them worked, doing the original then.
         visitInsn(typedOpcode);
-        visitLabel(end);*/
+        visitLabel(end);
     }
 }

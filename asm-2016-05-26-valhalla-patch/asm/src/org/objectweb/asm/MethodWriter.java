@@ -466,8 +466,10 @@ class MethodWriter extends MethodVisitor {
             this.access |= ACC_CONSTRUCTOR;
         }
         this.name = cw.newUTF8(name);
-        this.desc = cw.newUTF8(desc);
-        this.descriptor = desc;
+        // Translating the descriptor into valid Java 8- descriptor.
+        String retroDesc = translateMethodDescriptor(desc);
+        this.desc = cw.newUTF8(retroDesc);
+        this.descriptor = retroDesc;
         if (ClassReader.SIGNATURES) {
             this.signature = signature;
         }
@@ -2912,5 +2914,35 @@ class MethodWriter extends MethodVisitor {
             label.position = getNewOffset(indexes, sizes, 0, label.position);
             label.status |= Label.RESIZED;
         }
+    }
+
+    /**
+     * Translate type var types contained inside a method descriptor to objects.
+     *
+     * @param desc the method descriptor to transform.
+     * @return the method descriptor transformed.
+     */
+    private static String translateMethodDescriptor(String desc) {
+        Type[] argumentTypes = Type.getMethodType(desc).getArgumentTypes();
+        Type returnType = Type.getMethodType(desc).getReturnType();
+        Type[] resultTypes = new Type[argumentTypes.length];
+        for (int i = 0; i < argumentTypes.length; i++) {
+            resultTypes[i] = typeVarToObject(argumentTypes[i]);
+        }
+        return Type.getMethodDescriptor(typeVarToObject(returnType), resultTypes);
+    }
+
+    /**
+     * Transform a {@link @Type.TYPE_VAR} to a {link @Type.OBJECT}.
+     *
+     * @param type the type var instance to transform to Object.
+     * @return the object built from the type var instance passed.
+     */
+    private static Type typeVarToObject(Type type) {
+        if (type.getSort() != Type.TYPE_VAR) {
+            return type;
+        }
+        String descriptor = type.getDescriptor();
+        return Type.getType(descriptor.substring(descriptor.indexOf('/') + 1));
     }
 }

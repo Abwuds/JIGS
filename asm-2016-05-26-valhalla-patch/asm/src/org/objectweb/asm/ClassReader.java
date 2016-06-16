@@ -2613,10 +2613,9 @@ public class ClassReader {
         // computes the start index of the CONSTANT_TypeVar item in b
         // and reads the CONSTANT_Utf8 item designated by
         // the second and third bytes of this CONSTANT_TypeVar item
-
         int offset = readByte(items[readUnsignedShort(index)]);
         String varNameIndex = typeVariablesEntries[offset].gettVarNameIndex();
-        return 'T' + varNameIndex + "/" + readUTF8(items[readUnsignedShort(index)] + 1, buf);
+        return "T" + offset + "/" + readUTF8(items[readUnsignedShort(index)] + 1, buf);
     }
 
     /**
