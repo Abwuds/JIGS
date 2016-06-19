@@ -128,12 +128,17 @@ final class FieldWriter extends FieldVisitor {
         this.cw = cw;
         this.access = access;
         this.name = cw.newUTF8(name);
-        this.desc = cw.newUTF8(desc);
+        // Translating the descriptor into valid Java 8- descriptor.
+        // substitutionTable;
+        String retroDesc = Type.typeVarToObject(Type.getType(desc)).toString();
+        this.desc = cw.newUTF8(retroDesc);
+        System.out.println("cw = [" + cw + "], access = [" + access + "], name = [" + name + "], desc = [" + desc + "], signature = [" + signature + "], value = [" + value + "]");
+        System.out.println("desc = " + desc);
         if (ClassReader.SIGNATURES && signature != null) {
             this.signature = cw.newUTF8(signature);
         }
         if (value != null) {
-            this.value = cw.newConstItem(value).index;
+
         }
     }
 

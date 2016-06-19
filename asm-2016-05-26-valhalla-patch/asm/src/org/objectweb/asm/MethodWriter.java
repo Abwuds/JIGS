@@ -428,7 +428,6 @@ class MethodWriter extends MethodVisitor {
 
     /**
      * Constructs a new {@link MethodWriter}.
-     * 
      * @param cw
      *            the class writer in which the method must be added.
      * @param access
@@ -446,13 +445,11 @@ class MethodWriter extends MethodVisitor {
      *            <tt>true</tt> if the maximum stack size and number of local
      *            variables must be automatically computed.
      * @param computeFrames
-     *            <tt>true</tt> if the stack map tables must be recomputed from
-     *            scratch.
      */
     MethodWriter(final ClassWriter cw, final int access, final String name,
-            final String desc, final String signature,
-            final String[] exceptions, final boolean computeMaxs,
-            final boolean computeFrames) {
+                 final String desc, final String signature,
+                 final String[] exceptions, final ByteVector substitutionTable,
+                 final boolean computeMaxs, final boolean computeFrames) {
         super(Opcodes.ASM5);
         if (cw.firstMethod == null) {
             cw.firstMethod = this;
@@ -467,7 +464,8 @@ class MethodWriter extends MethodVisitor {
         }
         this.name = cw.newUTF8(name);
         // Translating the descriptor into valid Java 8- descriptor.
-        String retroDesc = translateMethodDescriptor(desc);
+        // substitutionTable;
+        String retroDesc = Type.translateMethodDescriptor(desc);
         this.desc = cw.newUTF8(retroDesc);
         this.descriptor = retroDesc;
         if (ClassReader.SIGNATURES) {
@@ -886,6 +884,8 @@ class MethodWriter extends MethodVisitor {
     @Override
     public void visitMethodInsn(final int opcode, final String owner,
             final String name, final String desc, final boolean itf) {
+        System.out.println("opcode = [" + opcode + "], owner = [" + owner + "], name = [" + name + "], desc = [" + desc + "], itf = [" + itf + "]");
+
         lastCodeOffset = code.length;
         Item i = cw.newMethodItem(owner, name, desc, itf);
         int argSize = i.intVal;
@@ -2914,35 +2914,5 @@ class MethodWriter extends MethodVisitor {
             label.position = getNewOffset(indexes, sizes, 0, label.position);
             label.status |= Label.RESIZED;
         }
-    }
-
-    /**
-     * Translate type var types contained inside a method descriptor to objects.
-     *
-     * @param desc the method descriptor to transform.
-     * @return the method descriptor transformed.
-     */
-    private static String translateMethodDescriptor(String desc) {
-        Type[] argumentTypes = Type.getMethodType(desc).getArgumentTypes();
-        Type returnType = Type.getMethodType(desc).getReturnType();
-        Type[] resultTypes = new Type[argumentTypes.length];
-        for (int i = 0; i < argumentTypes.length; i++) {
-            resultTypes[i] = typeVarToObject(argumentTypes[i]);
-        }
-        return Type.getMethodDescriptor(typeVarToObject(returnType), resultTypes);
-    }
-
-    /**
-     * Transform a {@link @Type.TYPE_VAR} to a {link @Type.OBJECT}.
-     *
-     * @param type the type var instance to transform to Object.
-     * @return the object built from the type var instance passed.
-     */
-    private static Type typeVarToObject(Type type) {
-        if (type.getSort() != Type.TYPE_VAR) {
-            return type;
-        }
-        String descriptor = type.getDescriptor();
-        return Type.getType(descriptor.substring(descriptor.indexOf('/') + 1));
     }
 }

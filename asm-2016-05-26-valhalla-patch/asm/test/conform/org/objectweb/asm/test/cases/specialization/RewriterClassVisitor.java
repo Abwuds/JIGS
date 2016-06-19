@@ -28,6 +28,4 @@ class RewriterClassVisitor extends ClassVisitor {
         // TODO foreach TypeVar --> Write it in the special attribute as a value to substitute during specialization.
         return new RewriterMethodVisitor(API, super.visitMethod(access, name, desc, signature, exceptions));
     }
-
-
 }

@@ -529,7 +529,7 @@ public class ClassWriter extends ClassVisitor {
      */
     boolean invalidFrames;
 
-    private final SubstitutionEntry[] subsitutionTable;
+    private final ByteVector substitutionTable;
 
     // ------------------------------------------------------------------------
     // Static initializer
@@ -649,7 +649,7 @@ public class ClassWriter extends ClassVisitor {
         key2 = new Item();
         key3 = new Item();
         key4 = new Item();
-        subsitutionTable = new SubstitutionEntry[256]; // TODO detect real size of the CP, nor make it dynamic.
+        substitutionTable = new ByteVector();
         this.computeMaxs = (flags & COMPUTE_MAXS) != 0;
         this.computeFrames = (flags & COMPUTE_FRAMES) != 0;
     }
@@ -702,6 +702,7 @@ public class ClassWriter extends ClassVisitor {
             final String[] interfaces) {
         this.version = version;
         this.access = access;
+        System.out.println("ClassWriter#visit : version = [" + version + "], access = [" + access + "], name = [" + name + "], signature = [" + signature + "], superName = [" + superName + "], interfaces = [" + interfaces + "]");
         this.name = newClass(name);
         thisName = name;
         if (ClassReader.SIGNATURES && signature != null) {
@@ -827,7 +828,7 @@ public class ClassWriter extends ClassVisitor {
     public final MethodVisitor visitMethod(final int access, final String name,
             final String desc, final String signature, final String[] exceptions) {
         return new MethodWriter(this, access, name, desc, signature,
-                exceptions, computeMaxs, computeFrames);
+                exceptions, substitutionTable, computeMaxs, computeFrames);
     }
 
     @Override
@@ -1143,6 +1144,10 @@ public class ClassWriter extends ClassVisitor {
      * @return a new or already existing class reference item.
      */
     Item newClassItem(final String value) {
+        if (!value.isEmpty()) {
+            Type type = Type.getType(value);
+            System.out.println("type = " + type + " value : " + value);
+        }
         key2.set(CLASS, value, null, null);
         Item result = get(key2);
         if (result == null) {
@@ -1631,6 +1636,8 @@ public class ClassWriter extends ClassVisitor {
         Item result = get(key2);
         if (result == null) {
             put122(NAME_TYPE, newUTF8(name), newUTF8(desc));
+            System.out.println("newNameTypeItem : name = [" + name + "], desc = [" + desc + "]");
+            System.out.println(Type.getType(desc).getSort() == Type.TYPE_VAR);
             result = new Item(index++, key2);
             put(result);
         }

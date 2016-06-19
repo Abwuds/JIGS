@@ -18,4 +18,6 @@ public class SubstitutionEntry {
         this.owner = owner;
         this.descriptor = descriptor;
     }
+
+
 }
