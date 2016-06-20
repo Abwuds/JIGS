@@ -448,7 +448,7 @@ class MethodWriter extends MethodVisitor {
      */
     MethodWriter(final ClassWriter cw, final int access, final String name,
                  final String desc, final String signature,
-                 final String[] exceptions, final ByteVector substitutionTable,
+                 final String[] exceptions,
                  final boolean computeMaxs, final boolean computeFrames) {
         super(Opcodes.ASM5);
         if (cw.firstMethod == null) {
@@ -884,8 +884,6 @@ class MethodWriter extends MethodVisitor {
     @Override
     public void visitMethodInsn(final int opcode, final String owner,
             final String name, final String desc, final boolean itf) {
-        System.out.println("opcode = [" + opcode + "], owner = [" + owner + "], name = [" + name + "], desc = [" + desc + "], itf = [" + itf + "]");
-
         lastCodeOffset = code.length;
         Item i = cw.newMethodItem(owner, name, desc, itf);
         int argSize = i.intVal;
