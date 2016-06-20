@@ -733,7 +733,7 @@ public class ClassWriter extends ClassVisitor {
             final String desc) {
         enclosingMethodOwner = newClass(owner);
         if (name != null && desc != null) {
-            enclosingMethod = newNameType(name, desc);
+            enclosingMethod = newNameType(owner, desc);
         }
     }
 
@@ -1009,6 +1009,11 @@ public class ClassWriter extends ClassVisitor {
         if (ClassReader.ANNOTATIONS && itanns != null) {
             out.putShort(newUTF8("RuntimeInvisibleTypeAnnotations"));
             itanns.put(out);
+        }
+        // TODO
+        if (!substitutionTable.isEmpty()) {
+            byte[] sTable = substitutionTable.getByteArray();
+            attrs.putByteArray(sTable, 0, sTable.length);
         }
         if (attrs != null) {
             attrs.put(this, null, 0, -1, -1, out);
@@ -1467,7 +1472,7 @@ public class ClassWriter extends ClassVisitor {
         key3.set(FIELD, owner, name, desc);
         Item result = get(key3);
         if (result == null) {
-            put122(FIELD, newClass(owner), newNameType(name, desc));
+            put122(FIELD, newClass(owner), newNameType(owner, desc));
             result = new Item(index++, key3);
             put(result);
         }
@@ -1512,7 +1517,7 @@ public class ClassWriter extends ClassVisitor {
         key3.set(type, owner, name, desc);
         Item result = get(key3);
         if (result == null) {
-            put122(type, newClass(owner), newNameType(name, desc));
+            put122(type, newClass(owner), newNameType(owner, desc));
             result = new Item(index++, key3);
             put(result);
         }

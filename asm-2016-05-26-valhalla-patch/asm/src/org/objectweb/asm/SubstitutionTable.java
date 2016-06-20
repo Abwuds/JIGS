@@ -45,4 +45,12 @@ public class SubstitutionTable {
     public String toString() {
         return descriptors.toString();
     }
+
+    public boolean isEmpty() {
+        return descriptors.isEmpty();
+    }
+
+    public byte[] getByteArray() {
+        return vector.data;
+    }
 }
