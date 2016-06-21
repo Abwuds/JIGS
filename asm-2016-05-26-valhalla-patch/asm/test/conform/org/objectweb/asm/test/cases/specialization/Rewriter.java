@@ -1,7 +1,9 @@
 package org.objectweb.asm.test.cases.specialization;
 
+import org.objectweb.asm.Attribute;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.SubstitutionTable;
 import org.objectweb.asm.test.cases.Generator;
 
 import java.io.IOException;
@@ -26,8 +28,9 @@ public class Rewriter extends Generator {
 
         try {
             byte[] bytes = Files.readAllBytes(Paths.get("asm/test/resources/ContainerJava10.class"));
+            // byte[] bytes = Files.readAllBytes(Paths.get("asm/test/test-results/pkg/specialization/Rewriter.class"));//"asm/test/resources/ContainerJava10.class"));
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-            new ClassReader(bytes).accept(new RewriterClassVisitor(cw), 0);
+            new ClassReader(bytes).accept(new RewriterClassVisitor(cw), new Attribute[]{new SubstitutionTable()}, 0);
 
 /*
             MethodVisitor mv;

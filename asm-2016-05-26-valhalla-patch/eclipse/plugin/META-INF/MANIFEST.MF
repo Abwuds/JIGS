@@ -24,3 +24,4 @@ Require-Bundle: org.eclipse.ui,
 Eclipse-LazyStart: true
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Bundle-ActivationPolicy: lazy
+Import-Package: sun.misc
