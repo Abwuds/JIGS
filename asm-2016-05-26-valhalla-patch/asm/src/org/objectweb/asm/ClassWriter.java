@@ -1081,7 +1081,6 @@ public class ClassWriter extends ClassVisitor {
             double val = ((Double) cst).doubleValue();
             return newDouble(val);
         } else if (cst instanceof String) {
-            System.out.println("Value : " + cst);
             return newString((String) cst);
         } else if (cst instanceof Type) {
             Type t = (Type) cst;
@@ -1636,7 +1635,6 @@ public class ClassWriter extends ClassVisitor {
     private Item newString(final String value) {
         key2.set(STR, value, null, null);
         Item result = get(key2);
-        System.out.println("Key : " + value + " exists : " + (result == null ? false : result.index));
         if (result == null) {
             pool.put12(STR, newUTF8(value));
             result = new Item(index++, key2);
