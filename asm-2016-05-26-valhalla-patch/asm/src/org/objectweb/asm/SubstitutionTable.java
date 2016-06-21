@@ -6,11 +6,12 @@ import java.util.Map;
 /**
  * Created by Jefferson Mangue on 20/06/2016.
  */
-public class SubstitutionTable {
+public class SubstitutionTable extends Attribute {
     private final ByteVector vector;
     private final HashMap<Integer, String> descriptors; // Cache.
 
     public SubstitutionTable() {
+        super("SubstitutionTable");
         vector = new ByteVector();
         descriptors = new HashMap<>();
     }
@@ -52,5 +53,16 @@ public class SubstitutionTable {
 
     public byte[] getByteArray() {
         return vector.data;
+    }
+
+
+    @Override
+    protected Attribute read(ClassReader cr, int off, int len, char[] buf, int codeOff, Label[] labels) {
+        return super.read(cr, off, len, buf, codeOff, labels);
+    }
+
+    @Override
+    protected ByteVector write(ClassWriter cw, byte[] code, int len, int maxStack, int maxLocals) {
+        return vector;
     }
 }

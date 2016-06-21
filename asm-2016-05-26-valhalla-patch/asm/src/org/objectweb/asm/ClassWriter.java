@@ -733,7 +733,7 @@ public class ClassWriter extends ClassVisitor {
             final String desc) {
         enclosingMethodOwner = newClass(owner);
         if (name != null && desc != null) {
-            enclosingMethod = newNameType(owner, desc);
+            enclosingMethod = newNameType(name, desc);
         }
     }
 
@@ -832,6 +832,7 @@ public class ClassWriter extends ClassVisitor {
 
     @Override
     public final void visitEnd() {
+       visitAttribute(substitutionTable);
     }
 
     // ------------------------------------------------------------------------
@@ -1010,11 +1011,11 @@ public class ClassWriter extends ClassVisitor {
             out.putShort(newUTF8("RuntimeInvisibleTypeAnnotations"));
             itanns.put(out);
         }
-        // TODO
-        if (!substitutionTable.isEmpty()) {
+        // TODO erase this.
+        /*if (!substitutionTable.isEmpty()) {
             byte[] sTable = substitutionTable.getByteArray();
             attrs.putByteArray(sTable, 0, sTable.length);
-        }
+        }*/
         if (attrs != null) {
             attrs.put(this, null, 0, -1, -1, out);
         }
@@ -1471,8 +1472,8 @@ public class ClassWriter extends ClassVisitor {
     Item newFieldItem(final String owner, final String name, final String desc) {
         key3.set(FIELD, owner, name, desc);
         Item result = get(key3);
-        if (result == null) {
-            put122(FIELD, newClass(owner), newNameType(owner, desc));
+        if (result == null) {// TODO pass owner...
+            put122(FIELD, newClass(owner), newNameType(name, desc));
             result = new Item(index++, key3);
             put(result);
         }
@@ -1516,8 +1517,8 @@ public class ClassWriter extends ClassVisitor {
         int type = itf ? IMETH : METH;
         key3.set(type, owner, name, desc);
         Item result = get(key3);
-        if (result == null) {
-            put122(type, newClass(owner), newNameType(owner, desc));
+        if (result == null) {// TODO pass owner...
+            put122(type, newClass(owner), newNameType(name, desc));
             result = new Item(index++, key3);
             put(result);
         }
@@ -1672,7 +1673,9 @@ public class ClassWriter extends ClassVisitor {
         key2.set(NAME_TYPE, name, desc, null);
         Item result = get(key2);
         if (result == null) {
-            put122(NAME_TYPE, newUTF8(name), newTypedUTF8(name, desc)); //newUTF8(desc));
+            int s2 = newTypedUTF8(name, desc);
+            put122(NAME_TYPE, newUTF8(name), s2); //newUTF8(desc));
+            System.out.println("Index returned by newTypedUTF8 : " + s2);
             result = new Item(index++, key2);
             put(result);
         }
