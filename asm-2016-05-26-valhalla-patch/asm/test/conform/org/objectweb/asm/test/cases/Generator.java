@@ -30,6 +30,7 @@
 package org.objectweb.asm.test.cases;
 
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.test.cases.specialization.Reader;
 import org.objectweb.asm.test.cases.specialization.Rewriter;
 
 import java.io.File;
@@ -45,13 +46,11 @@ import java.io.IOException;
 public class Generator implements Opcodes {
 
     public static void main(final String[] args) throws IOException {
-        /*Generator generators[] = { new MethodParameters(),
+        Generator generators[] = { new MethodParameters(),
                 new Annotation(), new TypeAnnotation(),
                 new Attribute(), new Debug(), new Enum(), new Frames(),
                 new Insns(), new Interface(), new Invalid(), new JSR(),
-                new Outer(), new Wide(), new InvokeDynamic(), new Rewriter(),
-                new Reader() };*/
-        Generator generators[] = { new Rewriter() };
+                new Outer(), new Wide(), new InvokeDynamic(), new Reader()};
         for (int i = 0; i < generators.length; ++i) {
             generators[i].generate(args[0]);
         }

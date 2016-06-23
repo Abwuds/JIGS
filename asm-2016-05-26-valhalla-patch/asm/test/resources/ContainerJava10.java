@@ -1,23 +1,31 @@
-
 /**
  * Created by Baxtalou on 19/05/2016.
  */
 public class ContainerJava10<any T, U, any X> {
-    T v;
-    X e;
+    T t;
+    X x;
+    U u;
 
-    public ContainerJava10(T v, X e) {
-        this.v = v;
-        this.e = e;
+    public ContainerJava10(T t, U u, X x) {
+        this.t = t;
+        this.x = x;
+        this.u = u;
         Object o = new Object();
     }
 
-    public T getV() {
-        return v;
+    public T getT() {
+        return t;
     }
 
-    public X getE() {
-        return e;
+    public X getX() {
+        return x;
     }
-        
+
+    public U getU() {
+        return u;
+    }
+
+    public String toString() {
+        return "t : " + t + " u " + u + " x " + x;
+    }
 }

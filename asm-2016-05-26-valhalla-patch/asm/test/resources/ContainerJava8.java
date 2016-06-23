@@ -6,13 +6,17 @@ import java.lang.Runnable;
  * Created by Baxtalou on 19/05/2016.
  */
 public class ContainerJava8<T extends Runnable> {
-    T v;
+    T t;
 
-    public ContainerJava8(T v) {
-        this.v = v;
+    public ContainerJava8(T t) {
+        this.t = t;
     }
 
-    public T getV() {
-        return v;
+    public T getT() {
+        return t;
+    }
+
+    public String toString() {
+        return "t" + t;
     }
 }
