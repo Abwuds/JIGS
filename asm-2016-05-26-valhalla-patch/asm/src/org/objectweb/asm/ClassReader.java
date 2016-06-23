@@ -2681,7 +2681,13 @@ public class ClassReader {
         // computes the start index of the CONSTANT_Class item in b
         // and reads the CONSTANT_Utf8 item designated by
         // the first two bytes of this CONSTANT_Class item
-        return readDescription(items[readUnsignedShort(index)], buf); //readUTF8(items[readUnsignedShort(index)], buf);
+        int startIndex = items[readUnsignedShort(index)];
+        switch (readByte(items[readUnsignedShort(startIndex)] - 1)) {
+            case ClassWriter.PARAMETERIZED_TYPE:
+                return readUTF8(items[readUnsignedShort(startIndex)] + 3, buf);
+            default: // case ClassWriter.UTF8
+                return readUTF8(startIndex, buf);
+        }
     }
 
     /**

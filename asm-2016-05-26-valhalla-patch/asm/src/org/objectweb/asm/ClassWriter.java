@@ -1011,11 +1011,6 @@ public class ClassWriter extends ClassVisitor {
             out.putShort(newUTF8("RuntimeInvisibleTypeAnnotations"));
             itanns.put(out);
         }
-        // TODO erase this.
-        /*if (!substitutionTable.isEmpty()) {
-            byte[] sTable = substitutionTable.getByteArray();
-            attrs.putByteArray(sTable, 0, sTable.length);
-        }*/
         if (attrs != null) {
             attrs.put(this, null, 0, -1, -1, out);
         }
@@ -1424,10 +1419,13 @@ public class ClassWriter extends ClassVisitor {
         }
 
         // now, create the InvokeDynamic constant
-        key3.set(name, desc, bootstrapMethodIndex);
+        String desc2 = Type.translateMethodDescriptor(desc);
+        Type methodDescriptor = Type.getType(desc2);
+        // TODO register if Typevar present.
+        key3.set(name, desc2, bootstrapMethodIndex);
         result = get(key3);
         if (result == null) {
-            put122(INDY, bootstrapMethodIndex, newNameType(name, desc));
+            put122(INDY, bootstrapMethodIndex, newNameType(name, desc2));
             result = new Item(index++, key3);
             put(result);
         }
@@ -1673,9 +1671,7 @@ public class ClassWriter extends ClassVisitor {
         key2.set(NAME_TYPE, name, desc, null);
         Item result = get(key2);
         if (result == null) {
-            int s2 = newTypedUTF8(name, desc);
-            put122(NAME_TYPE, newUTF8(name), s2); //newUTF8(desc));
-            System.out.println("Index returned by newTypedUTF8 : " + s2);
+            put122(NAME_TYPE, newUTF8(name), newTypedUTF8(name, desc)); //newUTF8(desc));
             result = new Item(index++, key2);
             put(result);
         }
