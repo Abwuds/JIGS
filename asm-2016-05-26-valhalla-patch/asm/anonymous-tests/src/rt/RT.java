@@ -44,7 +44,7 @@ public class RT {
      */
     public static CallSite bsm_new(MethodHandles.Lookup lookup, String name, MethodType type) throws Throwable {
         System.out.println("Inside the BSM dude");
-        return new ConstantCallSite(MethodHandles.constant(Object.class, "Hello from boostrap method dude."));
+        return new ConstantCallSite(MethodHandles.constant(String.class, "Hello from boostrap method dude."));
     }
 
     /**

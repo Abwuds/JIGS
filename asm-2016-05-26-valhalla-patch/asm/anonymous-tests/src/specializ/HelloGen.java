@@ -21,7 +21,7 @@ public class HelloGen {
     public static void main(String[] args) throws Exception, Throwable {
         String outputClassName = "HelloDynamicGen";
         FileOutputStream fos = new FileOutputStream(new File("output/production/anonymous-tests/" + outputClassName + ".class"));
-        byte[] bytes = dump(outputClassName, "bsm_new", "()Ljava/lang/Object;");
+        byte[] bytes = dump(outputClassName, "bsm_new", "()Ljava/lang/String;");
 
         // instanciateRetroClass();
         MethodHandles.Lookup lookup = MethodHandles.lookup();
@@ -49,9 +49,11 @@ public class HelloGen {
         // Create a standard main method.
         mv = cw.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "script", "([Ljava/lang/String;)V", null, null);
         mv.visitCode();
+        mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
         MethodType mt = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
         Handle bsm_new = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_new", mt.toMethodDescriptorString(), false);
         mv.visitInvokeDynamicInsn("new", descritpor, bsm_new);
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
         mv.visitInsn(Opcodes.RETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();
