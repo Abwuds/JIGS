@@ -1366,8 +1366,7 @@ public class ClassWriter extends ClassVisitor {
             final Handle bsm, final Object... bsmArgs) {
         Handle bsm2 = bsm;
         if (name.equals("metafactory") && bsm.owner.equals("java/lang/invoke/ObjectibleDispatch")) {
-            System.out.println("Substitutation.");
-            bsm2 = new Handle(bsm.tag, "rt/ObjectibleDispatch", bsm.name, bsm.desc, bsm.itf);
+            bsm2 = new Handle(bsm.tag, "rt/RT", bsm.name, bsm.desc, bsm.itf);
         }
         // TODO register in the substitution table if Typevar present.
         String desc2 = Type.translateMethodDescriptor(desc);

@@ -1,3 +1,4 @@
+package com.test.specialization;
 /**
  * Created by Baxtalou on 19/05/2016.
  */

@@ -31,7 +31,21 @@ import java.util.Objects;
 /**
  * Bootstrap class for virtual access adaptations
  */
-public class ObjectibleDispatch {
+public class RT {
+
+
+    /**
+     *
+     * @param lookup
+     * @param name
+     * @param type
+     * @return
+     * @throws Throwable
+     */
+    public static CallSite bsm_new(MethodHandles.Lookup lookup, String name, MethodType type) throws Throwable {
+        System.out.println("Inside the BSM dude");
+        return new ConstantCallSite(MethodHandles.constant(Object.class, "Hello from boostrap method dude."));
+    }
 
     /**
      * This bootstrap method returns an adapted callsite to match the virtual method signature defined
@@ -46,7 +60,7 @@ public class ObjectibleDispatch {
             throw new AssertionError("Missing dynamic parameters!");
         }
         System.out.println("Here");
-        MethodHandle res = caller.findStatic(ObjectibleDispatch.class, invokedName, invokedType);
+        MethodHandle res = caller.findStatic(RT.class, invokedName, invokedType);
         return new ConstantCallSite(res);
     }
 
