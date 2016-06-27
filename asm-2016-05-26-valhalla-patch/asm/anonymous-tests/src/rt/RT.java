@@ -42,8 +42,8 @@ public class RT {
      * @return
      * @throws Throwable
      */
-    public static CallSite bsm_new(MethodHandles.Lookup lookup, String name, MethodType type) throws Throwable {
-        System.out.println("Inside the BSM dude");
+    public static CallSite bsm_new(MethodHandles.Lookup lookup, String name, MethodType type, String specialization) throws Throwable {
+        System.out.println("Inside the BSM dude, the specialization is : " + specialization);
         return new ConstantCallSite(MethodHandles.constant(String.class, "Hello from boostrap method dude."));
     }
 
