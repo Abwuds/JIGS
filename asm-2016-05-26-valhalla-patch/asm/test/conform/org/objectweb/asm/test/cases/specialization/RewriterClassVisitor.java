@@ -22,7 +22,6 @@ class RewriterClassVisitor extends ClassVisitor {
 
     @Override
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-        // TODO foreach TypeVar --> Write it in the special attribute as a value to substitute during specialization.
         return new RewriterMethodVisitor(API, super.visitMethod(access, name, desc, signature, exceptions));
     }
 }

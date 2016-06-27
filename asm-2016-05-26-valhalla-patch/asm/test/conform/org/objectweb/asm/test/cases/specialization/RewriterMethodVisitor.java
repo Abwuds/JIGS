@@ -163,7 +163,8 @@ class RewriterMethodVisitor extends MethodVisitor {
     @Override
     public void visitTypedInsn(String name, int typedOpcode) {
         super.visitTypedInsn(name, typedOpcode);
-        Label end = new Label();
+        super.visitInsn(typedOpcode);
+       /* Label end = new Label();
         List<Map.Entry<String, Integer>> tests = INSTRS.get(typedOpcode);
         if (tests == null) {
             throw new IllegalArgumentException("Invalid Opcode following TYPED instruction : " + typedOpcode);
@@ -184,6 +185,6 @@ class RewriterMethodVisitor extends MethodVisitor {
 
         // If none of them worked, doing the original then.
         visitInsn(typedOpcode);
-        visitLabel(end);
+        visitLabel(end);*/
     }
 }
