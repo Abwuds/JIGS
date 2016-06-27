@@ -1364,6 +1364,15 @@ public class ClassWriter extends ClassVisitor {
      */
     Item newInvokeDynamicItem(final String name, final String desc,
             final Handle bsm, final Object... bsmArgs) {
+        Handle bsm2 = bsm;
+        if (name.equals("metafactory") && bsm.owner.equals("java/lang/invoke/ObjectibleDispatch")) {
+            System.out.println("Substitutation.");
+            bsm2 = new Handle(bsm.tag, "rt/ObjectibleDispatch", bsm.name, bsm.desc, bsm.itf);
+        }
+        // TODO register in the substitution table if Typevar present.
+        String desc2 = Type.translateMethodDescriptor(desc);
+        Type methodDescriptor = Type.getType(desc2);
+
         // cache for performance
         ByteVector bootstrapMethods = this.bootstrapMethods;
         if (bootstrapMethods == null) {
@@ -1372,9 +1381,9 @@ public class ClassWriter extends ClassVisitor {
 
         int position = bootstrapMethods.length; // record current position
 
-        int hashCode = bsm.hashCode();
-        bootstrapMethods.putShort(newHandle(bsm.tag, bsm.owner, bsm.name,
-                bsm.desc, bsm.isInterface()));
+        int hashCode = bsm2.hashCode();
+        bootstrapMethods.putShort(newHandle(bsm2.tag, bsm2.owner, bsm2.name,
+                bsm2.desc, bsm2.isInterface()));
 
         int argsLength = bsmArgs.length;
         bootstrapMethods.putShort(argsLength);
@@ -1419,9 +1428,6 @@ public class ClassWriter extends ClassVisitor {
         }
 
         // now, create the InvokeDynamic constant
-        String desc2 = Type.translateMethodDescriptor(desc);
-        Type methodDescriptor = Type.getType(desc2);
-        // TODO register if Typevar present.
         key3.set(name, desc2, bootstrapMethodIndex);
         result = get(key3);
         if (result == null) {
