@@ -24,6 +24,8 @@
  */
 package rt;
 
+import specializ.HelloGen;
+
 import java.lang.invoke.*;
 import java.util.List;
 import java.util.Objects;
@@ -44,7 +46,9 @@ public class RT {
      */
     public static CallSite bsm_new(MethodHandles.Lookup lookup, String name, MethodType type, String specialization) throws Throwable {
         System.out.println("Inside the BSM dude, the specialization is : " + specialization);
-        return new ConstantCallSite(MethodHandles.constant(String.class, "Hello from boostrap method dude."));
+        System.out.println("lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "], specialization = [" + specialization + "]");
+        Class<?> helloDynamicGen = HelloGen.FUNCTION_CLASS_LOADER.loadClass("HelloDynamicGen");// Already loaded.
+        return new ConstantCallSite(lookup.findConstructor(helloDynamicGen, MethodType.methodType(void.class, String.class)));//new ConstantCallSite(MethodHandles.constant(String.class, "Hello from boostrap method dude."));
     }
 
     /**
@@ -59,7 +63,6 @@ public class RT {
         if (params.isEmpty()) {
             throw new AssertionError("Missing dynamic parameters!");
         }
-        System.out.println("Here");
         MethodHandle res = caller.findStatic(RT.class, invokedName, invokedType);
         return new ConstantCallSite(res);
     }
