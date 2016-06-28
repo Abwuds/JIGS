@@ -45,10 +45,11 @@ public class RT {
      * @throws Throwable
      */
     public static CallSite bsm_new(MethodHandles.Lookup lookup, String name, MethodType type, String specialization) throws Throwable {
-        System.out.println("Inside the BSM dude, the specialization is : " + specialization);
         System.out.println("lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "], specialization = [" + specialization + "]");
-        Class<?> helloDynamicGen = HelloGen.FUNCTION_CLASS_LOADER.loadClass("HelloDynamicGen");// Already loaded.
-        return new ConstantCallSite(lookup.findConstructor(helloDynamicGen, MethodType.methodType(void.class, String.class)));//new ConstantCallSite(MethodHandles.constant(String.class, "Hello from boostrap method dude."));
+        // TODO use a cache system.
+        // TODO load class String name = lookup.lookupClass.
+        Class<?> species = HelloGen.FUNCTION_CLASS_LOADER.loadClass("HelloDynamicGen");// Already loaded.
+        return new ConstantCallSite(lookup.findConstructor(species, type.changeReturnType(void.class)));
     }
 
     /**

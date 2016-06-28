@@ -24,7 +24,7 @@ public class HelloGen {
     public static void main(String[] args) throws Exception, Throwable {
         String outputClassName = "HelloDynamicGen";
         FileOutputStream fos = new FileOutputStream(new File("output/production/anonymous-tests/" + outputClassName + ".class"));
-        byte[] bytes = dump(outputClassName, "bsm_new", "(Ljava/lang/String;)LHelloDynamicGen;");
+        byte[] bytes = dump(outputClassName, "bsm_new");
         fos.close();
         // instanciateRetroClass();
         MethodHandles.Lookup lookup = MethodHandles.lookup();
@@ -33,17 +33,18 @@ public class HelloGen {
         main.invoke(null);
     }
 
-    public static byte[] dump(String outputClassName, String bsmName, String descritpor) throws Exception {
+    public static byte[] dump(String outputClassName, String bsmName) throws Exception {
         final ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES);
         MethodVisitor mv;
 
         // Setup the basic metadata for the bootstrap class.
         cw.visit(Opcodes.V1_7, Opcodes.ACC_PUBLIC + Opcodes.ACC_SUPER, outputClassName, null, "java/lang/Object", null);
         cw.visitField(Opcodes.ACC_PRIVATE + Opcodes.ACC_FINAL, "field1", "Ljava/lang/String;", null, null);
+        cw.visitField(Opcodes.ACC_PRIVATE + Opcodes.ACC_FINAL, "field2", "Ljava/lang/String;", null, null);
 
 
         // Create a standard void constructor.
-        mv = cw.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "(Ljava/lang/String;)V", null, null);
+        mv = cw.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "(Ljava/lang/String;Ljava/lang/String;)V", null, null);
         mv.visitCode();
         mv.visitVarInsn(Opcodes.ALOAD, 0);
         mv.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
@@ -53,6 +54,9 @@ public class HelloGen {
         mv.visitVarInsn(Opcodes.ALOAD, 0);
         mv.visitVarInsn(Opcodes.ALOAD, 1);
         mv.visitFieldInsn(Opcodes.PUTFIELD, outputClassName, "field1", "Ljava/lang/String;");
+        mv.visitVarInsn(Opcodes.ALOAD, 0);
+        mv.visitVarInsn(Opcodes.ALOAD, 2);
+        mv.visitFieldInsn(Opcodes.PUTFIELD, outputClassName, "field2", "Ljava/lang/String;");
         mv.visitInsn(Opcodes.RETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();
@@ -63,20 +67,18 @@ public class HelloGen {
         mv.visitCode();
         mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
 
+        // Constructor invocation by passing through bootstrap method rt.RT#bsm_new.
+        // The bsm method selection.
         MethodType mt = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String.class);
         Handle bsm_new = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_new", mt.toMethodDescriptorString(), false);
-        mv.visitLdcInsn("Constructor Args");
-        mv.visitInvokeDynamicInsn("new", descritpor, bsm_new, "I");
+        // Constructor arguments.
+        mv.visitLdcInsn("Constructor Args 1");
+        mv.visitLdcInsn("Constructor Args 2");
+        // InvokeDynamic call.
+        mv.visitInvokeDynamicInsn("new", "(Ljava/lang/String;Ljava/lang/String;)LHelloDynamicGen;", bsm_new, "I");
+        // Calling toString and invocating it on the object allocated.
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Object", "toString", "()Ljava/lang/String;", false);
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
-
-
-        // Testing invokespecial before coupling it with an invokedynamic.
-        mv.visitTypeInsn(Opcodes.NEW, outputClassName);
-        mv.visitInsn(Opcodes.DUP);
-        mv.visitLdcInsn("Constructor args.");
-        mv.visitMethodInsn(Opcodes.INVOKESPECIAL, outputClassName, "<init>", "(Ljava/lang/String;)V", false);
-
 
         mv.visitInsn(Opcodes.RETURN);
         mv.visitMaxs(0, 0);
@@ -84,8 +86,14 @@ public class HelloGen {
 
         // The toString.
         mv = cw.visitMethod(Opcodes.ACC_PUBLIC, "toString", "()Ljava/lang/String;", null, null);
+        mv.visitCode();
         mv.visitVarInsn(Opcodes.ALOAD, 0);
         mv.visitFieldInsn(Opcodes.GETFIELD, outputClassName, "field1", "Ljava/lang/String;");
+        mv.visitLdcInsn(" + ");
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/String", "concat", "(Ljava/lang/String;)Ljava/lang/String;", false);
+        mv.visitVarInsn(Opcodes.ALOAD, 0);
+        mv.visitFieldInsn(Opcodes.GETFIELD, outputClassName, "field2", "Ljava/lang/String;");
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/String", "concat", "(Ljava/lang/String;)Ljava/lang/String;", false);
         mv.visitInsn(Opcodes.ARETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();
@@ -93,7 +101,6 @@ public class HelloGen {
 
         return cw.toByteArray();
     }
-
 
     private static void instanciateRetroClass() throws IOException, NoSuchFieldException, IllegalAccessException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException {
         byte[] codes = Files.readAllBytes(Paths.get("ContainerJava10.class"));
@@ -119,5 +126,13 @@ public class HelloGen {
         } catch (InstantiationException e) {
             e.printStackTrace();
         }
+    }
+
+    // Testing invokespecial before coupling it with an invokedynamic.
+    private static void basicConstructorCall(String outputClassName, MethodVisitor mv) {
+        mv.visitTypeInsn(Opcodes.NEW, outputClassName);
+        mv.visitInsn(Opcodes.DUP);
+        mv.visitLdcInsn("Constructor args.");
+        mv.visitMethodInsn(Opcodes.INVOKESPECIAL, outputClassName, "<init>", "(Ljava/lang/String;)V", false);
     }
 }
