@@ -2632,7 +2632,7 @@ public class ClassReader {
             sb.append(str);
             if(i + 1 < params) { sb.append(','); }
         }
-        return sb.append('>').append(';').toString();
+        return sb.append('>').toString();
     }
 
     /**
@@ -2658,10 +2658,36 @@ public class ClassReader {
         StringBuilder sb = new StringBuilder("(");
         int paramsIndex = item + 3;
         for (int i = 0; i < params; i++) {
-            String str = readDescription(paramsIndex + i * 2, buf);
+            String str = readMethodDescriptorArgument(paramsIndex + i * 2, buf);
             sb.append(str);
         }
         return sb.append(')').append(readDescription(item + 1, buf)).toString();
+    }
+
+    /**
+     * Reads a method descriptor arguments. Depending on the tag of the structure pointed.
+     * It can be a TypeVar, a ParameterizedType, or a UTF8. Their name will correspond to
+     * the representation of a {@link Type#OBJECT} or {@link Type#TYPE_VAR}.
+     * <i>This method is intended for {@link Attribute} sub classes,
+     * and is normally not needed by class generators or adapters.</i>
+     *
+     * @param index
+     *            the start index of an unsigned short value in {@link #b b},
+     *            whose value is the index of a method descriptor argument pool item.
+     * @param buf
+     *            buffer to be used to read the item. This buffer must be
+     *            sufficiently large. It is not automatically resized.
+     * @return the String corresponding to the specified method descriptor argument item.
+     */
+    public String readMethodDescriptorArgument(int index, char[] buf) {
+        switch (readByte(items[readUnsignedShort(index)] - 1)) {
+            case ClassWriter.TYPE_VAR:
+                return readTypeVar(index, buf);
+            case ClassWriter.PARAMETERIZED_TYPE:
+                return 'L' + readParameterizedType(index, buf) + ';';
+            default: // case ClassWriter.UTF8
+                return readUTF8(index, buf);
+        }
     }
 
     /**
@@ -2682,14 +2708,43 @@ public class ClassReader {
         // and reads the CONSTANT_Utf8 item designated by
         // the first two bytes of this CONSTANT_Class item
         int startIndex = items[readUnsignedShort(index)];
+        return readUTF8(startIndex, buf);/*
+        TODO see why when reading the innerClasses table, we can not access this indirection ?
+        TODO readByte(items[readUnsignedShort(startIndex)] - 1). Perhaps these are only the concatenation of UTF8.
         switch (readByte(items[readUnsignedShort(startIndex)] - 1)) {
             case ClassWriter.PARAMETERIZED_TYPE:
-                return readUTF8(items[readUnsignedShort(startIndex)] + 3, buf);
+                //return readGenericClass(startIndex, buf);
             default: // case ClassWriter.UTF8
                 return readUTF8(startIndex, buf);
-        }
+        }*/
     }
 
+    /**
+     * Reads a ParameterizedType constant pool item in {@link #b b}. <i>This method is
+     * intended for {@link Attribute} sub classes, and is normally not needed by
+     * class generators or adapters.</i>
+     *
+     * @param index
+     *            the start index of an unsigned short value in {@link #b b},
+     *            whose value is the index of a parameterizedType constant pool item.
+     * @param buf
+     *            buffer to be used to read the item. This buffer must be
+     *            sufficiently large. It is not automatically resized.
+     * @return the String corresponding to the specified TypeVar item.
+     */
+    public String readGenericClass(final int index, final char[] buf) {
+        int item = items[readUnsignedShort(index)];
+        int params = readByte(item + 5);
+        StringBuilder sb = new StringBuilder();
+        sb.append(readUTF8(item + 3, buf)).append('<');
+        int paramsIndex = item + 6;
+        for (int i = 0; i < params; i++) {
+            String str = readDescription/*readGenericClassParameter*/(paramsIndex + i * 2, buf);
+            sb.append(str);
+            if(i + 1 < params) { sb.append(','); }
+        }
+        return sb.append('>').toString();
+    }
     /**
      * Reads a numeric or string constant pool item in {@link #b b}. <i>This
      * method is intended for {@link Attribute} sub classes, and is normally not

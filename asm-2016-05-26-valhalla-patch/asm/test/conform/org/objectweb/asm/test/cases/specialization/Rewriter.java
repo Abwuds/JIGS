@@ -49,6 +49,7 @@ public class Rewriter {
      * @throws IOException
      */
     private void compileClazz(final Path path) throws IOException {
+        System.out.println("Writing class : " + path);
         writeClazz(PKG_SPECIALIZATION + path.getFileName(), dump(path));
     }
 

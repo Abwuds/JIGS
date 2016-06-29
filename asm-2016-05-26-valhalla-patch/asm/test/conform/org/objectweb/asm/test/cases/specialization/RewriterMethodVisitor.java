@@ -1,18 +1,15 @@
 package org.objectweb.asm.test.cases.specialization;
 
 
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.*;
 
+import java.lang.invoke.CallSite;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.util.*;
 import java.util.AbstractMap.SimpleEntry;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
- *
  * Created by Jefferson Mangue on 12/06/2016.
  */
 class RewriterMethodVisitor extends MethodVisitor {
@@ -155,10 +152,54 @@ class RewriterMethodVisitor extends MethodVisitor {
         super(api, mv);
     }
 
+    // An int is not sufficient. Because a stack level has multiple states possible.
+    // First it has the boolean value "dup visited" to detect if the dup has been visited (and skipped) or not.
+    // Otherwise all possible dup between the "new" opcode and the "invokespecial" will be skipped. .
+    private final Stack<Integer> invokeSpecialStack = new Stack<>();
+
     @Override
-    public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
-        super.visitMethodInsn(opcode, owner, name, desc, itf);
+    public void visitTypeInsn(int opcode, String type) {
+        // TODO Detect if it is an invocation with typevar and so on.
+        System.out.println("Type insn : " + type);
+        if (opcode != Opcodes.NEW) {
+            super.visitTypeInsn(opcode, type);
+            return;
+        }
+        // Avoiding the write of the "NEW" bytecode since they are replaced by invokedynamic.
+        System.out.println("opcode = [" + opcode + "], type = [" + type + "]");
+       // invokeSpecialStack++;
     }
+/*
+    @Override
+    public void visitInsn(int opcode) {
+        // Skipping the opcode DUP inside
+        if (invokeSpecialStack > 0 && opcode == Opcodes.DUP) {
+            return;
+        }
+        super.visitInsn(opcode);
+    }
+
+    private static final Handle BSM_NEW;
+
+    static {
+        MethodType mt = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String.class);
+        BSM_NEW = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_new", mt.toMethodDescriptorString(), false);
+    }
+
+    @Override
+    public void visitMethodInsn(final int opcode, final String owner,
+                                final String name, final String desc, final boolean itf) {
+        System.out.println("opcode = [" + opcode + "], owner = [" + owner + "], name = [" + name + "], desc = [" + desc + "], itf = [" + itf + "]");
+        if (invokeSpecialStack > 0 && opcode == Opcodes.INVOKESPECIAL) {
+            Type type = Type.getMethodType(desc);
+            String ddesc = Type.getMethodType(Type.getObjectType(owner), type.getArgumentTypes()).toString();
+            System.out.println(ddesc);
+            visitInvokeDynamicInsn(name, ddesc, BSM_NEW, "I");
+            invokeSpecialStack--;
+            return;
+        }
+        super.visitMethodInsn(opcode, owner, name, desc, itf);
+    }*/
 
     @Override
     public void visitTypedInsn(String name, int typedOpcode) {

@@ -13,7 +13,6 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -22,6 +21,8 @@ public class HelloGen {
     public static final FunctionClassLoader FUNCTION_CLASS_LOADER = new FunctionClassLoader();
 
     public static void main(String[] args) throws Exception, Throwable {
+
+
         String outputClassName = "HelloDynamicGen";
         FileOutputStream fos = new FileOutputStream(new File("output/production/anonymous-tests/" + outputClassName + ".class"));
         byte[] bytes = dump(outputClassName, "bsm_new");
@@ -74,9 +75,10 @@ public class HelloGen {
         // Constructor arguments.
         mv.visitLdcInsn("Constructor Args 1");
         mv.visitLdcInsn("Constructor Args 2");
+
         // InvokeDynamic call.
         mv.visitInvokeDynamicInsn("new", "(Ljava/lang/String;Ljava/lang/String;)LHelloDynamicGen;", bsm_new, "I");
-        // Calling toString and invocating it on the object allocated.
+        // Calling toString and invocation of it on the object allocated.
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Object", "toString", "()Ljava/lang/String;", false);
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
 
