@@ -169,9 +169,6 @@ class RewriterMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitTypeInsn(int opcode, String type) {
-        // TODO Detect if it is an invocation with typevar and so on.
-        System.out.println("visitTypeInsn : type : " + type);
-        // TODO test if the "NEW" is made with generics.
         if (opcode != Opcodes.NEW) {
             super.visitTypeInsn(opcode, type);
             return;

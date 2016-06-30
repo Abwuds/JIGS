@@ -17,7 +17,6 @@ class RewriterClassVisitor extends ClassVisitor {
 
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-        System.out.println("visit : version = [" + version + "], access = [" + access + "], name = [" + name + "], signature = [" + signature + "], superName = [" + superName + "], interfaces = [" + interfaces + "]");
         // Modification of the package by prefixing right : String substring = "java/lang/umlv/"+name.substring(name.lastIndexOf('/') + 1);
         super.visit(COMPILER_VERSION, access, name, signature, superName, interfaces);
     }

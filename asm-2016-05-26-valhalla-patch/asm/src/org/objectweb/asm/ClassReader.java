@@ -2740,14 +2740,14 @@ public class ClassReader {
         int item = items[readUnsignedShort(index)];
         int params = readByte(item + 5);
         StringBuilder sb = new StringBuilder();
-        sb.append(readUTF8(item + 3, buf)).append('<');
+        sb.append(readUTF8(item + 3, buf)).append('{');
         int paramsIndex = item + 6;
         for (int i = 0; i < params; i++) {
             String str = readGenericClassParameter(paramsIndex + i * 2, buf);
             sb.append(str);
             if(i + 1 < params) { sb.append(','); }
         }
-        return sb.append('>').toString();
+        return sb.append('}').toString();
     }
 
     /**

@@ -11,6 +11,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
@@ -21,7 +22,28 @@ public class HelloGen {
     public static final FunctionClassLoader FUNCTION_CLASS_LOADER = new FunctionClassLoader();
 
     public static void main(String[] args) throws Exception, Throwable {
+        byte[] codes = Files.readAllBytes(Paths.get("output/production/anonymous-tests/Container10Main.class"));
+        ClassReader reader = new ClassReader(codes);
+        ClassWriter writer = new ClassWriter(reader, 0);
+        int index = writer.newConst("Hello");
 
+        System.out.println("Hello write to index : " + index);
+        // Loading the unsafe.
+        Class<?> unsafeClass = sun.misc.Unsafe.class;
+        Field theUnsafe = unsafeClass.getDeclaredField("theUnsafe");
+        theUnsafe.setAccessible(true);
+        Unsafe unsafe = (Unsafe)theUnsafe.get(null);
+        System.out.println("The unsafe get.");
+
+        Object[] pool = new Object[index + 1];
+        pool[index] = "Hello specialized";
+        Class<?> species = HelloGen.FUNCTION_CLASS_LOADER.loadClass("Container10Main");
+        Class<?> mainClass = unsafe.defineAnonymousClass(species, codes, pool);
+        Method main = mainClass.getMethod("main", String[].class);
+        main.invoke(null, new Object[] { null });
+    }
+
+    private static void invokeHelloDynamicGen() throws Throwable {
         String outputClassName = "HelloDynamicGen";
         FileOutputStream fos = new FileOutputStream(new File("output/production/anonymous-tests/" + outputClassName + ".class"));
         byte[] bytes = dump(outputClassName, "bsm_new");
