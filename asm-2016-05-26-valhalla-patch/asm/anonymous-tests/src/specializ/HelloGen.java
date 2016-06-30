@@ -22,7 +22,6 @@ public class HelloGen {
 
     public static void main(String[] args) throws Exception, Throwable {
 
-
         String outputClassName = "HelloDynamicGen";
         FileOutputStream fos = new FileOutputStream(new File("output/production/anonymous-tests/" + outputClassName + ".class"));
         byte[] bytes = dump(outputClassName, "bsm_new");

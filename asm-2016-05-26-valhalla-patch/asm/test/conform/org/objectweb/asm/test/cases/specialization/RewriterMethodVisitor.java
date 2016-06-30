@@ -148,6 +148,16 @@ class RewriterMethodVisitor extends MethodVisitor {
         // TODO case ANEWARRAY
     }
 
+    /**
+     * Enumaration used for the detection of invoke special calls.
+     * This enumeration indicates if an eligible NEW opcodes sequence, for the substitution by an invokedynamic
+     * has been visited and then the same for DUP opcode. Only a NEW applied on generics is selected to be replaced.
+     * Other new have to be considered and ignored since they must not be replaced.
+     */
+    private enum InvokeSpecialVisited {
+        REPLACED_NEW, REPLACED_DUP, IGNORED_NEW, IGNORED_DUP
+    };
+
     RewriterMethodVisitor(int api, MethodVisitor mv) {
         super(api, mv);
     }
@@ -155,28 +165,46 @@ class RewriterMethodVisitor extends MethodVisitor {
     // An int is not sufficient. Because a stack level has multiple states possible.
     // First it has the boolean value "dup visited" to detect if the dup has been visited (and skipped) or not.
     // Otherwise all possible dup between the "new" opcode and the "invokespecial" will be skipped. .
-    private final Stack<Integer> invokeSpecialStack = new Stack<>();
+    private final Stack<InvokeSpecialVisited> invokeSpecialStack = new Stack<>();
 
     @Override
     public void visitTypeInsn(int opcode, String type) {
         // TODO Detect if it is an invocation with typevar and so on.
-        System.out.println("Type insn : " + type);
+        System.out.println("visitTypeInsn : type : " + type);
+        // TODO test if the "NEW" is made with generics.
         if (opcode != Opcodes.NEW) {
             super.visitTypeInsn(opcode, type);
             return;
         }
-        // Avoiding the write of the "NEW" bytecode since they are replaced by invokedynamic.
-        System.out.println("opcode = [" + opcode + "], type = [" + type + "]");
-       // invokeSpecialStack++;
-    }
-/*
-    @Override
-    public void visitInsn(int opcode) {
-        // Skipping the opcode DUP inside
-        if (invokeSpecialStack > 0 && opcode == Opcodes.DUP) {
+
+        // Ignoring this new since it does not manipulate generics.
+        if (!type.contains("<")) {
+            invokeSpecialStack.push(InvokeSpecialVisited.IGNORED_NEW);
+            super.visitTypeInsn(opcode, type);
             return;
         }
-        super.visitInsn(opcode);
+
+        // Replacing the "NEW" opcode since it will be replaced by invokedynamic.
+        invokeSpecialStack.push(InvokeSpecialVisited.REPLACED_NEW);
+    }
+
+    @Override
+    public void visitInsn(int opcode) {
+        if (opcode != Opcodes.DUP || invokeSpecialStack.empty()) {
+            super.visitInsn(opcode);
+            return;
+        }
+        // Replacing the DUP opcode corresponding to a NEW opcode replaced.
+        if (InvokeSpecialVisited.REPLACED_NEW.equals(invokeSpecialStack.peek())) {
+            invokeSpecialStack.set(invokeSpecialStack.size() - 1, InvokeSpecialVisited.REPLACED_DUP);
+            return;
+        }
+        // Ignoring the DUP opcode corresponding to a NEW opcode ignored.
+        if (InvokeSpecialVisited.IGNORED_NEW.equals(invokeSpecialStack.peek())) {
+            invokeSpecialStack.set(invokeSpecialStack.size() - 1, InvokeSpecialVisited.IGNORED_DUP);
+            super.visitInsn(opcode);
+            return;
+        }
     }
 
     private static final Handle BSM_NEW;
@@ -189,17 +217,23 @@ class RewriterMethodVisitor extends MethodVisitor {
     @Override
     public void visitMethodInsn(final int opcode, final String owner,
                                 final String name, final String desc, final boolean itf) {
-        System.out.println("opcode = [" + opcode + "], owner = [" + owner + "], name = [" + name + "], desc = [" + desc + "], itf = [" + itf + "]");
-        if (invokeSpecialStack > 0 && opcode == Opcodes.INVOKESPECIAL) {
-            Type type = Type.getMethodType(desc);
-            String ddesc = Type.getMethodType(Type.getObjectType(owner), type.getArgumentTypes()).toString();
-            System.out.println(ddesc);
-            visitInvokeDynamicInsn(name, ddesc, BSM_NEW, "I");
-            invokeSpecialStack--;
-            return;
+        if (opcode == Opcodes.INVOKESPECIAL) {
+            if (!invokeSpecialStack.empty()) {
+                InvokeSpecialVisited top = invokeSpecialStack.peek();
+                if(InvokeSpecialVisited.REPLACED_DUP.equals(top)) {
+                    Type type = Type.getMethodType(desc);
+                    String ddesc = Type.getMethodType(Type.getObjectType(owner), type.getArgumentTypes()).toString();
+                    System.out.println(ddesc);
+                    visitInvokeDynamicInsn(name, ddesc, BSM_NEW, desc); // TODO use Type inside the BM to parse desc.
+                    invokeSpecialStack.pop();
+                    return;
+                }
+                // IGNORED_DUP. Poping the current stack level.
+                invokeSpecialStack.pop();
+            }
         }
         super.visitMethodInsn(opcode, owner, name, desc, itf);
-    }*/
+    }
 
     @Override
     public void visitTypedInsn(String name, int typedOpcode) {
