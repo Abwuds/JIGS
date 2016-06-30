@@ -2707,16 +2707,20 @@ public class ClassReader {
         // computes the start index of the CONSTANT_Class item in b
         // and reads the CONSTANT_Utf8 item designated by
         // the first two bytes of this CONSTANT_Class item
-        int startIndex = items[readUnsignedShort(index)];
-        return readUTF8(startIndex, buf);/*
-        TODO see why when reading the innerClasses table, we can not access this indirection ?
-        TODO readByte(items[readUnsignedShort(startIndex)] - 1). Perhaps these are only the concatenation of UTF8.
-        switch (readByte(items[readUnsignedShort(startIndex)] - 1)) {
+
+        // When reading the innerClasses attribute, some constant pool class index are set to 0
+        // so we have to prevent the folowing switch.
+        int classIndex = readUnsignedShort(index);
+        if (classIndex == 0) {
+            return null;
+        }
+        int startOffset = items[classIndex];
+        switch (readByte(items[readUnsignedShort(startOffset)] - 1)) {
             case ClassWriter.PARAMETERIZED_TYPE:
-                //return readGenericClass(startIndex, buf);
+                return readGenericClass(startOffset, buf);
             default: // case ClassWriter.UTF8
-                return readUTF8(startIndex, buf);
-        }*/
+                return readUTF8(startOffset, buf);
+        }
     }
 
     /**
@@ -2739,12 +2743,34 @@ public class ClassReader {
         sb.append(readUTF8(item + 3, buf)).append('<');
         int paramsIndex = item + 6;
         for (int i = 0; i < params; i++) {
-            String str = readDescription/*readGenericClassParameter*/(paramsIndex + i * 2, buf);
+            String str = readGenericClassParameter(paramsIndex + i * 2, buf);
             sb.append(str);
             if(i + 1 < params) { sb.append(','); }
         }
         return sb.append('>').toString();
     }
+
+    /**
+     * Reads a generic class parameter constant in {@link #b b}.
+     * This value can be an UTF8 or a Typevar. In the last case, no '/' must be found
+     * inside the String returned. <i>This method is intended for {@link Attribute}
+     * sub classes, and is normally not needed by class generators or adapters.</i>
+     *
+     * @param index
+     *            the start index of an unsigned short value in {@link #b b},
+     *            whose value is the index of a TypeVar constant pool item.
+     * @param buf
+     *            buffer to be used to read the item. This buffer must be
+     *            sufficiently large. It is not automatically resized.
+     * @return the String corresponding to the specified TypeVar item.
+     */
+    public String readGenericClassParameter(final int index, final char[] buf) {
+        int tag = readByte(items[readUnsignedShort(index)] - 1);
+        if (tag == ClassWriter.UTF8) { return readUTF8(index, buf); }
+        // Else reading the Typevar and formating correctly.
+        return "T" + readByte(items[readUnsignedShort(index)]); // TODO replace from T+offset to TX/TY and so on ?
+    }
+
     /**
      * Reads a numeric or string constant pool item in {@link #b b}. <i>This
      * method is intended for {@link Attribute} sub classes, and is normally not
