@@ -7,7 +7,6 @@ import org.objectweb.asm.SubstitutionTable;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,7 +17,7 @@ import java.nio.file.Path;
  */
 public class Rewriter {
 
-    private static final String PKG_SPECIALIZATION = "compiled/";
+    private static final String FOLDER_SPECIALIZATION = "compiled/";
     /** The directory visited */
     private final String directory;
 
@@ -50,7 +49,7 @@ public class Rewriter {
      */
     private void compileClazz(final Path path) throws IOException {
         System.out.println("Writing class : " + path);
-        writeClazz(PKG_SPECIALIZATION + path.getFileName(), dump(path));
+        writeClazz(FOLDER_SPECIALIZATION + path.getFileName(), dump(path));
     }
 
     /**
@@ -72,12 +71,22 @@ public class Rewriter {
         try {
             byte[] bytes = Files.readAllBytes(path);
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+            RetroValhallaClassVisitor frontClassVisitor = new RetroValhallaClassVisitor(cw);
             // TODO do not write this attribute on non modified classes.
-            new ClassReader(bytes).accept(new RewriterClassVisitor(cw), new Attribute[]{new SubstitutionTable()}, 0);
+            new ClassReader(bytes).accept(frontClassVisitor, new Attribute[]{new SubstitutionTable()}, 0);
+            // Writing the back factory if one exists.
+            writeBackFactoryClazz(frontClassVisitor.getBackFactoryName(), frontClassVisitor);
+            // Returning the current class byte array.
             return cw.toByteArray();
         } catch (IOException e) {
             e.printStackTrace();
             return null;
+        }
+    }
+
+    private void writeBackFactoryClazz(String name, RetroValhallaClassVisitor frontClassVisitor) throws IOException {
+        if (frontClassVisitor.hasBackFactory()) {
+            writeClazz(FOLDER_SPECIALIZATION + name + ".class", frontClassVisitor.getBackFactoryBytes());
         }
     }
 
