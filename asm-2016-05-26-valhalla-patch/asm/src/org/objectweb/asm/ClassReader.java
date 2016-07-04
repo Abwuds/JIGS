@@ -634,7 +634,6 @@ public class ClassReader {
                 }
                 context.bootstrapMethods = bootstrapMethods;
             } else if ("TypeVariablesMap".equals(attrName)) {
-                System.out.println("TypeVariablesMap inside the class : " + attrName);
                 // Allocating an array for each enclosing class and the current one, having a type
                 // (represented by a TypeVariablesEntry) appearing inside this classfile.
                 context.typeVariablesEntries = getTypeVariablesEntries(u + 8, c);
@@ -930,7 +929,6 @@ public class ClassReader {
             } else if ("MethodParameters".equals(attrName)) {
                 methodParameters = u + 8;
             } else if ("TypeVariablesMap".equals(attrName)) {
-                System.out.println("TypeVariablesMap inside the class");
                 // Allocating an array for each enclosing class and the current one, having a type
                 // (represented by a TypeVariablesEntry) appearing inside this classfile.
                 context.typeVariablesEntries = getTypeVariablesEntries(u + 8, c);
