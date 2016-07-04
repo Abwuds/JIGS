@@ -698,7 +698,6 @@ public class ClassReader {
         // visits the attributes
         while (attributes != null) {
             Attribute attr = attributes.next;
-            System.out.println("Visiting attributes : " + attributes.type);
             attributes.next = null;
             classVisitor.visitAttribute(attributes);
             attributes = attr;
@@ -2605,6 +2604,7 @@ public class ClassReader {
         // and reads the CONSTANT_Utf8 item designated by
         // the second and third bytes of this CONSTANT_TypeVar item
         int offset = readByte(items[readUnsignedShort(index)]);
+        // TODO slash not here !!
         return "T" + offset + "/" + readUTF8(items[readUnsignedShort(index)] + 1, buf);
     }
 
@@ -2740,14 +2740,14 @@ public class ClassReader {
         int item = items[readUnsignedShort(index)];
         int params = readByte(item + 5);
         StringBuilder sb = new StringBuilder();
-        sb.append(readUTF8(item + 3, buf)).append('{');
+        sb.append(readUTF8(item + 3, buf)).append('<');
         int paramsIndex = item + 6;
         for (int i = 0; i < params; i++) {
             String str = readGenericClassParameter(paramsIndex + i * 2, buf);
             sb.append(str);
             if(i + 1 < params) { sb.append(','); }
         }
-        return sb.append('}').toString();
+        return sb.append('>').toString();
     }
 
     /**

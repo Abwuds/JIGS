@@ -175,7 +175,7 @@ class RewriterMethodVisitor extends MethodVisitor {
         }
 
         // Ignoring this new since it does not manipulate generics.
-        if (!type.contains("<")) {
+        if (!type.contains("__")) {
             invokeSpecialStack.push(InvokeSpecialVisited.IGNORED_NEW);
             super.visitTypeInsn(opcode, type);
             return;
@@ -220,8 +220,7 @@ class RewriterMethodVisitor extends MethodVisitor {
                 if(InvokeSpecialVisited.REPLACED_DUP.equals(top)) {
                     Type type = Type.getMethodType(desc);
                     String ddesc = Type.getMethodType(Type.getObjectType(owner), type.getArgumentTypes()).toString();
-                    System.out.println(ddesc);
-                    visitInvokeDynamicInsn(name, ddesc, BSM_NEW, desc); // TODO use Type inside the BM to parse desc.
+                    visitInvokeDynamicInsn(name, ddesc, BSM_NEW, ddesc); // TODO use Type inside the BM to parse desc.
                     invokeSpecialStack.pop();
                     return;
                 }
