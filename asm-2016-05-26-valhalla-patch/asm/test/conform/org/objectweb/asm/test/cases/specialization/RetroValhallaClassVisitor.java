@@ -40,11 +40,18 @@ class RetroValhallaClassVisitor extends ClassVisitor {
         // The class is a "anyfied" one. Now creating a back factory class, placed inside the package java/any".
         backFactoryName = ANY_PACKAGE + name.substring(0, name.indexOf('<')) + BACK_FACTORY_NAME;
         backClassVisitor.visit(version, Opcodes.ACC_PUBLIC, backFactoryName, null, "java/lang/Object", null);
+
+        // Creating field inside the class.
+        visitField(Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL, "_back__", "Ljava/lang/Object;", null, null);
     }
 
     @Override
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-        return new RewriterMethodVisitor(API, super.visitMethod(access, name, desc, signature, exceptions));
+        if (!hasBackFactory()) { return super.visitMethod(access, name, desc, signature, exceptions); }
+        int backAccess = access + (name.equals("<init>") ? 0 : Opcodes.ACC_STATIC);
+        MethodVisitor bmv = backClassVisitor.visitMethod(backAccess, name, desc, signature, exceptions);
+        MethodVisitor mv = super.visitMethod(access, name, desc, signature, exceptions);
+        return new RetroValhallaMethodVisitor(API, mv, bmv);
     }
 
     public byte[] getBackFactoryBytes() {
