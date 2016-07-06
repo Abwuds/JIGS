@@ -28,14 +28,16 @@ class RetroValhallaClassVisitor extends ClassVisitor {
         if (superName != null && !superName.equals("java/lang/Object")) {
             throw new IllegalStateException("Not inheritance allowed.");
         }
-        // Delegating to the classWriter.
-        super.visit(COMPILER_VERSION, access, name, signature, superName, interfaces);
-        // If the class contains any, creating the back class. At this step, only anyfied class contain the token '<'.
         if (!name.contains("<")) {
+            super.visit(COMPILER_VERSION, access, name, signature, superName, interfaces);
             return;
         }
+        // Delegating to the classWriter.
+        String rawName = name.substring(0, name.indexOf('<'));
+        super.visit(COMPILER_VERSION, access, rawName, signature, superName, interfaces);
+        // If the class contains any, creating the back class. At this step, only anyfied class contain the token '<'.
         // The class is a "anyfied" one. Now creating a back factory class, placed inside the package java/any".
-        backFactoryName = ANY_PACKAGE + name.substring(0, name.indexOf('<')) + BACK_FACTORY_NAME;
+        backFactoryName = ANY_PACKAGE + rawName + BACK_FACTORY_NAME;
         backClassVisitor.visit(version, Opcodes.ACC_PUBLIC, backFactoryName, null, "java/lang/Object", null);
 
         // Creating field inside the class.
