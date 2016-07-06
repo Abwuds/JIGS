@@ -168,6 +168,7 @@ class BackMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitTypeInsn(int opcode, String type) {
+        System.out.println("visitTypeInsn : opcode = [" + opcode + "], type = [" + type + "]");
         if (opcode != Opcodes.NEW) {
             super.visitTypeInsn(opcode, type);
             return;
@@ -213,20 +214,24 @@ class BackMethodVisitor extends MethodVisitor {
     @Override
     public void visitMethodInsn(final int opcode, final String owner,
                                 final String name, final String desc, final boolean itf) {
+        // Detect "new" call to end the current substitution by invokedynamic.
         if (opcode == Opcodes.INVOKESPECIAL) {
             if (!invokeSpecialStack.empty()) {
                 InvokeSpecialVisited top = invokeSpecialStack.peek();
                 if(InvokeSpecialVisited.REPLACED_DUP.equals(top)) {
                     Type type = Type.getMethodType(desc);
                     String ddesc = Type.getMethodType(Type.getObjectType(owner), type.getArgumentTypes()).toString();
+                    System.out.println("InvokeDynamic " + ddesc);
                     visitInvokeDynamicInsn(name, ddesc, BSM_NEW, ddesc); // TODO use Type inside the BM to parse desc.
                     invokeSpecialStack.pop();
                     return;
                 }
-                // IGNORED_DUP. Poping the current stack level.
+                // IGNORED_DUP. Popping the current stack level.
                 invokeSpecialStack.pop();
             }
         }
+
+        // Writing the call inside the class.
         super.visitMethodInsn(opcode, owner, name, desc, itf);
     }
 

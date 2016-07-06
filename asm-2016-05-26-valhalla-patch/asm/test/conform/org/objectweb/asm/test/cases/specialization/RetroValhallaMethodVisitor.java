@@ -186,5 +186,4 @@ class RetroValhallaMethodVisitor extends MethodVisitor {
     public AnnotationVisitor visitLocalVariableAnnotation(int typeRef, TypePath typePath, Label[] start, Label[] end, int[] index, String desc, boolean visible) {
         return bmv.visitLocalVariableAnnotation(typeRef, typePath, start, end, index, desc, visible);
     }
-
 }
