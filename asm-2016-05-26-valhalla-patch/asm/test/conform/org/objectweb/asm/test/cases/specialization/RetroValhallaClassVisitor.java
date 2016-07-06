@@ -1,9 +1,6 @@
 package org.objectweb.asm.test.cases.specialization;
 
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.*;
 
 /**
  *
@@ -42,7 +39,12 @@ class RetroValhallaClassVisitor extends ClassVisitor {
         backClassVisitor.visit(version, Opcodes.ACC_PUBLIC, backFactoryName, null, "java/lang/Object", null);
 
         // Creating field inside the class.
-        visitField(Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL, "_back__", "Ljava/lang/Object;", null, null);
+        super.visitField(Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL, "_back__", "Ljava/lang/Object;", null, null);
+    }
+
+    @Override
+    public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
+        return backClassVisitor.visitField(access, name, desc, signature, value);
     }
 
     @Override
