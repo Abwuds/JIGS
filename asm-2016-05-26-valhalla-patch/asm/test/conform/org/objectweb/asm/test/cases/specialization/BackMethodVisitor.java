@@ -157,14 +157,24 @@ class BackMethodVisitor extends MethodVisitor {
         REPLACED_NEW, REPLACED_DUP, IGNORED_NEW, IGNORED_DUP
     }
 
-    BackMethodVisitor(int api, MethodVisitor mv) {
-        super(api, mv);
-    }
-
     // An int is not sufficient. Because a stack level has multiple states possible.
     // First it has the boolean value "dup visited" to detect if the dup has been visited (and skipped) or not.
     // Otherwise all possible dup between the "new" opcode and the "invokespecial" will be skipped. .
     private final Stack<InvokeSpecialVisited> invokeSpecialStack = new Stack<>();
+    // The enclosing class name.
+    private final String owner;
+
+    BackMethodVisitor(int api, String owner, MethodVisitor mv) {
+        super(api, mv);
+        this.owner = owner;
+    }
+
+    /**
+     * @return the current {@link BackMethodVisitor} enclosing class name.
+     */
+    public String getOwner() {
+        return owner;
+    }
 
     @Override
     public void visitTypeInsn(int opcode, String type) {
@@ -175,7 +185,7 @@ class BackMethodVisitor extends MethodVisitor {
         }
 
         // Ignoring this new since it does not manipulate generics.
-        if (!type.contains("__")) {
+        if (!type.contains("<")) {
             invokeSpecialStack.push(InvokeSpecialVisited.IGNORED_NEW);
             super.visitTypeInsn(opcode, type);
             return;

@@ -3,11 +3,6 @@ package org.objectweb.asm.test.cases.specialization;
 
 import org.objectweb.asm.*;
 
-import java.lang.invoke.CallSite;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import java.util.*;
-import java.util.AbstractMap.SimpleEntry;
 
 /**
  * Created by Jefferson Mangue on 12/06/2016.
@@ -20,10 +15,11 @@ class RetroValhallaMethodVisitor extends MethodVisitor {
     private final CompatibilityMethodVisitor cmv;
     private final BackMethodVisitor bmv;
 
-    RetroValhallaMethodVisitor(int api, MethodVisitor methodVisitor, MethodVisitor backMethodVisitor) {
+    RetroValhallaMethodVisitor(int api, CompatibilityMethodVisitor methodVisitor,
+                               BackMethodVisitor backMethodVisitor) {
         super(api);
-        cmv = new CompatibilityMethodVisitor(api, methodVisitor);
-        bmv = new BackMethodVisitor(api, backMethodVisitor);
+        cmv = methodVisitor;
+        bmv = backMethodVisitor;
     }
 
     @Override
@@ -74,6 +70,7 @@ class RetroValhallaMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitFieldInsn(int opcode, String owner, String name, String desc) {
+        if (cmv.getOwner().equals(owner)) { owner = bmv.getOwner(); }
         bmv.visitFieldInsn(opcode, owner, name, desc);
     }
 
