@@ -745,7 +745,7 @@ public class ClassReader {
         int access = readUnsignedShort(u);
         String name = readUTF8(u + 2, c);
         // The descriptor can be either in an UTF8, in a TypeVar, or a ParameterizedType attribute.
-        String desc = readDescription(u + 4, c);
+        String desc = readDescriptor(u + 4, c);
         u += 6;
 
         // reads the field attributes
@@ -1463,7 +1463,7 @@ public class ClassReader {
                 String iowner = readClass(cpIndex, c);
                 cpIndex = items[readUnsignedShort(cpIndex + 2)];
                 String iname = readUTF8(cpIndex, c);
-                String idesc = readDescription(cpIndex + 2, c);
+                String idesc = readDescriptor(cpIndex + 2, c);
                 if (opcode < Opcodes.INVOKEVIRTUAL) {
                     mv.visitFieldInsn(opcode, iowner, iname, idesc);
                 } else {
@@ -2563,6 +2563,7 @@ public class ClassReader {
         }
     }
 
+
     /**
      * Reads a UTF8 or a MethodDescriptor constant pool item in {@link #b b}, depending on the tag
      * of the structure pointed. <i>This method is intended for {@link Attribute} sub classes,
@@ -2656,14 +2657,14 @@ public class ClassReader {
         StringBuilder sb = new StringBuilder("(");
         int paramsIndex = item + 3;
         for (int i = 0; i < params; i++) {
-            String str = readMethodDescriptorArgument(paramsIndex + i * 2, buf);
+            String str = readDescriptor(paramsIndex + i * 2, buf);
             sb.append(str);
         }
         return sb.append(')').append(readDescription(item + 1, buf)).toString();
     }
 
     /**
-     * Reads a method descriptor arguments. Depending on the tag of the structure pointed.
+     * Reads a descriptor. Depending on the tag of the structure pointed.
      * It can be a TypeVar, a ParameterizedType, or a UTF8. Their name will correspond to
      * the representation of a {@link Type#OBJECT} or {@link Type#TYPE_VAR}.
      * <i>This method is intended for {@link Attribute} sub classes,
@@ -2677,12 +2678,15 @@ public class ClassReader {
      *            sufficiently large. It is not automatically resized.
      * @return the String corresponding to the specified method descriptor argument item.
      */
-    public String readMethodDescriptorArgument(int index, char[] buf) {
-        switch (readByte(items[readUnsignedShort(index)] - 1)) {
+    public String readDescriptor(int index, char[] buf) {
+        int tag = readByte(items[readUnsignedShort(index)] - 1);
+        switch (tag) {
             case ClassWriter.TYPE_VAR:
                 return readTypeVar(index, buf);
             case ClassWriter.PARAMETERIZED_TYPE:
                 return readGenericClass(index, buf);
+            case ClassWriter.METHOD_DESCRIPTOR:
+                return readMethodDescriptor(index, buf);
             default: // case ClassWriter.UTF8
                 return readUTF8(index, buf);
         }
@@ -2707,7 +2711,7 @@ public class ClassReader {
         // the first two bytes of this CONSTANT_Class item
 
         // When reading the innerClasses attribute, some constant pool class index are set to 0
-        // so we have to prevent the folowing switch.
+        // so we have to prevent the following switch.
         int classIndex = readUnsignedShort(index);
         if (classIndex == 0) {
             return null;

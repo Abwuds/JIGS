@@ -171,6 +171,8 @@ class BackMethodVisitor extends MethodVisitor {
     // First it has the boolean value "dup visited" to detect if the dup has been visited (and skipped) or not.
     // Otherwise all possible dup between the "new" opcode and the "invokespecial" will be skipped. .
     private final Stack<InvokeSpecialVisited> invokeSpecialStack = new Stack<>();
+
+
     // The enclosing class name.
     private final String owner;
 
@@ -202,6 +204,14 @@ class BackMethodVisitor extends MethodVisitor {
 
         // Replacing the "NEW" opcode since it will be replaced by invokedynamic.
         invokeSpecialStack.push(InvokeSpecialVisited.REPLACED_NEW);
+    }
+
+    @Override
+    public void visitFieldInsn(int opcode, String owner, String name, String desc) {
+        // The description is either an Object, a TypeVar, or a parameterized type.
+        // In the last case, we don't want it to propagate to the underlying classWriter.
+        super.visitFieldInsn(opcode, Type.rawName(owner), name, Type.rawDesc(desc));
+
     }
 
     @Override

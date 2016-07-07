@@ -987,6 +987,11 @@ public class Type {
         }
     }
 
+    public static String rawDesc(String name) {
+        if (!name.startsWith("$")) { return name; }
+        return 'L' + name.substring(1, name.indexOf('<')) + ';'; // Erasing type variables.
+    }
+
     public static String rawName(String name) {
         if (!name.startsWith("$")) { return name; }
         return name.substring(1, name.indexOf('<')); // Erasing type variables.

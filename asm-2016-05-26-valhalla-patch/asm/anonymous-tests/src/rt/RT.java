@@ -36,18 +36,17 @@ import java.util.Objects;
 public class RT {
 
 
-    /**
-     *
-     * @param lookup
-     * @param name
-     * @param type
-     * @return
-     * @throws Throwable
-     */
     public static CallSite bsm_new(MethodHandles.Lookup lookup, String name, MethodType type, String specialization) throws Throwable {
         System.out.println("lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "], specialization = [" + specialization + "]");
         // TODO use a cache system.
         // TODO load class String name = lookup.lookupClass.
+        Class<?> species = HelloGen.FUNCTION_CLASS_LOADER.loadClass("HelloDynamicGen");// Already loaded.
+        return new ConstantCallSite(lookup.findConstructor(species, type.changeReturnType(void.class)));
+    }
+
+    public static CallSite bsm_getField(MethodHandles.Lookup lookup, String name, MethodType type, Object owner) throws Throwable {
+        System.out.println("lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "], owner = [" + owner + "]");
+        // TODO use a cache system.
         Class<?> species = HelloGen.FUNCTION_CLASS_LOADER.loadClass("HelloDynamicGen");// Already loaded.
         return new ConstantCallSite(lookup.findConstructor(species, type.changeReturnType(void.class)));
     }
