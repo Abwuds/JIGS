@@ -105,12 +105,12 @@ class RetroValhallaClassVisitor extends ClassVisitor {
     }
 
     private MethodVisitor createRetroValhallaMethodVisitor(int access, String name, String desc, String signature, String[] exceptions) {
-        int backAccess = access;
-        String backDesc = desc;
+        int backAccess;
+        String backDesc;
         // For each method of the back but the constructor, transforming it into a static method taking
         // in first parameter the front class.
         if (!name.equals("<init>")) {
-            backAccess += Opcodes.ACC_STATIC;
+            backAccess = access + Opcodes.ACC_STATIC;
             Type mType = Type.getType(desc);
             Type[] argumentTypes = mType.getArgumentTypes();
             Type[] parameterTypes = new Type[argumentTypes.length + 1];
@@ -118,13 +118,14 @@ class RetroValhallaClassVisitor extends ClassVisitor {
             for (int i = 1; i < parameterTypes.length; i++) { parameterTypes[i] = argumentTypes[i - 1]; }
             backDesc = Type.translateMethodDescriptor(Type.getMethodDescriptor(mType.getReturnType(), parameterTypes));
         } else {
+            backAccess = access;
             backDesc = Type.translateMethodDescriptor(desc);
         }
         // Back and front method visitors.
         MethodVisitor fmw = super.visitMethod(access, name, desc, signature, exceptions);
         MethodVisitor bmw = backClassVisitor.visitMethod(backAccess, name, backDesc, null, exceptions);
         CompatibilityMethodVisitor mv = new CompatibilityMethodVisitor(api, this.name, fmw);
-        BackMethodVisitor bmv = new BackMethodVisitor(api, this.name, backFactoryName, bmw);
+        BackMethodVisitor bmv = new BackMethodVisitor(api, name, this.name, backFactoryName, bmw);
         // Special method visitor visiting the initial class and splitting informations inside
         // the front and the back class.
         return new RetroValhallaMethodVisitor(API, mv, bmv);

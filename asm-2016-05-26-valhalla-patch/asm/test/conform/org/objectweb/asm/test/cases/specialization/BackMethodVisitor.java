@@ -155,7 +155,7 @@ class BackMethodVisitor extends MethodVisitor {
 
     static {
         MethodType mtNew = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String.class);
-        MethodType mtBackField = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, int.class, Object.class);
+        MethodType mtBackField = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, Object.class, int.class, String.class);
         BSM_NEW = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_new", mtNew.toMethodDescriptorString(), false);
         BSM_GETBACKFIELD = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_getBackField", mtBackField.toMethodDescriptorString(), false);
     }
@@ -177,13 +177,15 @@ class BackMethodVisitor extends MethodVisitor {
 
     // The name of the front class of the enclosing class.
     private final String frontOwner;
+    private final String methodName;
     // The enclosing class name.
     private final String owner;
 
-    BackMethodVisitor(int api, String frontOwner, String owner, MethodVisitor mv) {
+    BackMethodVisitor(int api, String methodName, String frontOwner, String owner, MethodVisitor mv) {
         super(api, mv);
-        this.owner = owner;
+        this.methodName = methodName;
         this.frontOwner = frontOwner;
+        this.owner = owner;
     }
 
     /**
@@ -213,9 +215,13 @@ class BackMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitFieldInsn(int opcode, String owner, String name, String desc) {
-        // The description is either an Object, a TypeVar, or a parameterized type.
-        // In the last case, we don't want it to propagate to the underlying classWriter.
-        owner = Type.rawName(owner);
+        // In case the field's owner is not the current back class, nothing is needed and it is
+        // a regular field access. Same thing when treating the owner#<init> method,
+        // the xxxfield opcodes must not be replaced by invokedynamic.
+        if (methodName.equals("<init>")) {
+            super.visitFieldInsn(opcode, owner, name, Type.rawDesc(desc));
+            return;
+        }
         if (!this.owner.equals(owner)) {
             super.visitFieldInsn(opcode, owner, name, Type.rawDesc(desc));
             return;
@@ -224,10 +230,9 @@ class BackMethodVisitor extends MethodVisitor {
             super.visitFieldInsn(opcode, owner, name, Type.rawDesc(desc));
             return;
         }
-
-        // Every getfield/putfield on the front class is transformed in a getfield/putfield
-        // on the back field. This back field is retrieved with an invokedynamic.
-        // Generate invoke dynamic instead of getfield or putfield.
+        // Every getfield/putfield in method which are not <init>, is transformed in a getfield/putfield
+        // on the back field. To do so, we pass the logic to an invokedynamic which will
+        // get the field value or push the value in the field contained inside the back class.
         visitIntInsn(Opcodes.SIPUSH, opcode);
         visitLdcInsn(name);
         visitInvokeDynamicInsn("getBackField", "(Ljava/lang/Object;ILjava/lang/String;)" + Type.rawDesc(desc), BSM_GETBACKFIELD);

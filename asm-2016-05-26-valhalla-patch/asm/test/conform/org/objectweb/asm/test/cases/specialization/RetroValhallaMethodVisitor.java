@@ -70,6 +70,8 @@ class RetroValhallaMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitFieldInsn(int opcode, String owner, String name, String desc) {
+        // The description is either an Object, a TypeVar, or a parameterized type.
+        // In the last case, we don't want it to propagate to the underlying classWriter.
         owner = Type.rawName(owner);
         if (cmv.getOwner().equals(owner)) { owner = bmv.getOwner(); }
         bmv.visitFieldInsn(opcode, owner, name, desc);
