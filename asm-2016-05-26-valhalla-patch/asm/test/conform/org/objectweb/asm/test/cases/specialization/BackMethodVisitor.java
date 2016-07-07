@@ -155,7 +155,7 @@ class BackMethodVisitor extends MethodVisitor {
 
     static {
         MethodType mtNew = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String.class);
-        MethodType mtBackField = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, Object.class);
+        MethodType mtBackField = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, int.class, Object.class);
         BSM_NEW = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_new", mtNew.toMethodDescriptorString(), false);
         BSM_GETBACKFIELD = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_getBackField", mtBackField.toMethodDescriptorString(), false);
     }
@@ -216,17 +216,20 @@ class BackMethodVisitor extends MethodVisitor {
         // The description is either an Object, a TypeVar, or a parameterized type.
         // In the last case, we don't want it to propagate to the underlying classWriter.
         owner = Type.rawName(owner);
-        if (!frontOwner.equals(owner)) {
+        if (!this.owner.equals(owner)) {
             super.visitFieldInsn(opcode, owner, name, Type.rawDesc(desc));
             return;
         }
+        if (opcode != Opcodes.GETFIELD && opcode != Opcodes.PUTFIELD) {
+            super.visitFieldInsn(opcode, owner, name, Type.rawDesc(desc));
+            return;
+        }
+
         // Every getfield/putfield on the front class is transformed in a getfield/putfield
         // on the back field. This back field is retrieved with an invokedynamic.
         // Generate invoke dynamic instead of getfield or putfield.
-        if (opcode == Opcodes.GETFIELD || opcode == Opcodes.PUTFIELD) {
-            visitInvokeDynamicInsn("getBackField", desc, BSM_GETBACKFIELD, name);
-        }
-        super.visitFieldInsn(opcode, owner, name, Type.rawDesc(desc));
+        visitLdcInsn(name);
+        visitInvokeDynamicInsn("getBackField", "(Ljava/lang/Object;Ljava/lang/String;)" + Type.rawDesc(desc), BSM_GETBACKFIELD);
     }
 
     @Override
@@ -262,7 +265,7 @@ class BackMethodVisitor extends MethodVisitor {
             if (InvokeSpecialVisited.REPLACED_DUP.equals(top)) {
                 Type type = Type.getMethodType(desc);
                 String newDesc = Type.translateMethodDescriptor(Type.getMethodType(Type.getType(owner),
-                                type.getArgumentTypes()).toString());
+                        type.getArgumentTypes()).toString());
                 visitInvokeDynamicInsn(name, newDesc, BSM_NEW, newDesc); // TODO use Type inside the BM to parse desc.
                 invokeSpecialStack.pop();
                 return;

@@ -24,6 +24,7 @@
  */
 package rt;
 
+import org.objectweb.asm.Opcodes;
 import specializ.HelloGen;
 
 import java.lang.invoke.*;
@@ -36,7 +37,8 @@ import java.util.Objects;
 public class RT {
 
 
-    public static CallSite bsm_new(MethodHandles.Lookup lookup, String name, MethodType type, String specialization) throws Throwable {
+    public static CallSite bsm_new(MethodHandles.Lookup lookup, String name, MethodType type,
+                                   String specialization) throws Throwable {
         System.out.println("lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "], specialization = [" + specialization + "]");
         // TODO use a cache system.
         // TODO load class String name = lookup.lookupClass.
@@ -44,10 +46,12 @@ public class RT {
         return new ConstantCallSite(lookup.findConstructor(species, type.changeReturnType(void.class)));
     }
 
-    public static CallSite bsm_getBackField(MethodHandles.Lookup lookup, String name, MethodType type, Object owner) throws Throwable {
-        // TODO method retrieving an owner and calling a method handle.
-        lookup.findStatic(RT.class, "getBackField", MethodType.methodType());
-
+    public static CallSite bsm_getBackField(MethodHandles.Lookup lookup, String name,
+                                            MethodType type, Opcodes opcode, Object owner,
+                                            String fieldName) throws Throwable {
+        MethodHandle mh = lookup.findStatic(RT.class, "getBackField", MethodType.methodType(Object.class, MethodHandles.Lookup.class));
+        mh.bindTo(lookup);
+        return new ConstantCallSite(mh);
     }
 
     /**
@@ -55,8 +59,9 @@ public class RT {
      * @param owner the owner class containing the field.
      * @return the _back__ field of the owner.
      */
-    public static java.lang.invoke.MethodHandle getBackField(Object owner, MethodHandles.Lookup lookup)
+    public static java.lang.invoke.MethodHandle getBackField(MethodHandles.Lookup lookup, Object owner)
             throws NoSuchFieldException, IllegalAccessException {
+        // Pour putField : lookup.findSetter() ??
         return lookup.findGetter(owner.getClass(), "_back__", Object.class);
     }
 
