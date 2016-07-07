@@ -184,11 +184,10 @@ class BackMethodVisitor extends MethodVisitor {
             return;
         }
 
-        // TODO check if the Type.equalsParameterizedType instead !
         // Ignoring this new since it does not manipulate generics.
-        if (!type.contains("<")) {
+        if (!type.startsWith("$")) {
             invokeSpecialStack.push(InvokeSpecialVisited.IGNORED_NEW);
-            super.visitTypeInsn(opcode, type);
+            super.visitTypeInsn(opcode, Type.rawName(type));
             return;
         }
 
@@ -225,25 +224,25 @@ class BackMethodVisitor extends MethodVisitor {
     @Override
     public void visitMethodInsn(final int opcode, final String owner,
                                 final String name, final String desc, final boolean itf) {
-        // Detect "new" call to end the current substitution by invokedynamic.
-        if (opcode == Opcodes.INVOKESPECIAL) {
-            if (!invokeSpecialStack.empty()) {
-                InvokeSpecialVisited top = invokeSpecialStack.peek();
-                if(InvokeSpecialVisited.REPLACED_DUP.equals(top)) {
-                    Type type = Type.getMethodType(desc);
-                    String ddesc = Type.getMethodType(Type.getObjectType(owner), type.getArgumentTypes()).toString();
-                    System.out.println("InvokeDynamic " + ddesc);
-                    visitInvokeDynamicInsn(name, ddesc, BSM_NEW, ddesc); // TODO use Type inside the BM to parse desc.
-                    invokeSpecialStack.pop();
-                    return;
-                }
-                // IGNORED_DUP. Popping the current stack level.
-                invokeSpecialStack.pop();
-            }
+        if (opcode != Opcodes.INVOKESPECIAL) {
+            // Writing the call inside the class.
+            super.visitMethodInsn(opcode, owner, name, desc, itf);
         }
 
-        // Writing the call inside the class.
-        super.visitMethodInsn(opcode, owner, name, desc, itf);
+        // Detect "new" call to substitute it by an invokedynamic.
+        if (!invokeSpecialStack.empty()) {
+            InvokeSpecialVisited top = invokeSpecialStack.peek();
+            if (InvokeSpecialVisited.REPLACED_DUP.equals(top)) {
+                Type type = Type.getMethodType(desc);
+                String ddesc = Type.translateMethodDescriptor(Type.getMethodType(Type.getType(owner),
+                        type.getArgumentTypes()).toString());
+                visitInvokeDynamicInsn(name, ddesc, BSM_NEW, ddesc); // TODO use Type inside the BM to parse desc.
+                invokeSpecialStack.pop();
+                return;
+            }
+            // IGNORED_DUP. Popping the current stack level.
+            invokeSpecialStack.pop();
+        }
     }
 
     @Override
