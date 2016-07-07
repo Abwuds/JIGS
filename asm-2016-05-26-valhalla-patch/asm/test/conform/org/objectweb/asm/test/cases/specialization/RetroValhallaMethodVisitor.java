@@ -70,6 +70,7 @@ class RetroValhallaMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitFieldInsn(int opcode, String owner, String name, String desc) {
+        owner = Type.rawName(owner);
         if (cmv.getOwner().equals(owner)) { owner = bmv.getOwner(); }
         bmv.visitFieldInsn(opcode, owner, name, desc);
     }

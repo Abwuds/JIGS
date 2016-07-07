@@ -148,6 +148,16 @@ class BackMethodVisitor extends MethodVisitor {
     }
 
     /**
+     * Invokedynamic constants.
+     */
+    private static final Handle BSM_NEW;
+
+    static {
+        MethodType mt = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String.class);
+        BSM_NEW = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_new", mt.toMethodDescriptorString(), false);
+    }
+
+    /**
      * Enumeration used for the detection of invoke special calls.
      * This enumeration indicates if an eligible NEW opcodes sequence, for the substitution by an invokedynamic
      * has been visited and then the same for DUP opcode. Only a NEW applied on generics is selected to be replaced.
@@ -167,6 +177,7 @@ class BackMethodVisitor extends MethodVisitor {
     BackMethodVisitor(int api, String owner, MethodVisitor mv) {
         super(api, mv);
         this.owner = owner;
+        visitParameter("JJjjj", Opcodes.ACC_FINAL);
     }
 
     /**
@@ -178,7 +189,6 @@ class BackMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitTypeInsn(int opcode, String type) {
-        System.out.println("visitTypeInsn : opcode = [" + opcode + "], type = [" + type + "]");
         if (opcode != Opcodes.NEW) {
             super.visitTypeInsn(opcode, type);
             return;
@@ -214,13 +224,6 @@ class BackMethodVisitor extends MethodVisitor {
         }
     }
 
-    private static final Handle BSM_NEW;
-
-    static {
-        MethodType mt = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String.class);
-        BSM_NEW = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_new", mt.toMethodDescriptorString(), false);
-    }
-
     @Override
     public void visitMethodInsn(final int opcode, final String owner,
                                 final String name, final String desc, final boolean itf) {
@@ -234,9 +237,9 @@ class BackMethodVisitor extends MethodVisitor {
             InvokeSpecialVisited top = invokeSpecialStack.peek();
             if (InvokeSpecialVisited.REPLACED_DUP.equals(top)) {
                 Type type = Type.getMethodType(desc);
-                String ddesc = Type.translateMethodDescriptor(Type.getMethodType(Type.getType(owner),
-                        type.getArgumentTypes()).toString());
-                visitInvokeDynamicInsn(name, ddesc, BSM_NEW, ddesc); // TODO use Type inside the BM to parse desc.
+                String newDesc = Type.translateMethodDescriptor(Type.getMethodType(Type.getType(owner),
+                                type.getArgumentTypes()).toString());
+                visitInvokeDynamicInsn(name, newDesc, BSM_NEW, newDesc); // TODO use Type inside the BM to parse desc.
                 invokeSpecialStack.pop();
                 return;
             }
