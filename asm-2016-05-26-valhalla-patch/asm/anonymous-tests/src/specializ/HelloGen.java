@@ -22,7 +22,7 @@ public class HelloGen {
     public static final FunctionClassLoader FUNCTION_CLASS_LOADER = new FunctionClassLoader();
 
     public static void main(String[] args) throws Exception, Throwable {
-        byte[] codes = Files.readAllBytes(Paths.get("output/production/anonymous-tests/Container10Main.class"));
+       /* byte[] codes = Files.readAllBytes(Paths.get("output/production/anonymous-tests/Container10Main.class"));
         ClassReader reader = new ClassReader(codes);
         ClassWriter writer = new ClassWriter(reader, 0);
         int index = writer.newConst("Hello");
@@ -40,7 +40,8 @@ public class HelloGen {
         Class<?> species = HelloGen.FUNCTION_CLASS_LOADER.loadClass("Container10Main");
         Class<?> mainClass = unsafe.defineAnonymousClass(species, codes, pool);
         Method main = mainClass.getMethod("main", String[].class);
-        main.invoke(null, new Object[] { null });
+        main.invoke(null, new Object[] { null });*/
+        invokeHelloDynamicGen();
     }
 
     private static void invokeHelloDynamicGen() throws Throwable {

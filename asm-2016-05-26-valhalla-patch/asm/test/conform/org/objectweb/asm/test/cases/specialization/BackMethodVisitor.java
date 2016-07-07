@@ -151,10 +151,13 @@ class BackMethodVisitor extends MethodVisitor {
      * Invokedynamic constants.
      */
     private static final Handle BSM_NEW;
+    private static final Handle BSM_GETBACKFIELD;
 
     static {
-        MethodType mt = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String.class);
-        BSM_NEW = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_new", mt.toMethodDescriptorString(), false);
+        MethodType mtNew = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String.class);
+        MethodType mtBackField = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, Object.class);
+        BSM_NEW = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_new", mtNew.toMethodDescriptorString(), false);
+        BSM_GETBACKFIELD = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_getBackField", mtBackField.toMethodDescriptorString(), false);
     }
 
     /**
@@ -172,13 +175,15 @@ class BackMethodVisitor extends MethodVisitor {
     // Otherwise all possible dup between the "new" opcode and the "invokespecial" will be skipped. .
     private final Stack<InvokeSpecialVisited> invokeSpecialStack = new Stack<>();
 
-
+    // The name of the front class of the enclosing class.
+    private final String frontOwner;
     // The enclosing class name.
     private final String owner;
 
-    BackMethodVisitor(int api, String owner, MethodVisitor mv) {
+    BackMethodVisitor(int api, String frontOwner, String owner, MethodVisitor mv) {
         super(api, mv);
         this.owner = owner;
+        this.frontOwner = frontOwner;
     }
 
     /**
@@ -210,8 +215,18 @@ class BackMethodVisitor extends MethodVisitor {
     public void visitFieldInsn(int opcode, String owner, String name, String desc) {
         // The description is either an Object, a TypeVar, or a parameterized type.
         // In the last case, we don't want it to propagate to the underlying classWriter.
-        super.visitFieldInsn(opcode, Type.rawName(owner), name, Type.rawDesc(desc));
-
+        owner = Type.rawName(owner);
+        if (!frontOwner.equals(owner)) {
+            super.visitFieldInsn(opcode, owner, name, Type.rawDesc(desc));
+            return;
+        }
+        // Every getfield/putfield on the front class is transformed in a getfield/putfield
+        // on the back field. This back field is retrieved with an invokedynamic.
+        // Generate invoke dynamic instead of getfield or putfield.
+        if (opcode == Opcodes.GETFIELD || opcode == Opcodes.PUTFIELD) {
+            visitInvokeDynamicInsn("getBackField", desc, BSM_GETBACKFIELD, name);
+        }
+        super.visitFieldInsn(opcode, owner, name, Type.rawDesc(desc));
     }
 
     @Override

@@ -987,6 +987,12 @@ public class Type {
         }
     }
 
+    public static Type rawType(Type type) {
+        if (type.sort != PARAMETERIZED_TYPE) { return type; }
+        String s = type.toString();
+        return getType('L' + s.substring(1, s.indexOf('<')) + ';'); // Erasing type variables.
+    }
+
     public static String rawDesc(String name) {
         if (!name.startsWith("$")) { return name; }
         return 'L' + name.substring(1, name.indexOf('<')) + ';'; // Erasing type variables.

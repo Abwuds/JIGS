@@ -44,15 +44,24 @@ public class RT {
         return new ConstantCallSite(lookup.findConstructor(species, type.changeReturnType(void.class)));
     }
 
-    public static CallSite bsm_getField(MethodHandles.Lookup lookup, String name, MethodType type, Object owner) throws Throwable {
-        System.out.println("lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "], owner = [" + owner + "]");
-        // TODO use a cache system.
-        Class<?> species = HelloGen.FUNCTION_CLASS_LOADER.loadClass("HelloDynamicGen");// Already loaded.
-        return new ConstantCallSite(lookup.findConstructor(species, type.changeReturnType(void.class)));
+    public static CallSite bsm_getBackField(MethodHandles.Lookup lookup, String name, MethodType type, Object owner) throws Throwable {
+        // TODO method retrieving an owner and calling a method handle.
+       // lookup.findStatic(RT.class, );
+        return null;
     }
 
     /**
-     * This bootstrap method returns an adapted callsite to match the virtual method signature defined
+     * Retrieves the _back__ field of a front class specialized.
+     * @param owner the owner class containing the field.
+     * @return the _back__ field of the owner.
+     */
+    public static Object getBackField(Object owner) {
+        //owner.
+        return null;
+    }
+
+    /**
+     * This bootstrap method returns an adapted callSite to match the virtual method signature defined
      * in the XYZ$any interface.
      */
     public static CallSite metafactory(MethodHandles.Lookup caller,
