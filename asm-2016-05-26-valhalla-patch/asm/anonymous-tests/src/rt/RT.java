@@ -47,7 +47,7 @@ public class RT {
     }
 
     public static CallSite bsm_getBackField(MethodHandles.Lookup lookup, String name,
-                                            MethodType type, Opcodes opcode, Object owner,
+                                            MethodType type, Object owner, Opcodes opcode,
                                             String fieldName) throws Throwable {
         MethodHandle mh = lookup.findStatic(RT.class, name, MethodType.methodType(Object.class, MethodHandles.Lookup.class));
         mh.bindTo(lookup);
