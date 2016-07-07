@@ -228,8 +228,9 @@ class BackMethodVisitor extends MethodVisitor {
         // Every getfield/putfield on the front class is transformed in a getfield/putfield
         // on the back field. This back field is retrieved with an invokedynamic.
         // Generate invoke dynamic instead of getfield or putfield.
+        visitIntInsn(Opcodes.SIPUSH, opcode);
         visitLdcInsn(name);
-        visitInvokeDynamicInsn("getBackField", "(Ljava/lang/Object;Ljava/lang/String;)" + Type.rawDesc(desc), BSM_GETBACKFIELD);
+        visitInvokeDynamicInsn("getBackField", "(Ljava/lang/Object;ILjava/lang/String;)" + Type.rawDesc(desc), BSM_GETBACKFIELD);
     }
 
     @Override
