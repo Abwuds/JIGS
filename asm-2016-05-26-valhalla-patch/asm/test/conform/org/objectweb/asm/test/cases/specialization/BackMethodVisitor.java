@@ -177,7 +177,6 @@ class BackMethodVisitor extends MethodVisitor {
     BackMethodVisitor(int api, String owner, MethodVisitor mv) {
         super(api, mv);
         this.owner = owner;
-        visitParameter("JJjjj", Opcodes.ACC_FINAL);
     }
 
     /**
@@ -197,7 +196,7 @@ class BackMethodVisitor extends MethodVisitor {
         // Ignoring this new since it does not manipulate generics.
         if (!type.startsWith("$")) {
             invokeSpecialStack.push(InvokeSpecialVisited.IGNORED_NEW);
-            super.visitTypeInsn(opcode, Type.rawName(type));
+            super.visitTypeInsn(opcode, type);
             return;
         }
 
@@ -245,6 +244,7 @@ class BackMethodVisitor extends MethodVisitor {
             }
             // IGNORED_DUP. Popping the current stack level.
             invokeSpecialStack.pop();
+            super.visitMethodInsn(opcode, owner, name, desc, itf);
         }
     }
 

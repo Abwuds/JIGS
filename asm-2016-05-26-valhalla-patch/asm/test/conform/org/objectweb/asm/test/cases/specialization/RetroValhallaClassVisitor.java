@@ -2,8 +2,6 @@ package org.objectweb.asm.test.cases.specialization;
 
 import org.objectweb.asm.*;
 
-import java.util.Arrays;
-
 
 /**
  *
