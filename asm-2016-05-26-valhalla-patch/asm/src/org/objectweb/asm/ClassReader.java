@@ -1489,7 +1489,7 @@ public class ClassReader {
                 }
                 cpIndex = items[readUnsignedShort(cpIndex + 2)];
                 String iname = readUTF8(cpIndex, c);
-                String idesc = readDescription(cpIndex + 2, c);
+                String idesc = readMethodDescriptor(cpIndex + 2, c);
                 mv.visitInvokeDynamicInsn(iname, idesc, bsm, bsmArgs);
                 u += 5;
                 break;
@@ -2538,33 +2538,6 @@ public class ClassReader {
     }
 
     /**
-     * Reads a UTF8 or a TypeVar constant pool item in {@link #b b}, depending on the tag
-     * of the structure pointed. <i>This method is intended for {@link Attribute} sub classes,
-     * and is normally not needed by class generators or adapters.</i>
-     *
-     * @param index
-     *            the start index of an unsigned short value in {@link #b b},
-     *            whose value is the index of a class constant pool item.
-     * @param buf
-     *            buffer to be used to read the item. This buffer must be
-     *            sufficiently large. It is not automatically resized.
-     * @return the String corresponding to the specified TypeVar item.
-     */
-    public String readDescription(int index, char[] buf) {
-        switch (readByte(items[readUnsignedShort(index)] - 1)) {
-            case ClassWriter.TYPE_VAR:
-                return readTypeVar(index, buf);
-            case ClassWriter.PARAMETERIZED_TYPE:
-                return readParameterizedType(index, buf);
-            case ClassWriter.METHOD_DESCRIPTOR:
-                return readMethodDescriptor(index, buf);
-            default: // case ClassWriter.UTF8
-                return readUTF8(index, buf);
-        }
-    }
-
-
-    /**
      * Reads a UTF8 or a MethodDescriptor constant pool item in {@link #b b}, depending on the tag
      * of the structure pointed. <i>This method is intended for {@link Attribute} sub classes,
      * and is normally not needed by class generators or adapters.</i>
@@ -2608,33 +2581,6 @@ public class ClassReader {
     }
 
     /**
-     * Reads a ParameterizedType constant pool item in {@link #b b}. <i>This method is
-     * intended for {@link Attribute} sub classes, and is normally not needed by
-     * class generators or adapters.</i>
-     *
-     * @param index
-     *            the start index of an unsigned short value in {@link #b b},
-     *            whose value is the index of a parameterizedType constant pool item.
-     * @param buf
-     *            buffer to be used to read the item. This buffer must be
-     *            sufficiently large. It is not automatically resized.
-     * @return the String corresponding to the specified TypeVar item.
-     */
-    public String readParameterizedType(final int index, final char[] buf) {
-        int item = items[readUnsignedShort(index)];
-        int params = readByte(item + 5);
-        StringBuilder sb = new StringBuilder();
-        sb.append(readUTF8(item + 3, buf)).append('<');
-        int paramsIndex = item + 6;
-        for (int i = 0; i < params; i++) {
-            String str = readDescription(paramsIndex + i * 2, buf);
-            sb.append(str);
-            if(i + 1 < params) { sb.append(','); }
-        }
-        return sb.append('>').toString();
-    }
-
-    /**
      * Reads a MethodDescriptor constant pool item in {@link #b b}. <i>This method is
      * intended for {@link Attribute} sub classes, and is normally not needed by
      * class generators or adapters.</i>
@@ -2660,7 +2606,7 @@ public class ClassReader {
             String str = readDescriptor(paramsIndex + i * 2, buf);
             sb.append(str);
         }
-        return sb.append(')').append(readDescription(item + 1, buf)).toString();
+        return sb.append(')').append(readDescriptor(item + 1, buf)).toString();
     }
 
     /**
