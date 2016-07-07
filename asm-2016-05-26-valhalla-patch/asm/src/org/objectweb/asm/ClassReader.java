@@ -2576,7 +2576,6 @@ public class ClassReader {
         // and reads the CONSTANT_Utf8 item designated by
         // the second and third bytes of this CONSTANT_TypeVar item
         int offset = readByte(items[readUnsignedShort(index)]);
-        // TODO slash not here !!
         return "T" + offset + "/" + readUTF8(items[readUnsignedShort(index)] + 1, buf);
     }
 
@@ -2715,8 +2714,8 @@ public class ClassReader {
     public String readGenericClassParameter(final int index, final char[] buf) {
         int tag = readByte(items[readUnsignedShort(index)] - 1);
         if (tag == ClassWriter.UTF8) { return readUTF8(index, buf); }
-        // Else reading the Typevar and formating correctly.
-        return "T" + readByte(items[readUnsignedShort(index)]); // TODO replace from T+offset to TX/TY and so on ?
+        // Else reading the TypeVar and formatting correctly.
+        return readTypeVar(index, buf);
     }
 
     /**
