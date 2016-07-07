@@ -1136,7 +1136,7 @@ public class ClassWriter extends ClassVisitor {
             return newUTF8(value);
         }
         // If the TypeVar has already been registered, returning its index.
-        String desc = Type.typeVarToObject(type).getDescriptor();
+        String desc = Type.typeToObject(type).getDescriptor();
         if (substitutionTable.contains(desc)) {
             return substitutionTable.get(desc);
         }

@@ -2682,7 +2682,7 @@ public class ClassReader {
             case ClassWriter.TYPE_VAR:
                 return readTypeVar(index, buf);
             case ClassWriter.PARAMETERIZED_TYPE:
-                return 'L' + readParameterizedType(index, buf) + ';';
+                return readGenericClass(index, buf);
             default: // case ClassWriter.UTF8
                 return readUTF8(index, buf);
         }
@@ -2722,8 +2722,8 @@ public class ClassReader {
     }
 
     /**
-     * Reads a ParameterizedType constant pool item in {@link #b b}. <i>This method is
-     * intended for {@link Attribute} sub classes, and is normally not needed by
+     * Reads a Class constant pool item, represented by a Parameterized type in {@link #b b}.
+     * <i>This method is intended for {@link Attribute} sub classes, and is normally not needed by
      * class generators or adapters.</i>
      *
      * @param index
@@ -2737,7 +2737,7 @@ public class ClassReader {
     public String readGenericClass(final int index, final char[] buf) {
         int item = items[readUnsignedShort(index)];
         int params = readByte(item + 5);
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder().append('$');
         sb.append(readUTF8(item + 3, buf)).append('<');
         int paramsIndex = item + 6;
         for (int i = 0; i < params; i++) {
@@ -2745,7 +2745,7 @@ public class ClassReader {
             sb.append(str);
             if(i + 1 < params) { sb.append(','); }
         }
-        return sb.append('>').toString();
+        return sb.append('>').append(';').toString();
     }
 
     /**

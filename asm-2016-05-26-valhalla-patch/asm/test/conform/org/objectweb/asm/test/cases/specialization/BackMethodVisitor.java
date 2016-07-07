@@ -184,6 +184,7 @@ class BackMethodVisitor extends MethodVisitor {
             return;
         }
 
+        // TODO check if the Type.equalsParameterizedType instead !
         // Ignoring this new since it does not manipulate generics.
         if (!type.contains("<")) {
             invokeSpecialStack.push(InvokeSpecialVisited.IGNORED_NEW);

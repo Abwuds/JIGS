@@ -29,15 +29,14 @@ class RetroValhallaClassVisitor extends ClassVisitor {
 
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-        System.out.println("visit : version = [" + version + "], access = [" + access + "], name = [" + name + "], signature = [" + signature + "], superName = [" + superName + "], interfaces = [" + interfaces + "]");
-        // At this step, only anyfied classes contain the token '<'.
-        if (!name.contains("<")) {
+        // At this step, only anyfied classes starts with the token '$'.
+        if (!name.startsWith("$")) {
             this.name = name;
             super.visit(COMPILER_VERSION, access, name, signature, superName, interfaces);
             return;
         }
         // The class is anyfied. Cleaning the class name into the raw name.
-        String rawName = name.substring(0, name.indexOf('<'));
+        String rawName = Type.rawName(name);
         this.name = rawName;
         // The inheritance is not handled for anyfied class yet.
         if (superName != null && !superName.equals("java/lang/Object")) {
