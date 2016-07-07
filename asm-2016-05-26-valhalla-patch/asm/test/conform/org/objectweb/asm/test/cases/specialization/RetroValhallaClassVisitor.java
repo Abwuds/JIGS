@@ -117,10 +117,12 @@ class RetroValhallaClassVisitor extends ClassVisitor {
             parameterTypes[0] = Type.getType('L' + this.name + ';');
             for (int i = 1; i < parameterTypes.length; i++) { parameterTypes[i] = argumentTypes[i - 1]; }
             backDesc = Type.translateMethodDescriptor(Type.getMethodDescriptor(mType.getReturnType(), parameterTypes));
+        } else {
+            backDesc = Type.translateMethodDescriptor(desc);
         }
         // Back and front method visitors.
         MethodVisitor fmw = super.visitMethod(access, name, desc, signature, exceptions);
-        MethodVisitor bmw = backClassVisitor.visitMethod(backAccess, name, backDesc, signature, exceptions);
+        MethodVisitor bmw = backClassVisitor.visitMethod(backAccess, name, backDesc, null, exceptions);
         CompatibilityMethodVisitor mv = new CompatibilityMethodVisitor(api, this.name, fmw);
         BackMethodVisitor bmv = new BackMethodVisitor(api, this.name, backFactoryName, bmw);
         // Special method visitor visiting the initial class and splitting informations inside

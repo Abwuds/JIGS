@@ -46,8 +46,8 @@ public class RT {
 
     public static CallSite bsm_getBackField(MethodHandles.Lookup lookup, String name, MethodType type, Object owner) throws Throwable {
         // TODO method retrieving an owner and calling a method handle.
-       // lookup.findStatic(RT.class, );
-        return null;
+        lookup.findStatic(RT.class, "getBackField", MethodType.methodType());
+
     }
 
     /**
@@ -55,9 +55,9 @@ public class RT {
      * @param owner the owner class containing the field.
      * @return the _back__ field of the owner.
      */
-    public static Object getBackField(Object owner) {
-        //owner.
-        return null;
+    public static java.lang.invoke.MethodHandle getBackField(Object owner, MethodHandles.Lookup lookup)
+            throws NoSuchFieldException, IllegalAccessException {
+        return lookup.findGetter(owner.getClass(), "_back__", Object.class);
     }
 
     /**
