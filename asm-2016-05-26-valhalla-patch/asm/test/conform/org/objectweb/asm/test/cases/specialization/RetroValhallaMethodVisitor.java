@@ -12,10 +12,10 @@ import org.objectweb.asm.*;
  */
 class RetroValhallaMethodVisitor extends MethodVisitor {
 
-    private final CompatibilityMethodVisitor cmv;
+    private final FrontMethodVisitor cmv;
     private final BackMethodVisitor bmv;
 
-    RetroValhallaMethodVisitor(int api, CompatibilityMethodVisitor methodVisitor,
+    RetroValhallaMethodVisitor(int api, FrontMethodVisitor methodVisitor,
                                BackMethodVisitor backMethodVisitor) {
         super(api);
         cmv = methodVisitor;

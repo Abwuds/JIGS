@@ -15,7 +15,7 @@ class RetroValhallaClassVisitor extends ClassVisitor {
     public static final String BACK_FACTORY_NAME = "_BackFactory";
     private static final int COMPILER_VERSION = 52;
     private final ClassWriter backClassWriter;
-    private final RetroValhallaBackClassVisitor backClassVisitor;
+    private final BackClassVisitor backClassVisitor;
 
     // Created classes names.
     private String name;
@@ -24,7 +24,7 @@ class RetroValhallaClassVisitor extends ClassVisitor {
     public RetroValhallaClassVisitor(ClassVisitor cv) {
         super(API, cv);
         backClassWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-        this.backClassVisitor = new RetroValhallaBackClassVisitor(backClassWriter);
+        this.backClassVisitor = new BackClassVisitor(backClassWriter);
     }
 
     @Override
@@ -124,7 +124,7 @@ class RetroValhallaClassVisitor extends ClassVisitor {
         // Back and front method visitors.
         MethodVisitor fmw = super.visitMethod(access, name, desc, signature, exceptions);
         MethodVisitor bmw = backClassVisitor.visitMethod(backAccess, name, backDesc, null, exceptions);
-        CompatibilityMethodVisitor mv = new CompatibilityMethodVisitor(api, this.name, fmw);
+        FrontMethodVisitor mv = new FrontMethodVisitor(api, this.name, fmw);
         BackMethodVisitor bmv = new BackMethodVisitor(api, name, this.name, backFactoryName, bmw);
         // Special method visitor visiting the initial class and splitting informations inside
         // the front and the back class.

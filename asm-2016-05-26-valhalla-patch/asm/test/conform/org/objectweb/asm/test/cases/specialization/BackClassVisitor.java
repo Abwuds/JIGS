@@ -8,12 +8,12 @@ import org.objectweb.asm.Opcodes;
  *
  * Created by Jefferson Mangue on 09/06/2016.
  */
-class RetroValhallaBackClassVisitor extends ClassVisitor {
+class BackClassVisitor extends ClassVisitor {
 
     public static final int API = Opcodes.ASM5;
-    private static final int COMPILER_VERSION = 52;
+    private static final int COMPILER_VERSION = 52; // Java 1.8
 
-    RetroValhallaBackClassVisitor(ClassVisitor cv) {
+    BackClassVisitor(ClassVisitor cv) {
         super(API, cv);
     }
 
@@ -24,6 +24,6 @@ class RetroValhallaBackClassVisitor extends ClassVisitor {
 
     @Override
     public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
-        return super.visitField(access, name, desc, null, value);
+        return super.visitField(access, name, desc, null, value); // No parameterized signature.
     }
 }
