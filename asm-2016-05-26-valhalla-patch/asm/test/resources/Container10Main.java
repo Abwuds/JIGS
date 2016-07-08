@@ -4,9 +4,13 @@
  */
 public class Container10Main {
     public static void main(String[]args){
-        String e = new String("Hello Java World");
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {
+            }
+        };
         System.out.println("Hello");
-        Container10<int, String, float> c = new Container10<int, String, float>(6, 2.3f);
+        Container10<int, Runnable, float> c = new Container10<int, Runnable, float>(6, r, 2.3f);
         System.out.println(c.getT());
     }
 }

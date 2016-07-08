@@ -222,7 +222,10 @@ class BackMethodVisitor extends MethodVisitor {
             // on the back field. To do so, we pass the logic to an invokedynamic which will
             // get the field value or push the value in the field contained inside the back class.
             visitLdcInsn(name);
-            visitInvokeDynamicInsn("getBackField", "(Ljava/lang/Object;Ljava/lang/String;)" + Type.rawDesc(desc), BSM_GETBACKFIELD, opcode);
+            // TODO in case this particular return descriptor is TypeVar or ParameterizedType, it has to be recorded inside the substitution table !
+            //
+            String returnDescriptor = Type.rawDesc(desc);
+            visitInvokeDynamicInsn("getBackField", "(Ljava/lang/Object;Ljava/lang/String;)" + returnDescriptor, BSM_GETBACKFIELD, opcode);
             return;
         }
 

@@ -92,7 +92,8 @@ public class InvokeAnyAdapter {
                 Type type = Type.getMethodType(desc);
                 String newDesc = Type.translateMethodDescriptor(Type.getMethodType(Type.getType(owner),
                         type.getArgumentTypes()).toString());
-                mv.visitInvokeDynamicInsn(name, newDesc, BSM_NEW, newDesc); // TODO use Type inside the BM to parse desc.
+                // If name is "<init>" the "<>" can not be placed in a valid name. They have to be replaced.
+                mv.visitInvokeDynamicInsn(name.replace('<', '_').replace('>', '_'), newDesc, BSM_NEW, newDesc); // TODO use Type inside the BM to parse desc.
                 invokeSpecialStack.pop();
                 return true;
             }
