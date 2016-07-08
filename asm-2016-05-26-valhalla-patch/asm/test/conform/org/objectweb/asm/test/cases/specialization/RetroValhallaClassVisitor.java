@@ -61,7 +61,7 @@ class RetroValhallaClassVisitor extends ClassVisitor {
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
         // If we have not created a back class, we only copy the method.
         // TODO the calling code can have special invokeDynamic to insert in place of invokespecial.
-        if (!hasBackFactory()) { return super.visitMethod(access, name, desc, signature, exceptions); }
+        if (!hasBackFactory()) { return new InvokeCompatibilityMethodVisitor(api, super.visitMethod(access, name, desc, signature, exceptions)); }
         // We have to turn every method into static method inside the back class.
         return createRetroValhallaMethodVisitor(access, name, desc, signature, exceptions);
     }

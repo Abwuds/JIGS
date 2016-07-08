@@ -1,7 +1,10 @@
 package org.objectweb.asm.test.cases.specialization;
 
 
-import org.objectweb.asm.*;
+import org.objectweb.asm.Handle;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 
 import java.lang.invoke.CallSite;
 import java.lang.invoke.MethodHandles;
@@ -147,45 +150,29 @@ class BackMethodVisitor extends MethodVisitor {
         // TODO case ANEWARRAY
     }
 
-    /**
-     * Invokedynamic constants.
-     */
-    private static final Handle BSM_NEW;
     private static final Handle BSM_GETBACKFIELD;
+    private static final Handle BSM_SETBACKFIELD;
 
     static {
-        MethodType mtNew = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String.class);
-        MethodType mtBackField = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, Object.class, int.class, String.class);
-        BSM_NEW = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_new", mtNew.toMethodDescriptorString(), false);
-        BSM_GETBACKFIELD = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_getBackField", mtBackField.toMethodDescriptorString(), false);
+        MethodType mtGetBackField = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
+        MethodType mtSetBackField = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
+        BSM_GETBACKFIELD = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_getBackField", mtGetBackField.toMethodDescriptorString(), false);
+        BSM_SETBACKFIELD = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_setBackField", mtSetBackField.toMethodDescriptorString(), false);
     }
-
-    /**
-     * Enumeration used for the detection of invoke special calls.
-     * This enumeration indicates if an eligible NEW opcodes sequence, for the substitution by an invokedynamic
-     * has been visited and then the same for DUP opcode. Only a NEW applied on generics is selected to be replaced.
-     * Other new have to be considered and ignored since they must not be replaced.
-     */
-    private enum InvokeSpecialVisited {
-        REPLACED_NEW, REPLACED_DUP, IGNORED_NEW, IGNORED_DUP
-    }
-
-    // An int is not sufficient. Because a stack level has multiple states possible.
-    // First it has the boolean value "dup visited" to detect if the dup has been visited (and skipped) or not.
-    // Otherwise all possible dup between the "new" opcode and the "invokespecial" will be skipped. .
-    private final Stack<InvokeSpecialVisited> invokeSpecialStack = new Stack<>();
 
     // The name of the front class of the enclosing class.
     private final String frontOwner;
     private final String methodName;
     // The enclosing class name.
     private final String owner;
+    private final InvokeAnyAdapter invokeAnyAdapter;
 
     BackMethodVisitor(int api, String methodName, String frontOwner, String owner, MethodVisitor mv) {
         super(api, mv);
         this.methodName = methodName;
         this.frontOwner = frontOwner;
         this.owner = owner;
+        invokeAnyAdapter = new InvokeAnyAdapter(this);
     }
 
     /**
@@ -197,20 +184,24 @@ class BackMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitTypeInsn(int opcode, String type) {
-        if (opcode != Opcodes.NEW) {
+        if (!invokeAnyAdapter.visitTypeInsn(opcode, type)) {
             super.visitTypeInsn(opcode, type);
-            return;
         }
+    }
 
-        // Ignoring this new since it does not manipulate generics.
-        if (!type.startsWith("$")) {
-            invokeSpecialStack.push(InvokeSpecialVisited.IGNORED_NEW);
-            super.visitTypeInsn(opcode, type);
-            return;
+    @Override
+    public void visitInsn(int opcode) {
+        if (!invokeAnyAdapter.visitInsn(opcode)) {
+            super.visitInsn(opcode);
         }
+    }
 
-        // Replacing the "NEW" opcode since it will be replaced by invokedynamic.
-        invokeSpecialStack.push(InvokeSpecialVisited.REPLACED_NEW);
+    @Override
+    public void visitMethodInsn(final int opcode, final String owner,
+                                final String name, final String desc, final boolean itf) {
+        if (!invokeAnyAdapter.visitMethodInsn(opcode, owner, name, desc, itf)) {
+            super.visitMethodInsn(opcode, owner, name, desc, itf);
+        }
     }
 
     @Override
@@ -226,60 +217,23 @@ class BackMethodVisitor extends MethodVisitor {
             super.visitFieldInsn(opcode, owner, name, Type.rawDesc(desc));
             return;
         }
-        if (opcode != Opcodes.GETFIELD && opcode != Opcodes.PUTFIELD) {
-            super.visitFieldInsn(opcode, owner, name, Type.rawDesc(desc));
+        if (opcode == Opcodes.GETFIELD) {
+            // Every getfield/putfield in method which are not <init>, is transformed in a getfield/putfield
+            // on the back field. To do so, we pass the logic to an invokedynamic which will
+            // get the field value or push the value in the field contained inside the back class.
+            visitLdcInsn(name);
+            visitInvokeDynamicInsn("getBackField", "(Ljava/lang/Object;Ljava/lang/String;)" + Type.rawDesc(desc), BSM_GETBACKFIELD, opcode);
             return;
-        }
-        // Every getfield/putfield in method which are not <init>, is transformed in a getfield/putfield
-        // on the back field. To do so, we pass the logic to an invokedynamic which will
-        // get the field value or push the value in the field contained inside the back class.
-        visitIntInsn(Opcodes.SIPUSH, opcode);
-        visitLdcInsn(name);
-        visitInvokeDynamicInsn("getBackField", "(Ljava/lang/Object;ILjava/lang/String;)" + Type.rawDesc(desc), BSM_GETBACKFIELD);
-    }
-
-    @Override
-    public void visitInsn(int opcode) {
-        if (opcode != Opcodes.DUP || invokeSpecialStack.empty()) {
-            super.visitInsn(opcode);
-            return;
-        }
-        // Replacing the DUP opcode corresponding to a NEW opcode replaced.
-        if (InvokeSpecialVisited.REPLACED_NEW.equals(invokeSpecialStack.peek())) {
-            invokeSpecialStack.set(invokeSpecialStack.size() - 1, InvokeSpecialVisited.REPLACED_DUP);
-            return;
-        }
-        // Ignoring the DUP opcode corresponding to a NEW opcode ignored.
-        if (InvokeSpecialVisited.IGNORED_NEW.equals(invokeSpecialStack.peek())) {
-            invokeSpecialStack.set(invokeSpecialStack.size() - 1, InvokeSpecialVisited.IGNORED_DUP);
-            super.visitInsn(opcode);
-            return;
-        }
-    }
-
-    @Override
-    public void visitMethodInsn(final int opcode, final String owner,
-                                final String name, final String desc, final boolean itf) {
-        if (opcode != Opcodes.INVOKESPECIAL) {
-            // Writing the call inside the class.
-            super.visitMethodInsn(opcode, owner, name, desc, itf);
         }
 
-        // Detect "new" call to substitute it by an invokedynamic.
-        if (!invokeSpecialStack.empty()) {
-            InvokeSpecialVisited top = invokeSpecialStack.peek();
-            if (InvokeSpecialVisited.REPLACED_DUP.equals(top)) {
-                Type type = Type.getMethodType(desc);
-                String newDesc = Type.translateMethodDescriptor(Type.getMethodType(Type.getType(owner),
-                        type.getArgumentTypes()).toString());
-                visitInvokeDynamicInsn(name, newDesc, BSM_NEW, newDesc); // TODO use Type inside the BM to parse desc.
-                invokeSpecialStack.pop();
-                return;
-            }
-            // IGNORED_DUP. Popping the current stack level.
-            invokeSpecialStack.pop();
-            super.visitMethodInsn(opcode, owner, name, desc, itf);
+        if (opcode == Opcodes.PUTFIELD) {
+            visitLdcInsn(name);
+            visitInvokeDynamicInsn("setBackField", "(Ljava/lang/Object;" + desc + "Ljava/lang/String;)V", BSM_SETBACKFIELD, opcode);
+            return;
         }
+
+        // Neither GETFIELD nor PUTFIELD.
+        super.visitFieldInsn(opcode, owner, name, Type.rawDesc(desc));
     }
 
     @Override

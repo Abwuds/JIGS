@@ -886,8 +886,8 @@ class MethodWriter extends MethodVisitor {
     public void visitMethodInsn(final int opcode, final String owner,
             final String name, final String desc, final boolean itf) {
         String oowner = owner;
-        if (oowner.contains("<")) {
-            oowner = oowner.substring(0, oowner.indexOf('<'));
+        if (oowner.startsWith("$")) {
+            oowner = Type.rawName(owner);
         }
         lastCodeOffset = code.length;
         Item i = cw.newMethodItem(oowner, name, desc, itf);
