@@ -466,6 +466,7 @@ class MethodWriter extends MethodVisitor {
         // Translating the descriptor into valid Java 8- descriptor.
         // substitutionTable;
         String retroDesc = Type.translateMethodDescriptor(desc);
+        // TODO register signature if any TypeVar/ParameterizedType present.
         this.desc = cw.newUTF8(retroDesc);
         this.descriptor = retroDesc;
         if (ClassReader.SIGNATURES) {
