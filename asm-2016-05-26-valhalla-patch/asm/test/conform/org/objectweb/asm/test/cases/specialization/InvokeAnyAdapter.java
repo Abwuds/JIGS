@@ -93,7 +93,7 @@ public class InvokeAnyAdapter {
                 String newDesc = Type.translateMethodDescriptor(Type.getMethodType(Type.getType(owner),
                         type.getArgumentTypes()).toString());
                 // The name has to be <init>, but this is not a valid bsm identifier because of "<>".
-                mv.visitInvokeDynamicInsn("_init", newDesc, BSM_NEW, newDesc); // TODO use Type inside the BM to parse desc.
+                mv.visitInvokeDynamicInsn("newAnyObject", newDesc, BSM_NEW, newDesc); // TODO use Type inside the BM to parse desc.
                 invokeSpecialStack.pop();
                 return true;
             }
