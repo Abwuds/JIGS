@@ -130,6 +130,7 @@ final class FieldWriter extends FieldVisitor {
         this.name = cw.newUTF8(name);
         // Translating the descriptor into valid Java 8- descriptor.
         // substitutionTable;
+        // TODO register inside the substitution table if TypeVar or ParameterizedType.
         String retroDesc = Type.typeToObject(Type.getType(desc)).toString();
         this.desc = cw.newUTF8(retroDesc);
         if (ClassReader.SIGNATURES && signature != null) {

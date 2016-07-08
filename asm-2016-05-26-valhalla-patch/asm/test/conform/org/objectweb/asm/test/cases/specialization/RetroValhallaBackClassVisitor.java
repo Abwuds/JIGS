@@ -1,6 +1,7 @@
 package org.objectweb.asm.test.cases.specialization;
 
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Opcodes;
 
 /**
@@ -19,5 +20,10 @@ class RetroValhallaBackClassVisitor extends ClassVisitor {
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
         super.visit(COMPILER_VERSION, access, name, signature, superName, interfaces);
+    }
+
+    @Override
+    public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
+        return super.visitField(access, name, desc, null, value);
     }
 }
