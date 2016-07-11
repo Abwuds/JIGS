@@ -43,7 +43,7 @@ class BackClassVisitor extends ClassVisitor {
             Type mType = Type.getType(desc);
             Type[] argumentTypes = mType.getArgumentTypes();
             Type[] parameterTypes = new Type[argumentTypes.length + 1];
-            parameterTypes[0] = Type.getType('L' + this.name + ';');
+            parameterTypes[0] = Type.getType('L' + frontName + ';');
             for (int i = 1; i < parameterTypes.length; i++) { parameterTypes[i] = argumentTypes[i - 1]; }
             methodDescriptor =  Type.getMethodDescriptor(mType.getReturnType(), parameterTypes);
         } else {

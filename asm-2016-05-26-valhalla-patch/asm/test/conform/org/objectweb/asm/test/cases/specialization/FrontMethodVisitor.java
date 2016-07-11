@@ -32,12 +32,12 @@ class FrontMethodVisitor extends MethodVisitor {
         super(api, mv);
     }
 
-    public static void visitFrontMethod(int api, String owner, String name, String desc, String signature, String[] exceptions, MethodVisitor fmw) {
-        System.out.println("visitFrontMethod : api = [" + api + "], name = [" + name + "], desc = [" + desc + "], signature = [" + signature + "], exceptions = [" + exceptions + "], fmw = [" + fmw + "]");
+    public static void visitFrontMethod(int api, String frontName, String methodName, String desc, String signature, String[] exceptions, MethodVisitor fmw) {
+        System.out.println("visitFrontMethod api = [" + api + "], frontName = [" + frontName + "], methodName = [" + methodName + "], desc = [" + desc + "], signature = [" + signature + "], exceptions = [" + exceptions + "], fmw = [" + fmw + "]");
         MethodVisitor mv = new FrontMethodVisitor(api, fmw);
         Type type = Type.getType(desc);
         // For the front method :
-        if (name.equals("<init>")) {
+        if (methodName.equals("<init>")) {
             // Creating compatibility constructor.
             mv.visitCode();
             mv.visitInsn(Opcodes.ALOAD_0);// PutField on this for the field _back__.
@@ -47,8 +47,8 @@ class FrontMethodVisitor extends MethodVisitor {
             // Loading constructor arguments.
             Type[] argumentTypes = loadArguments(mv, type);
             String indyDescriptor = Type.getMethodDescriptor(Type.getType("Ljava/lang/Object;"), argumentTypes);
-            mv.visitInvokeDynamicInsn(BSM_NAME, indyDescriptor, BSM_NEW_BACK, owner);
-            mv.visitFieldInsn(Opcodes.PUTFIELD, owner, FrontClassVisitor.BACK_FIELD, "Ljava/lang/Object;");
+            mv.visitInvokeDynamicInsn(BSM_NAME, indyDescriptor, BSM_NEW_BACK, frontName);
+            mv.visitFieldInsn(Opcodes.PUTFIELD, frontName, FrontClassVisitor.BACK_FIELD, "Ljava/lang/Object;");
 
             mv.visitInsn(Opcodes.RETURN);
             mv.visitMaxs(0, 0);
@@ -58,12 +58,13 @@ class FrontMethodVisitor extends MethodVisitor {
             // Instance methods :
             mv.visitCode();
             // Getting the back field to delegate the call.
-            mv.visitLdcInsn(name);
+            mv.visitLdcInsn(methodName);
             mv.visitInsn(Opcodes.ALOAD_0);
-            mv.visitFieldInsn(Opcodes.GETFIELD, owner, FrontClassVisitor.BACK_FIELD, "Ljava/lang/Object;");
+            mv.visitFieldInsn(Opcodes.GETFIELD, frontName, FrontClassVisitor.BACK_FIELD, "Ljava/lang/Object;");
             // Delegating the call and the arguments.
+            mv.visitInsn(Opcodes.ALOAD_0);
             loadArguments(mv, type);
-            String delegateDesc = createDelegateCallDescriptor(type);
+            String delegateDesc = createDelegateCallDescriptor(type, 'L' + frontName + ';');
             mv.visitInvokeDynamicInsn("delegateCall", delegateDesc, BSM_DELEGATE_CALL);
 
             // The return.
@@ -79,12 +80,14 @@ class FrontMethodVisitor extends MethodVisitor {
         }
     }
 
-    private static String createDelegateCallDescriptor(Type type) {
+    private static String createDelegateCallDescriptor(Type type, String frontDesc) {
         Type[] argsSrc = type.getArgumentTypes();
-        Type[] args = new Type[argsSrc.length + 2];
-        args[0] = Type.getType("Ljava/lang/String;");
-        args[1] = Type.getType("Ljava/lang/Object;");
-        System.arraycopy(argsSrc, 0, args, 2, argsSrc.length);
+        Type[] args = new Type[argsSrc.length + 3];
+        args[0] = Type.getType("Ljava/lang/String;"); // method name.
+        args[1] = Type.getType("Ljava/lang/Object;"); // receiver.
+        args[2] = Type.getType(frontDesc); // receiver.
+        // args[2] = Type.getType("[Ljava/lang/Object;"); // receiver.
+        System.arraycopy(argsSrc, 0, args, 3, argsSrc.length); // method args.
         return Type.getMethodDescriptor(type.getReturnType(), args);
     }
 

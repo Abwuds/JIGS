@@ -110,25 +110,35 @@ public class RT {
         System.out.println("BSM_DELEGATE_CALL lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "]");
         MethodType invokeCallType = MethodType.methodType(Object.class, MethodHandles.Lookup.class, MethodType.class, String.class, Object.class, Object[].class);
         MethodHandle mh = lookup.findStatic(RT.class, "invokeCall", invokeCallType);
-        mh = mh.bindTo(lookup).bindTo(type); // TODO think if you have to spread or collect into an array to make this compatible.
+        mh = mh.bindTo(lookup).bindTo(type.dropParameterTypes(0, 2)); // Dropping name, receiver to have the delegate method type.
+        // No varargs arguments.
+        mh = mh.asCollector(Object[].class, type.parameterCount() - 2).asType(type); // - 2 for name, receiver.
+        System.out.println("BSM_DELEGATE_CALL resulting mh : " + mh);
         return new ConstantCallSite(mh);
     }
 
     public static Object invokeCall(MethodHandles.Lookup lookup, MethodType type, String name, Object receiver, Object... args) throws Throwable {
         System.out.println("invokeCall : lookup = [" + lookup + "], type = [" + type + "], name = [" + name + "], receiver = [" + receiver + "], args = [" + args + "]");
-        MethodHandle mh = lookup.findVirtual(receiver.getClass(), name, type);
-        return mh.invoke(args);
+        // TODO try by removing the asSpreader and other stuff.
+        MethodHandle mh = lookup.findStatic(receiver.getClass(), name, type).asType(type).asSpreader(Object[].class, args.length);
+        System.out.println("invokeCall : method handle found : " + mh);
+        System.out.println("invokeCall : return type : " + type.returnType());
+        Object res = type.returnType().cast(mh.invoke(args));
+        System.out.println("invokeCall : method invoked : " + res);
+        return res;
     }
 
-    public static CallSite bsm_getBackField(MethodHandles.Lookup lookup, String name,
-                                            MethodType type) throws Throwable {
-        MethodHandle mh = lookup.findStatic(RT.class, name, MethodType.methodType(Object.class, MethodHandles.Lookup.class));
-        mh.bindTo(lookup);
+    public static CallSite bsm_getBackField(MethodHandles.Lookup lookup, String name, MethodType type) throws Throwable {
+        System.out.println("BSM_GETBACKFIELD : lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "]");
+        MethodHandle mh = lookup.findStatic(RT.class, name, MethodType.methodType(Object.class, MethodHandles.Lookup.class,
+                            Class.class, Object.class, String.class));
+        mh = mh.bindTo(lookup).bindTo(type.returnType()).asType(type);
+        System.out.println("BSM_GETBACKFIELD : method handle result : " + mh);
         return new ConstantCallSite(mh);
     }
 
-    public static CallSite bsm_setBackField(MethodHandles.Lookup lookup, String name,
-                                            MethodType type) throws Throwable {
+    public static CallSite bsm_setBackField(MethodHandles.Lookup lookup, String name, MethodType type) throws Throwable {
+        System.out.println("BSM_SETBACKFIELD : lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "]");
         MethodHandle mh = lookup.findStatic(RT.class, name, MethodType.methodType(Object.class, MethodHandles.Lookup.class));
         mh.bindTo(lookup);
         return new ConstantCallSite(mh);
@@ -139,10 +149,10 @@ public class RT {
      * @param owner the owner class containing the field.
      * @return the _back__ field of the owner.
      */
-    public static java.lang.invoke.MethodHandle getBackField(MethodHandles.Lookup lookup, Object owner, String name)
-            throws NoSuchFieldException, IllegalAccessException {
-        // Pour putField : lookup.findSetter() ??
-        return lookup.findGetter(owner.getClass(), "_back__", Object.class);
+    public static Object getBackField(MethodHandles.Lookup lookup, Class<?> returnType, Object owner, String name)
+            throws Throwable {
+        Object backField = lookup.findGetter(owner.getClass(), "_back__", Object.class).invoke(owner);
+        return lookup.findGetter(backField.getClass(), name, returnType).invoke(backField);
     }
 
     /**
@@ -153,6 +163,7 @@ public class RT {
                                        String invokedName,
                                        MethodType invokedType,
                                        Object... args) throws ReflectiveOperationException {
+        System.out.println("METAFACTORY : caller = [" + caller + "], invokedName = [" + invokedName + "], invokedType = [" + invokedType + "], args = [" + args + "]");
         List<Class<?>> params = invokedType.parameterList();
         if (params.isEmpty()) {
             throw new AssertionError("Missing dynamic parameters!");

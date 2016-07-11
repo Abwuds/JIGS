@@ -59,7 +59,7 @@ class FrontClassVisitor extends ClassVisitor {
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
         // If we have not created a back class, we use a visitor able to transform invocations in compatible invocations.
         if (!hasBackFactory()) { return new InvokeAnyMethodVisitor(api, super.visitMethod(access, name, desc, signature, exceptions)); }
-        // TODO do not redirect static method to back.
+        // TODO do not redirect static method to back class.
         // We have to turn every method into static method inside the back class.
         return createRetroValhallaMethodVisitor(access, name, desc, signature, exceptions);
     }
