@@ -131,16 +131,17 @@ public class RT {
     public static CallSite bsm_getBackField(MethodHandles.Lookup lookup, String name, MethodType type) throws Throwable {
         System.out.println("BSM_GETBACKFIELD : lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "]");
         MethodHandle mh = lookup.findStatic(RT.class, name, MethodType.methodType(Object.class, MethodHandles.Lookup.class,
-                            Class.class, Object.class, String.class));
+                Class.class, Object.class, String.class));
         mh = mh.bindTo(lookup).bindTo(type.returnType()).asType(type);
         System.out.println("BSM_GETBACKFIELD : method handle result : " + mh);
         return new ConstantCallSite(mh);
     }
 
-    public static CallSite bsm_setBackField(MethodHandles.Lookup lookup, String name, MethodType type) throws Throwable {
-        System.out.println("BSM_SETBACKFIELD : lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "]");
-        MethodHandle mh = lookup.findStatic(RT.class, name, MethodType.methodType(Object.class, MethodHandles.Lookup.class));
-        mh.bindTo(lookup);
+    public static CallSite bsm_putBackField(MethodHandles.Lookup lookup, String name, MethodType type) throws Throwable {
+        System.out.println("BSM_PUTBACKFIELD : lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "]");
+        MethodHandle mh = lookup.findStatic(RT.class, name, MethodType.methodType(void.class, MethodHandles.Lookup.class,
+                Class.class, Object.class, Object.class, String.class));
+        mh = mh.bindTo(lookup).bindTo(type.parameterType(1));
         return new ConstantCallSite(mh);
     }
 
@@ -149,10 +150,21 @@ public class RT {
      * @param owner the owner class containing the field.
      * @return the _back__ field of the owner.
      */
-    public static Object getBackField(MethodHandles.Lookup lookup, Class<?> returnType, Object owner, String name)
+    public static Object getBackField(MethodHandles.Lookup lookup, Class<?> fieldType, Object owner, String name)
             throws Throwable {
-        Object backField = lookup.findGetter(owner.getClass(), "_back__", Object.class).invoke(owner);
-        return lookup.findGetter(backField.getClass(), name, returnType).invoke(backField);
+        Object backField = getBack__(lookup, owner);
+        return lookup.findGetter(backField.getClass(), name, fieldType).invoke(backField);
+    }
+
+    public static void putBackField(MethodHandles.Lookup lookup, Class<?> fieldType, Object owner, Object value, String name)
+            throws Throwable {
+        Object backField = getBack__(lookup, owner);
+        System.out.println(" Fields : " + fieldType + " " + backField.getClass() + " " + name);
+        lookup.findSetter(backField.getClass(), name, fieldType).invoke(backField, value);
+    }
+
+    private static Object getBack__(MethodHandles.Lookup lookup, Object owner) throws Throwable {
+        return lookup.findGetter(owner.getClass(), "_back__", Object.class).invoke(owner);
     }
 
     /**

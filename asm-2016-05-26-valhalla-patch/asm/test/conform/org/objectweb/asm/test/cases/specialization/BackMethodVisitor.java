@@ -151,13 +151,13 @@ class BackMethodVisitor extends MethodVisitor {
     }
 
     private static final Handle BSM_GETBACKFIELD;
-    private static final Handle BSM_SETBACKFIELD;
+    private static final Handle BSM_PUTBACKFIELD;
 
     static {
         MethodType mtGetBackField = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
-        MethodType mtSetBackField = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
+        MethodType mtPutBackField = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
         BSM_GETBACKFIELD = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_getBackField", mtGetBackField.toMethodDescriptorString(), false);
-        BSM_SETBACKFIELD = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_setBackField", mtSetBackField.toMethodDescriptorString(), false);
+        BSM_PUTBACKFIELD = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_putBackField", mtPutBackField.toMethodDescriptorString(), false);
     }
 
     // The name of the front class of the enclosing class.
@@ -235,7 +235,7 @@ class BackMethodVisitor extends MethodVisitor {
 
         if (opcode == Opcodes.PUTFIELD) {
             visitLdcInsn(name);
-            visitInvokeDynamicInsn("setBackField", "(Ljava/lang/Object;" + desc + "Ljava/lang/String;)V", BSM_SETBACKFIELD);
+            visitInvokeDynamicInsn("putBackField", "(Ljava/lang/Object;" + desc + "Ljava/lang/String;)V", BSM_PUTBACKFIELD);
             return;
         }
 
