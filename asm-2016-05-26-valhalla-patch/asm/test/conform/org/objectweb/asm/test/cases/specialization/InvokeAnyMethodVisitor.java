@@ -7,11 +7,11 @@ import org.objectweb.asm.MethodVisitor;
  *
  * Created by Jefferson Mangue on 12/06/2016.
  */
-class InvokeCompatibilityMethodVisitor extends MethodVisitor {
+class InvokeAnyMethodVisitor extends MethodVisitor {
 
     private final InvokeAnyAdapter invokeAnyAdapter;
 
-    InvokeCompatibilityMethodVisitor(int api, MethodVisitor mv) {
+    InvokeAnyMethodVisitor(int api, MethodVisitor mv) {
         super(api, mv);
         invokeAnyAdapter = new InvokeAnyAdapter(this);
     }

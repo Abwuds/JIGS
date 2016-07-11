@@ -19,9 +19,10 @@ public class InvokeAnyAdapter {
      * Invokedynamic constants.
      */
     private static final Handle BSM_NEW;
+    public static final String BSM_NAME = "newAnyObject";
 
     static {
-        MethodType mtNew = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String.class);
+        MethodType mtNew = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
         BSM_NEW = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_new", mtNew.toMethodDescriptorString(), false);
     }
 
@@ -92,8 +93,8 @@ public class InvokeAnyAdapter {
                 Type type = Type.getMethodType(desc);
                 String newDesc = Type.translateMethodDescriptor(Type.getMethodType(Type.getType(owner),
                         type.getArgumentTypes()).toString());
-                // The name has to be <init>, but this is not a valid bsm identifier because of "<>".
-                mv.visitInvokeDynamicInsn("newAnyObject", newDesc, BSM_NEW, newDesc); // TODO use Type inside the BM to parse desc.
+                // The name has to be <init>, but this is not a valid bsm identifier because of "<" and ">".
+                mv.visitInvokeDynamicInsn(BSM_NAME, newDesc, BSM_NEW);
                 invokeSpecialStack.pop();
                 return true;
             }

@@ -206,6 +206,11 @@ class BackMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitFieldInsn(int opcode, String owner, String name, String desc) {
+        // The description is either an Object, a TypeVar, or a parameterized type.
+        // In the last case, we don't want it to propagate to the underlying classWriter.
+        owner = Type.rawName(owner);
+        if (frontOwner.equals(owner)) { owner = this.owner; }
+
         // In case the field's owner is not the current back class, nothing is needed and it is
         // a regular field access. Same thing when treating the owner#<init> method,
         // the xxxfield opcodes must not be replaced by invokedynamic.

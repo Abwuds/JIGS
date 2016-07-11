@@ -24,10 +24,13 @@
  */
 package rt;
 
-import org.objectweb.asm.Opcodes;
-import specializ.HelloGen;
+import sun.misc.Unsafe;
 
+import java.io.IOException;
 import java.lang.invoke.*;
+import java.lang.reflect.Field;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
 
@@ -36,14 +39,85 @@ import java.util.Objects;
  */
 public class RT {
 
+    // TODO move this in one file and share it with org.objectweb.asm.test.cases.specialization.
+    public static final String ANY_PACKAGE = "java/any/";
+    public static final String BACK_FACTORY_NAME = "_BackFactory";
+    private static final ClassValue<byte[]> BACK_FACTORY = new ClassValue<byte[]>() {
 
-    public static CallSite bsm_new(MethodHandles.Lookup lookup, String name, MethodType type,
-                                   String specialization) throws Throwable {
-        System.out.println("BSM_NEW : lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "], specialization = [" + specialization + "]");
-        // TODO use a cache system.
-        // TODO load class String name = lookup.lookupClass.
-        Class<?> species = HelloGen.FUNCTION_CLASS_LOADER.loadClass("HelloDynamicGen");// Already loaded.
-        return new ConstantCallSite(lookup.findConstructor(species, type.changeReturnType(void.class)));
+        @Override
+        protected byte[] computeValue(Class<?> type) {
+            // TODO return the back factory.
+            System.out.println("Requesting type name : " + type);
+            String backName = ANY_PACKAGE + type.getName() + BACK_FACTORY_NAME + ".class";
+            try {
+                return Files.readAllBytes(Paths.get(backName));
+            } catch (IOException e) {
+                throw new IllegalStateException(e.getMessage());
+            }
+        }
+    };
+
+    public static CallSite bsm_new(MethodHandles.Lookup lookup, String name, MethodType type) throws Throwable {
+        System.out.println("BSM_NEW lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "]");
+        Class<?> frontClass = type.returnType();
+        System.out.println("Return type wanted : " + frontClass);
+        // Allocate specialized class - with object for the moment - and return one of its constructor.
+        Class<?> unsafeClass = sun.misc.Unsafe.class;
+        Field theUnsafe = unsafeClass.getDeclaredField("theUnsafe");
+        theUnsafe.setAccessible(true);
+        Unsafe unsafe = (Unsafe)theUnsafe.get(null);
+        System.out.println("The unsafe get.");
+
+        byte[] backCode = BACK_FACTORY.get(frontClass);
+        System.out.println("Code get : " + backCode.length);
+
+        Object[] pool = new Object[0]; // TODO get size.
+        // Class<?> species = HelloGen.FUNCTION_CLASS_LOADER.loadClass("Container10Main");
+        Class<?> backClass = unsafe.defineAnonymousClass(frontClass, backCode, pool);
+        System.out.println("BackClass loaded and specialized : " + backClass);
+        // Has to launch with -noverify...
+        MethodHandle mh = lookup.findConstructor(backClass, type.changeReturnType(void.class));
+        System.out.println("Constructor found : " + mh);
+        return new ConstantCallSite(mh);
+    }
+
+    public static CallSite bsm_newSpeciesObject(MethodHandles.Lookup lookup, String name, MethodType type, String owner) throws Throwable {
+        System.out.println("BSM_SPECIES_OBJECT lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "]");
+        Class<?> frontClass = ClassLoader.getSystemClassLoader().loadClass(owner);
+        System.out.println("Return type wanted : " + frontClass);
+        // Allocate specialized class - with object for the moment - and return one of its constructor.
+        Class<?> unsafeClass = sun.misc.Unsafe.class;
+        Field theUnsafe = unsafeClass.getDeclaredField("theUnsafe");
+        theUnsafe.setAccessible(true);
+        Unsafe unsafe = (Unsafe)theUnsafe.get(null);
+        System.out.println("The unsafe get.");
+
+        byte[] backCode = BACK_FACTORY.get(frontClass);
+        System.out.println("Code get : " + backCode.length);
+
+        Object[] pool = new Object[0]; // TODO get size.
+        // Class<?> species = HelloGen.FUNCTION_CLASS_LOADER.loadClass("Container10Main");
+        Class<?> backClass = unsafe.defineAnonymousClass(frontClass, backCode, pool);
+        System.out.println("BackClass loaded and specialized : " + backClass);
+        // Has to launch with -noverify...
+        MethodHandle mh = lookup.findConstructor(backClass, type.changeReturnType(void.class));
+        mh = mh.asType(type);
+        System.out.println("Constructor found : " + mh);
+        return new ConstantCallSite(mh);
+    }
+
+    public static CallSite bsm_delegateCall(MethodHandles.Lookup lookup, String name, MethodType type) throws Throwable {
+        System.out.println("BSM_DELEGATE_CALL lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "]");
+        MethodType invokeCallType = MethodType.methodType(Object.class, MethodHandles.Lookup.class, MethodType.class, String.class, Object.class, Object[].class);
+        MethodHandle mh = lookup.findStatic(RT.class, "invokeCall", invokeCallType);
+        mh = mh.bindTo(lookup).bindTo(type); // TODO think if you have to spread or collect into an array to make this compatible.
+        return new ConstantCallSite(mh);
+    }
+
+    public static Object invokeCall(MethodHandles.Lookup lookup, MethodType type, String name, Object receiver, Object... args) throws Throwable {
+        System.out.println("invokeCall : lookup = [" + lookup + "], type = [" + type + "], name = [" + name + "], receiver = [" + receiver + "], args = [" + args + "]");
+        MethodHandle mh = lookup.findVirtual(receiver.getClass(), name, type);
+        return mh.invoke(args);
     }
 
     public static CallSite bsm_getBackField(MethodHandles.Lookup lookup, String name,

@@ -71,7 +71,7 @@ public class Rewriter {
         try {
             byte[] bytes = Files.readAllBytes(path);
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-            RetroValhallaClassVisitor frontClassVisitor = new RetroValhallaClassVisitor(cw);
+            FrontClassVisitor frontClassVisitor = new FrontClassVisitor(cw);
             // TODO do not write this attribute on non modified classes.
             new ClassReader(bytes).accept(frontClassVisitor, new Attribute[]{new SubstitutionTable()}, 0);
             // Writing the back factory if one exists.
@@ -84,7 +84,7 @@ public class Rewriter {
         }
     }
 
-    private void writeBackFactoryClazz(String name, RetroValhallaClassVisitor frontClassVisitor) throws IOException {
+    private void writeBackFactoryClazz(String name, FrontClassVisitor frontClassVisitor) throws IOException {
         if (frontClassVisitor.hasBackFactory()) {
             writeClazz(FOLDER_SPECIALIZATION + name + ".class", frontClassVisitor.getBackFactoryBytes());
         }

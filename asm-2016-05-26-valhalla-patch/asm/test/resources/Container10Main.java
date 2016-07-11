@@ -10,7 +10,7 @@ public class Container10Main {
             }
         };
         System.out.println("Hello");
-        Container10<int, Runnable, float> c = new Container10<int, Runnable, float>(6, r, 2.3f);
+        Container10<String, Runnable, String> c = new Container10<String, Runnable, String>("hello", r, "fox");
         System.out.println(c.getT());
     }
 }
