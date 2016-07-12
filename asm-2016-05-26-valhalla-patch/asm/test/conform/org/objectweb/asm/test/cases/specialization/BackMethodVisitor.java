@@ -190,10 +190,26 @@ class BackMethodVisitor extends MethodVisitor {
     }
 
     @Override
+    public void visitLdcInsn(Object cst) {
+        super.visitLdcInsn(cst);
+    }
+
+    @Override
+    public void visitVarInsn(int opcode, int var) {
+        super.visitVarInsn(opcode, var);
+    }
+
+    @Override
     public void visitInsn(int opcode) {
-        if (!invokeAnyAdapter.visitInsn(opcode)) {
-            super.visitInsn(opcode);
+        if (invokeAnyAdapter.visitInsn(opcode)) {
+            return;
         }
+        // TODO temporary hack because ALOAD_X are invalid during the stack size calculations.
+        if (opcode <= Opcodes.ALOAD_0 || opcode <= Opcodes.ALOAD_3){
+            visitVarInsn(Opcodes.ALOAD, opcode - Opcodes.ALOAD_0);
+            return;
+        }
+        super.visitInsn(opcode);
     }
 
     @Override
@@ -246,7 +262,9 @@ class BackMethodVisitor extends MethodVisitor {
     @Override
     public void visitTypedInsn(String name, int typedOpcode) {
         super.visitTypedInsn(name, typedOpcode);
-        super.visitInsn(typedOpcode);
+        // TODO Warning : Use visitVarInsn ALOAD, X instead for the moment, visitInsn is redirect on visitVarInsn.
+        // TODO temporary hack because ALOAD_X are invalid during the stack size calculations.
+        visitInsn(typedOpcode);
        /* Label end = new Label();
         List<Map.Entry<String, Integer>> tests = INSTRS.get(typedOpcode);
         if (tests == null) {

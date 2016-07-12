@@ -48,6 +48,7 @@ class FrontMethodVisitor extends MethodVisitor {
 
     private static void visitConstructor(String frontName, MethodVisitor mv, Type type) {
         mv.visitCode();
+        visitSuperConstructor(mv);
         // TODO DEBUG mv.visitInsn(Opcodes.ALOAD_0);
         mv.visitVarInsn(Opcodes.ALOAD, 0);// PutField on this for the field _back__.
 
@@ -65,11 +66,28 @@ class FrontMethodVisitor extends MethodVisitor {
         mv.visitEnd();
     }
 
+    @Override
+    // TODO temporary hack because ALOAD_X are invalid during the stack size calculations.
+    public void visitInsn(int opcode) {
+        if (opcode <= Opcodes.ALOAD_0 || opcode <= Opcodes.ALOAD_3){
+            visitVarInsn(Opcodes.ALOAD, opcode - Opcodes.ALOAD_0);
+            return;
+        }
+        super.visitInsn(opcode);
+    }
+
+    private static void visitSuperConstructor(MethodVisitor mv) {
+        // TODO DEBUG mv.visitInsn(Opcodes.ALOAD_0);
+        mv.visitVarInsn(Opcodes.ALOAD, 0);
+        // TODO the super.<init> owner is Object for the moment, because the inheritance is not handled.
+        mv.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
+    }
+
     private static void visitInstanceMethod(String frontName, String methodName, MethodVisitor mv, Type type) {
         mv.visitCode();
         // Getting the back field to delegate the call.
         mv.visitLdcInsn(methodName);
-        // TODO DEBUG mv.visitInsn(Opcodes.ALOAD_0);
+        mv.visitInsn(Opcodes.ALOAD_0);
         mv.visitVarInsn(Opcodes.ALOAD, 0); // PutField on this for the field _back__.
         mv.visitFieldInsn(Opcodes.GETFIELD, frontName, FrontClassVisitor.BACK_FIELD, "Ljava/lang/Object;");
         // Delegating the call and the arguments.
@@ -134,8 +152,11 @@ class FrontMethodVisitor extends MethodVisitor {
 
     public static void createFrontSpecializerConstructor(String rawName, String backField, MethodVisitor mv) {
         mv.visitCode();
-        mv.visitInsn(Opcodes.ALOAD_0);
-        mv.visitInsn(Opcodes.ALOAD_2);
+        visitSuperConstructor(mv);
+        // TODO DEBUG mv.visitInsn(Opcodes.ALOAD_0);
+        mv.visitVarInsn(Opcodes.ALOAD, 0);
+        // TODO DEBUG mv.visitInsn(Opcodes.ALOAD_2);
+        mv.visitVarInsn(Opcodes.ALOAD, 2);
         mv.visitFieldInsn(Opcodes.PUTFIELD, rawName, backField, "Ljava/lang/Object;");
         mv.visitInsn(Opcodes.RETURN);
         mv.visitMaxs(0, 0);
