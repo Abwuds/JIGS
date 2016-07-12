@@ -34,22 +34,22 @@ class FrontMethodVisitor extends MethodVisitor {
 
     public static void visitFrontMethod(int api, String frontName, String methodName, String desc, String signature, String[] exceptions, MethodVisitor fmw) {
         System.out.println("visitFrontMethod api = [" + api + "], frontName = [" + frontName + "], methodName = [" + methodName + "], desc = [" + desc + "], signature = [" + signature + "], exceptions = [" + exceptions + "], fmw = [" + fmw + "]");
-        MethodVisitor mv = new FrontMethodVisitor(api, fmw);
         Type type = Type.getType(desc);
         // For the front method :
         if (methodName.equals("<init>")) {
             // Creating compatibility constructor.
-            visitConstructor(frontName, mv, type);
+            visitConstructor(frontName, fmw, type);
         } else {
-            // TODO handle static method.
             // Instance methods :
-            visitInstanceMethod(frontName, methodName, mv, type);
+            visitInstanceMethod(frontName, methodName, fmw, type);
+            // TODO handle static method.
         }
     }
 
     private static void visitConstructor(String frontName, MethodVisitor mv, Type type) {
         mv.visitCode();
-        mv.visitInsn(Opcodes.ALOAD_0);// PutField on this for the field _back__.
+        // TODO DEBUG mv.visitInsn(Opcodes.ALOAD_0);
+        mv.visitVarInsn(Opcodes.ALOAD, 0);// PutField on this for the field _back__.
 
         // TODO Change the constructor "Void, Object" because we can not pass null to Void.
         // TODO pass null instead ?
@@ -69,10 +69,12 @@ class FrontMethodVisitor extends MethodVisitor {
         mv.visitCode();
         // Getting the back field to delegate the call.
         mv.visitLdcInsn(methodName);
-        mv.visitInsn(Opcodes.ALOAD_0);
+        // TODO DEBUG mv.visitInsn(Opcodes.ALOAD_0);
+        mv.visitVarInsn(Opcodes.ALOAD, 0); // PutField on this for the field _back__.
         mv.visitFieldInsn(Opcodes.GETFIELD, frontName, FrontClassVisitor.BACK_FIELD, "Ljava/lang/Object;");
         // Delegating the call and the arguments.
-        mv.visitInsn(Opcodes.ALOAD_0);
+        // TODO DEBUG mv.visitInsn(Opcodes.ALOAD_0);
+        mv.visitVarInsn(Opcodes.ALOAD, 0);// PutField on this for the field _back__.
         loadArguments(mv, type);
         String delegateDesc = createDelegateCallDescriptor(type, 'L' + frontName + ';');
         mv.visitInvokeDynamicInsn("delegateCall", delegateDesc, BSM_DELEGATE_CALL);
