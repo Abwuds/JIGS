@@ -87,7 +87,7 @@ class FrontMethodVisitor extends MethodVisitor {
         mv.visitCode();
         // Getting the back field to delegate the call.
         mv.visitLdcInsn(methodName);
-        mv.visitInsn(Opcodes.ALOAD_0);
+        // mv.visitInsn(Opcodes.ALOAD_0);
         mv.visitVarInsn(Opcodes.ALOAD, 0); // PutField on this for the field _back__.
         mv.visitFieldInsn(Opcodes.GETFIELD, frontName, FrontClassVisitor.BACK_FIELD, "Ljava/lang/Object;");
         // Delegating the call and the arguments.
