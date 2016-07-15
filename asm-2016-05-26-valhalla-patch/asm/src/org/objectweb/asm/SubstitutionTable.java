@@ -19,11 +19,6 @@ public class SubstitutionTable extends Attribute {
         descriptors = new HashMap<>();
     }
 
-    private SubstitutionTable(ByteVector vector, HashMap<Integer, String> descriptors) {
-        super(NAME);
-        this.vector = vector;
-        this.descriptors = descriptors;
-    }
 
     public void putUTF8(int index, String owner, String descriptor) {
         descriptors.put(index, descriptor);
@@ -36,8 +31,9 @@ public class SubstitutionTable extends Attribute {
         return descriptors.containsKey(index);
     }
 
-    public boolean contains(String descriptor) {
-        return descriptors.containsValue(descriptor);
+    public boolean contains(String owner, String descriptor) {
+        // TODO test on owner AND descriptor since x/Object is replaced by t/Object.
+        return descriptors.containsValue(descriptor) && ;
     }
 
     public int get(String desc) {
@@ -67,9 +63,6 @@ public class SubstitutionTable extends Attribute {
 
     @Override
     protected Attribute read(ClassReader cr, int off, int len, char[] buf, int codeOff, Label[] labels) {
-        System.out.printf("Short : " + cr.readShort(off));
-        off += 2;
-        System.out.printf("UTF8 : " + cr.readUTF8(off, buf));
         return super.read(cr, off, len, buf, codeOff, labels);
     }
 

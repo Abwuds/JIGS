@@ -784,6 +784,9 @@ public class ClassWriter extends ClassVisitor {
     public final void visitAttribute(final Attribute attr) {
         attr.next = attrs;
         attrs = attr;
+        if (attr.type.equals("SubstitutionTable")) {
+            System.out.println("ClassWriter#visitAttribute : ATTRIBUTE IS SubstitutionTable : " + attr);
+        }
     }
 
     @Override
@@ -1129,15 +1132,17 @@ public class ClassWriter extends ClassVisitor {
      * @return the index of a new or already existing UTF8 item.
      */
     public int newTypedUTF8(final String owner, final String value) {
+        System.out.println("ClassWriter#newTypedUTF8 : owner = [" + owner + "], value = [" + value + "]");
         // Getting the current descriptor index.
         Type type = Type.getType(value);
         // Not a TypeVar constant, registering the UTF8 normally.
-        if (type.getSort() != Type.TYPE_VAR) {
+        if (type.getSort() != Type.TYPE_VAR && type.getSort() != Type.PARAMETERIZED_TYPE) {
             return newUTF8(value);
         }
+        System.out.println("ClassWriter#newTypedUTF8 PASSED : owner = [" + owner + "], value = [" + value + "]");
         // If the TypeVar has already been registered, returning its index.
         String desc = Type.typeToObject(type).getDescriptor();
-        if (substitutionTable.contains(desc)) {
+        if (substitutionTable.contains(owner, desc)) {
             return substitutionTable.get(desc);
         }
         // Forcing the creation of a new UTF8 constant for this particular TypeVar.

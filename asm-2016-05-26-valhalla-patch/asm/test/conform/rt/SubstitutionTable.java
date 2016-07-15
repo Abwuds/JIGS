@@ -43,13 +43,16 @@ public class SubstitutionTable  {
 */
 
     public static SubstitutionTable create(SubstitutionTableReader substitutionTableReader, int off, int len) {
+        System.out.println("substitutionTableReader = [" + substitutionTableReader + "], off = [" + off + "], len = [" + len + "]");
         HashMap<Integer, String> descriptors = new HashMap<>();
-        System.out.println("SubstitutionTable#create : substitutionTableReader = [" + substitutionTableReader + "], " +
-                "off = [" + off + "], len = [" + len + "]");
-        while (off < len) {
+        for (int i = 0; i < len; i++) {
             int index = substitutionTableReader.readShort(off);
-            String owner = substitutionTableReader.readUTF8(off + 2);
-            System.out.println("INDEX : " + index + " OWNER : " + owner);
+            off += 2;
+            String owner = substitutionTableReader.readUTF8(off);
+            off += owner.length() + 2;
+            String descriptor = substitutionTableReader.readUTF8(off);
+            off += descriptor.length() + 2;
+            System.out.println("INDEX : " + index + " OWNER : " + owner + " DESCRIPTOR : " + descriptor);
         }
         return new SubstitutionTable(descriptors);
     }

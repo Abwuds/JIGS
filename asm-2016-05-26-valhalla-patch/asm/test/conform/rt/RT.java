@@ -116,6 +116,7 @@ public class RT {
         ClassWriter writer = new ClassWriter(reader, 0);
         int index = writer.newConst("Hello");
         System.out.println("createBackSpecies - Hello index : " + index);*/
+        // TODO store the Substitution table in a couple values for the key class in classValue.
         SubstitutionTable substitutionTable = SubstitutionTableReader.read(backCode);
         System.out.println("After the substitutionTable : " + substitutionTable);
 
@@ -123,9 +124,7 @@ public class RT {
         // TODO get pool size by reading the class file and specialize.
         Object[] pool = new Object[0];
         // Has to launch with -noverify for the moment...
-        System.out.println("Before anonymous");
         Class<?> backClass = unsafe.defineAnonymousClass(frontClass, backCode, pool);
-        System.out.println("After anonymous");
         return lookup.findConstructor(backClass, type.changeReturnType(void.class)).asType(type);
     }
 

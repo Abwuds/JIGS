@@ -101,7 +101,6 @@ public class Rewriter {
     }
 
     private void copyRTClazz(String dir) throws IOException {
-        System.out.println("dir = [" + dir + "]");
         File[] files = new File(dir).listFiles((d, name) -> {
             return name.endsWith(".class");
         });

@@ -65,11 +65,9 @@ class FrontClassVisitor extends ClassVisitor {
     }
 
     @Override
-    public void visitAttribute(Attribute attr) {
-        if (hasBackFactory() && attr.type.equals(SubstitutionTable.NAME)) {
-            System.out.println("visitAttribute : attr = [" + attr + "]");
-            backClassVisitor.visitAttribute(attr);
-        }
+    public void visitEnd() {
+        super.visitEnd();
+        backClassVisitor.visitEnd(); // Calls the write of the substitutionTable. (I know it should be clearer).
     }
 
     @Override
