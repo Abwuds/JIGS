@@ -16,5 +16,6 @@ public class Container10Main {
         System.out.println(c.getX());
         c.setT("NewFieldValue");
         System.out.println(c.getT());
+        System.out.println(c.getT() + " " + c.getX() + " " + c.getU());
     }
 }

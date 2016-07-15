@@ -4,6 +4,7 @@ import org.objectweb.asm.Attribute;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.SubstitutionTable;
+import rt.RT;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -96,11 +97,12 @@ public class Rewriter {
         }
         Rewriter rewriter = new Rewriter(dir);
         rewriter.compileDirectory();
-        rewriter.copyRTClazz(dir);
+        rewriter.copyRTClazz(ClassLoader.getSystemClassLoader().getResource("").getPath() + RT.class.getPackage().getName().replace('.', '/'));
     }
 
     private void copyRTClazz(String dir) throws IOException {
-        File[] files = new File("asm/output/production/anonymous-tests/rt").listFiles((d, name) -> {
+        System.out.println("dir = [" + dir + "]");
+        File[] files = new File(dir).listFiles((d, name) -> {
             return name.endsWith(".class");
         });
         for (File f : files) {

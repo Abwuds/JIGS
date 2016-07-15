@@ -65,6 +65,14 @@ class FrontClassVisitor extends ClassVisitor {
     }
 
     @Override
+    public void visitAttribute(Attribute attr) {
+        if (hasBackFactory() && attr.type.equals(SubstitutionTable.NAME)) {
+            System.out.println("visitAttribute : attr = [" + attr + "]");
+            backClassVisitor.visitAttribute(attr);
+        }
+    }
+
+    @Override
     public void visitInnerClass(String name, String outerName, String innerName, int access) {
         super.visitInnerClass(Type.rawName(name), outerName, innerName, access);
     }

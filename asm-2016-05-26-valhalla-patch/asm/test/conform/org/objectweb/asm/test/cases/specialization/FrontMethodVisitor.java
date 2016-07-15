@@ -11,6 +11,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 
 /**
+ *
  * Created by Jefferson Mangue on 12/06/2016.
  */
 class FrontMethodVisitor extends MethodVisitor {
@@ -33,7 +34,6 @@ class FrontMethodVisitor extends MethodVisitor {
     }
 
     public static void visitFrontMethod(int api, String frontName, String methodName, String desc, String signature, String[] exceptions, MethodVisitor fmw) {
-        System.out.println("visitFrontMethod api = [" + api + "], frontName = [" + frontName + "], methodName = [" + methodName + "], desc = [" + desc + "], signature = [" + signature + "], exceptions = [" + exceptions + "], fmw = [" + fmw + "]");
         Type type = Type.getType(desc);
         // For the front method :
         if (methodName.equals("<init>")) {
@@ -49,11 +49,7 @@ class FrontMethodVisitor extends MethodVisitor {
     private static void visitConstructor(String frontName, MethodVisitor mv, Type type) {
         mv.visitCode();
         visitSuperConstructor(mv);
-        // TODO DEBUG mv.visitInsn(Opcodes.ALOAD_0);
         mv.visitVarInsn(Opcodes.ALOAD, 0);// PutField on this for the field _back__.
-
-        // TODO Change the constructor "Void, Object" because we can not pass null to Void.
-        // TODO pass null instead ?
 
         // Loading constructor arguments.
         Type[] argumentTypes = loadArguments(mv, type);
@@ -66,18 +62,7 @@ class FrontMethodVisitor extends MethodVisitor {
         mv.visitEnd();
     }
 
-    @Override
-    // TODO temporary hack because ALOAD_X are invalid during the stack size calculations.
-    public void visitInsn(int opcode) {
-        if (opcode <= Opcodes.ALOAD_0 || opcode <= Opcodes.ALOAD_3){
-            visitVarInsn(Opcodes.ALOAD, opcode - Opcodes.ALOAD_0);
-            return;
-        }
-        super.visitInsn(opcode);
-    }
-
     private static void visitSuperConstructor(MethodVisitor mv) {
-        // TODO DEBUG mv.visitInsn(Opcodes.ALOAD_0);
         mv.visitVarInsn(Opcodes.ALOAD, 0);
         // TODO the super.<init> owner is Object for the moment, because the inheritance is not handled.
         mv.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
@@ -87,11 +72,9 @@ class FrontMethodVisitor extends MethodVisitor {
         mv.visitCode();
         // Getting the back field to delegate the call.
         mv.visitLdcInsn(methodName);
-        // mv.visitInsn(Opcodes.ALOAD_0);
         mv.visitVarInsn(Opcodes.ALOAD, 0); // PutField on this for the field _back__.
         mv.visitFieldInsn(Opcodes.GETFIELD, frontName, FrontClassVisitor.BACK_FIELD, "Ljava/lang/Object;");
         // Delegating the call and the arguments.
-        // TODO DEBUG mv.visitInsn(Opcodes.ALOAD_0);
         mv.visitVarInsn(Opcodes.ALOAD, 0);// PutField on this for the field _back__.
         loadArguments(mv, type);
         String delegateDesc = createDelegateCallDescriptor(type, 'L' + frontName + ';');
@@ -150,12 +133,10 @@ class FrontMethodVisitor extends MethodVisitor {
         return argumentTypes;
     }
 
-    public static void createFrontSpecializerConstructor(String rawName, String backField, MethodVisitor mv) {
+    static void createFrontSpecializerConstructor(String rawName, String backField, MethodVisitor mv) {
         mv.visitCode();
         visitSuperConstructor(mv);
-        // TODO DEBUG mv.visitInsn(Opcodes.ALOAD_0);
         mv.visitVarInsn(Opcodes.ALOAD, 0);
-        // TODO DEBUG mv.visitInsn(Opcodes.ALOAD_2);
         mv.visitVarInsn(Opcodes.ALOAD, 2);
         mv.visitFieldInsn(Opcodes.PUTFIELD, rawName, backField, "Ljava/lang/Object;");
         mv.visitInsn(Opcodes.RETURN);

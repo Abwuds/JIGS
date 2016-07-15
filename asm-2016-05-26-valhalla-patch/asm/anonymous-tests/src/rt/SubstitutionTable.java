@@ -1,30 +1,20 @@
-package org.objectweb.asm;
+package rt;
 
 import java.util.HashMap;
-import java.util.Map;
 
 /**
  *
  * Created by Jefferson Mangue on 20/06/2016.
  */
-public class SubstitutionTable extends Attribute {
+public class SubstitutionTable  {
     public static final String NAME = "SubstitutionTable";
 
-    private final ByteVector vector;
     private final HashMap<Integer, String> descriptors; // Cache.
 
-    public SubstitutionTable() {
-        super(NAME);
-        vector = new ByteVector();
-        descriptors = new HashMap<>();
-    }
-
-    private SubstitutionTable(ByteVector vector, HashMap<Integer, String> descriptors) {
-        super(NAME);
-        this.vector = vector;
+    private SubstitutionTable(HashMap<Integer, String> descriptors) {
         this.descriptors = descriptors;
     }
-
+/*
     public void putUTF8(int index, String owner, String descriptor) {
         descriptors.put(index, descriptor);
         vector.putShort(index);
@@ -50,31 +40,17 @@ public class SubstitutionTable extends Attribute {
         }
         throw new IllegalArgumentException("No key : " + desc);
     }
+*/
 
-    @Override
-    public String toString() {
-        return descriptors.toString();
-    }
-
-    public boolean isEmpty() {
-        return descriptors.isEmpty();
-    }
-
-    public byte[] getByteArray() {
-        return vector.data;
-    }
-
-
-    @Override
-    protected Attribute read(ClassReader cr, int off, int len, char[] buf, int codeOff, Label[] labels) {
-        System.out.printf("Short : " + cr.readShort(off));
-        off += 2;
-        System.out.printf("UTF8 : " + cr.readUTF8(off, buf));
-        return super.read(cr, off, len, buf, codeOff, labels);
-    }
-
-    @Override
-    protected ByteVector write(ClassWriter cw, byte[] code, int len, int maxStack, int maxLocals) {
-        return vector;
+    public static SubstitutionTable create(SubstitutionTableReader substitutionTableReader, int off, int len) {
+        HashMap<Integer, String> descriptors = new HashMap<>();
+        System.out.println("SubstitutionTable#create : substitutionTableReader = [" + substitutionTableReader + "], " +
+                "off = [" + off + "], len = [" + len + "]");
+        while (off < len) {
+            int index = substitutionTableReader.readShort(off);
+            String owner = substitutionTableReader.readUTF8(off + 2);
+            System.out.println("INDEX : " + index + " OWNER : " + owner);
+        }
+        return new SubstitutionTable(descriptors);
     }
 }
