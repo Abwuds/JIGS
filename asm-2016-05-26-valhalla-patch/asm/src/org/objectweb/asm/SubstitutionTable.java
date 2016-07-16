@@ -1,5 +1,6 @@
 package org.objectweb.asm;
 
+import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,7 +12,7 @@ public class SubstitutionTable extends Attribute {
     public static final String NAME = "SubstitutionTable";
 
     private final ByteVector vector;
-    private final HashMap<Integer, String> descriptors; // Cache.
+    private final HashMap<Integer, Map.Entry<String, String>> descriptors; // Cache.
 
     public SubstitutionTable() {
         super(NAME);
@@ -21,7 +22,7 @@ public class SubstitutionTable extends Attribute {
 
 
     public void putUTF8(int index, String owner, String descriptor) {
-        descriptors.put(index, descriptor);
+        descriptors.put(index, new HashMap.SimpleEntry(descriptor, owner));
         vector.putShort(index);
         vector.putUTF8(owner);
         vector.putUTF8(descriptor);
@@ -31,20 +32,21 @@ public class SubstitutionTable extends Attribute {
         return descriptors.containsKey(index);
     }
 
-    public boolean contains(String owner, String descriptor) {
+    public boolean contains(String descriptor, String owner) {
         // TODO test on owner AND descriptor since x/Object is replaced by t/Object.
-        return descriptors.containsValue(descriptor) && ;
+        return descriptors.containsValue(new HashMap.SimpleEntry<>(descriptor, owner));
     }
 
-    public int get(String desc) {
+    public int get(String desc, String owner) {
         // Since the contains test using index is used inside a loop inside ClassWriter#get method.
         // The index has been chosen to be the key.
-        for (Map.Entry<Integer, String> e : descriptors.entrySet()) {
-            if (e.getValue().equals(desc)) {
+        AbstractMap.SimpleEntry<String, String> entry = new HashMap.SimpleEntry<>(desc, owner);
+        for (Map.Entry<Integer,  Map.Entry<String, String>> e : descriptors.entrySet()) {
+            if (e.getValue().equals(entry)) {
                 return e.getKey();
             }
         }
-        throw new IllegalArgumentException("No key : " + desc);
+        throw new IllegalArgumentException("No key : " + entry);
     }
 
     @Override

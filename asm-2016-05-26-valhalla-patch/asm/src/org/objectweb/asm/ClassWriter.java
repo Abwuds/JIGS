@@ -1142,8 +1142,8 @@ public class ClassWriter extends ClassVisitor {
         System.out.println("ClassWriter#newTypedUTF8 PASSED : owner = [" + owner + "], value = [" + value + "]");
         // If the TypeVar has already been registered, returning its index.
         String desc = Type.typeToObject(type).getDescriptor();
-        if (substitutionTable.contains(owner, desc)) {
-            return substitutionTable.get(desc);
+        if (substitutionTable.contains(desc, owner)) {
+            return substitutionTable.get(desc, owner);
         }
         // Forcing the creation of a new UTF8 constant for this particular TypeVar.
         pool.putByte(UTF8).putUTF8(desc);
