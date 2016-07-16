@@ -22,7 +22,7 @@ public class SubstitutionTable extends Attribute {
 
 
     public void putUTF8(int index, String owner, String descriptor) {
-        descriptors.put(index, new HashMap.SimpleEntry(descriptor, owner));
+        descriptors.put(index, new HashMap.SimpleEntry<>(descriptor, owner));
         vector.putShort(index);
         vector.putUTF8(owner);
         vector.putUTF8(descriptor);

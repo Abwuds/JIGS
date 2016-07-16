@@ -957,8 +957,9 @@ public class Type {
      * @return the method descriptor transformed.
      */
     public static String translateMethodDescriptor(String desc) {
-        Type[] argumentTypes = Type.getMethodType(desc).getArgumentTypes();
-        Type returnType = Type.getMethodType(desc).getReturnType();
+        Type methodType = Type.getMethodType(desc);
+        Type[] argumentTypes = methodType.getArgumentTypes();
+        Type returnType = methodType.getReturnType();
         Type[] resultTypes = new Type[argumentTypes.length];
         for (int i = 0; i < argumentTypes.length; i++) {
             resultTypes[i] = typeToObject(argumentTypes[i]);
@@ -966,6 +967,32 @@ public class Type {
         return Type.getMethodDescriptor(typeToObject(returnType), resultTypes);
     }
 
+    public static boolean hasTypeVar(Type type) {
+        if (type.sort == TYPE_VAR) { return true; }
+        if (type.sort != METHOD) { return false; }
+        // sort == METHOD
+        Type[] argumentTypes = type.getArgumentTypes();
+        for (int i = 0; i < argumentTypes.length; i++) {
+            // TODO test if PARAMETERIZED_TYPE too ?
+            int sort = argumentTypes[i].sort;
+            if (sort == TYPE_VAR) {
+                return true;
+            }
+        }
+        return type.getReturnType().sort == TYPE_VAR;
+    }
+
+    public static String translateType(Type type) {
+        switch(type.sort) {
+            case METHOD:
+                return translateMethodDescriptor(type.getDescriptor());
+            case TYPE_VAR:
+            case PARAMETERIZED_TYPE:
+                return typeToObject(type).getDescriptor();
+            default:
+                return type.getDescriptor();
+        }
+    }
     /**
      * Transform a {@link @Type.TYPE_VAR} or a PARAMETERIZED_TYPE to a {link @Type.OBJECT}.
      *
@@ -973,7 +1000,7 @@ public class Type {
      * @return the object built from the type var instance passed.
      */
     public static Type typeToObject(Type type) {
-        switch(type.getSort()) {
+        switch(type.sort) {
             case TYPE_VAR : {
                 String descriptor = type.getDescriptor();
                 return Type.getType(descriptor.substring(descriptor.indexOf('/') + 1));

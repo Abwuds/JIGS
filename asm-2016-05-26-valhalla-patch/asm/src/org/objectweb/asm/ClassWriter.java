@@ -784,9 +784,6 @@ public class ClassWriter extends ClassVisitor {
     public final void visitAttribute(final Attribute attr) {
         attr.next = attrs;
         attrs = attr;
-        if (attr.type.equals("SubstitutionTable")) {
-            System.out.println("ClassWriter#visitAttribute : ATTRIBUTE IS SubstitutionTable : " + attr);
-        }
     }
 
     @Override
@@ -1132,25 +1129,24 @@ public class ClassWriter extends ClassVisitor {
      * @return the index of a new or already existing UTF8 item.
      */
     public int newTypedUTF8(final String owner, final String value) {
-        System.out.println("ClassWriter#newTypedUTF8 : owner = [" + owner + "], value = [" + value + "]");
         // Getting the current descriptor index.
         Type type = Type.getType(value);
+        // Translating the descriptor (can be a parameterized type too).
+        String desc = Type.translateType(type);
         // Not a TypeVar constant, registering the UTF8 normally.
-        if (type.getSort() != Type.TYPE_VAR && type.getSort() != Type.PARAMETERIZED_TYPE) {
-            return newUTF8(value);
+        if (!Type.hasTypeVar(type)) {
+            return newUTF8(desc);
         }
-        System.out.println("ClassWriter#newTypedUTF8 PASSED : owner = [" + owner + "], value = [" + value + "]");
         // If the TypeVar has already been registered, returning its index.
-        String desc = Type.typeToObject(type).getDescriptor();
-        if (substitutionTable.contains(desc, owner)) {
-            return substitutionTable.get(desc, owner);
+        if (substitutionTable.contains(value, owner)) {
+            return substitutionTable.get(value, owner);
         }
         // Forcing the creation of a new UTF8 constant for this particular TypeVar.
         pool.putByte(UTF8).putUTF8(desc);
         Item result = new Item(index++, key);
         put(result);
         // Adding the value to the substitutionTable.
-        substitutionTable.putUTF8(result.index, owner, desc);
+        substitutionTable.putUTF8(result.index, owner, value);
         return result.index;
     }
 
@@ -1374,8 +1370,12 @@ public class ClassWriter extends ClassVisitor {
             bsm2 = new Handle(bsm.tag, "rt/RT", bsm.name, bsm.desc, bsm.itf);
         }
         // TODO register in the substitution table if Typevar present.
-        String desc2 = Type.translateMethodDescriptor(desc);
-        Type methodDescriptor = Type.getType(desc2);
+        /*System.out.println("newInvokeDynamicItem " + name + ": " + desc);
+        if (Type.hasTypeVar(desc)) {
+            System.out.println("newInvokeDynamicItem HAS TYPE VAR.");
+            // substitutionTable.
+            // TODO look into nameAndType to substitute !
+        }*/
 
         // cache for performance
         ByteVector bootstrapMethods = this.bootstrapMethods;
@@ -1432,10 +1432,10 @@ public class ClassWriter extends ClassVisitor {
         }
 
         // now, create the InvokeDynamic constant
-        key3.set(name, desc2, bootstrapMethodIndex);
+        key3.set(name, desc, bootstrapMethodIndex);
         result = get(key3);
         if (result == null) {
-            put122(INDY, bootstrapMethodIndex, newNameType(name, desc2));
+            put122(INDY, bootstrapMethodIndex, newNameType(name, desc));
             result = new Item(index++, key3);
             put(result);
         }
