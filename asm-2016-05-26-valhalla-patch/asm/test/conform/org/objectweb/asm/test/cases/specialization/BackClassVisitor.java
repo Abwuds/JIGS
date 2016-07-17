@@ -36,9 +36,12 @@ class BackClassVisitor extends ClassVisitor {
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
         int methodAccess;
         String methodDescriptor;
-        // For each method of the back but the constructor, transforming it into a static method taking
-        // in first parameter the front class.
-        if (!name.equals("<init>")) {
+        if (name.equals("<init>")) {
+            methodAccess = access;
+            methodDescriptor = desc;
+        } else {
+            // For each method of the back but the constructor, transforming it into a static method taking
+            // in first parameter the front class.
             methodAccess = access + Opcodes.ACC_STATIC;
             Type mType = Type.getType(desc);
             Type[] argumentTypes = mType.getArgumentTypes();
@@ -46,9 +49,6 @@ class BackClassVisitor extends ClassVisitor {
             parameterTypes[0] = Type.getType('L' + frontName + ';');
             for (int i = 1; i < parameterTypes.length; i++) { parameterTypes[i] = argumentTypes[i - 1]; }
             methodDescriptor =  Type.getMethodDescriptor(mType.getReturnType(), parameterTypes);
-        } else {
-            methodAccess = access;
-            methodDescriptor = desc;
         }
         return new BackMethodVisitor(api, name, frontName, this.name, super.visitMethod(methodAccess, name, methodDescriptor, null, exceptions));
     }

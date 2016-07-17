@@ -1365,17 +1365,12 @@ public class ClassWriter extends ClassVisitor {
      */
     Item newInvokeDynamicItem(final String name, final String desc,
             final Handle bsm, final Object... bsmArgs) {
+
+        // Substituting ObjectibleDispatch#metafactory to RT#metafactory.
         Handle bsm2 = bsm;
         if (name.equals("metafactory") && bsm.owner.equals("java/lang/invoke/ObjectibleDispatch")) {
             bsm2 = new Handle(bsm.tag, "rt/RT", bsm.name, bsm.desc, bsm.itf);
         }
-        // TODO register in the substitution table if Typevar present.
-        /*System.out.println("newInvokeDynamicItem " + name + ": " + desc);
-        if (Type.hasTypeVar(desc)) {
-            System.out.println("newInvokeDynamicItem HAS TYPE VAR.");
-            // substitutionTable.
-            // TODO look into nameAndType to substitute !
-        }*/
 
         // cache for performance
         ByteVector bootstrapMethods = this.bootstrapMethods;
@@ -1480,7 +1475,7 @@ public class ClassWriter extends ClassVisitor {
     Item newFieldItem(final String owner, final String name, final String desc) {
         key3.set(FIELD, owner, name, desc);
         Item result = get(key3);
-        if (result == null) {// TODO pass owner...
+        if (result == null) {// TODO do we pass the owner ?
             put122(FIELD, newClass(owner), newNameType(name, desc));
             result = new Item(index++, key3);
             put(result);

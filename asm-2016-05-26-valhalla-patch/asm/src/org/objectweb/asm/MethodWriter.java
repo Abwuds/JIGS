@@ -464,10 +464,9 @@ class MethodWriter extends MethodVisitor {
         }
         this.name = cw.newUTF8(name);
         // Translating the descriptor into valid Java 8- descriptor.
-        // substitutionTable;
+        // And registering the UTF8 if typed with TypeVar.
         String retroDesc = Type.translateMethodDescriptor(desc);
-        // TODO register signature if any TypeVar/ParameterizedType present.
-        this.desc = cw.newUTF8(retroDesc);
+        this.desc = cw.newTypedUTF8(name, desc);
         this.descriptor = retroDesc;
         if (ClassReader.SIGNATURES) {
             this.signature = signature;
@@ -885,12 +884,8 @@ class MethodWriter extends MethodVisitor {
     @Override
     public void visitMethodInsn(final int opcode, final String owner,
             final String name, final String desc, final boolean itf) {
-        String oowner = owner;
-        if (oowner.startsWith("$")) {
-            oowner = Type.rawName(owner);
-        }
         lastCodeOffset = code.length;
-        Item i = cw.newMethodItem(oowner, name, desc, itf);
+        Item i = cw.newMethodItem(owner, name, desc, itf);
         int argSize = i.intVal;
         // Label currentBlock = this.currentBlock;
         if (currentBlock != null) {
