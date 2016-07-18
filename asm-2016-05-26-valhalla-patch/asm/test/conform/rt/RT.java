@@ -24,6 +24,8 @@
  */
 package rt;
 
+import org.objectweb.asm.test.cases.specialization.BackClassVisitor;
+import org.objectweb.asm.test.cases.specialization.FrontClassVisitor;
 import sun.misc.Unsafe;
 
 import java.io.IOException;
@@ -42,8 +44,8 @@ import java.util.Objects;
 public class RT {
 
     private static final Unsafe UNSAFE = initUnsafe();
-    private static final String ANY_PACKAGE = "java/any/";
-    private static final String BACK_FACTORY_NAME = "_BackFactory";
+    private static final String ANY_PACKAGE = BackClassVisitor.ANY_PACKAGE;
+    private static final String BACK_FACTORY_NAME = BackClassVisitor.BACK_FACTORY_NAME;
     private static final MethodType GET_BACK_FIELD_TYPE = MethodType.methodType(Object.class, MethodHandles.Lookup.class, Class.class, Object.class, String.class);
     private static final MethodType PUT_BACK_FIELD_TYPE = MethodType.methodType(void.class, MethodHandles.Lookup.class, Class.class, Object.class, Object.class, String.class);
     private static final MethodType INVOKE_CALL_TYPE = MethodType.methodType(Object.class, MethodHandles.Lookup.class, MethodType.class, String.class, Object.class, Object[].class); private static final ClassValue<byte[]> BACK_FACTORY = new ClassValue<byte[]>() {
@@ -124,8 +126,8 @@ public class RT {
         }
 
         // TODO get pool size by reading the class file and specialize.
-        // Has to launch with -noverify for the moment...
-        Class<?> backClass = UNSAFE.defineAnonymousClass(frontClass, backCode, pool);
+        // Passing Object.class
+        Class<?> backClass = UNSAFE.defineAnonymousClass(Object.class, backCode, pool);
         return lookup.findConstructor(backClass, type.changeReturnType(void.class)).asType(type);
     }
 
@@ -142,7 +144,7 @@ public class RT {
     }
 
     private static Object getBack__(MethodHandles.Lookup lookup, Object owner) throws Throwable {
-        return lookup.findGetter(owner.getClass(), "_back__", Object.class).invoke(owner);
+        return lookup.findGetter(owner.getClass(), FrontClassVisitor.BACK_FIELD, Object.class).invoke(owner);
     }
 
     private static Unsafe initUnsafe() {

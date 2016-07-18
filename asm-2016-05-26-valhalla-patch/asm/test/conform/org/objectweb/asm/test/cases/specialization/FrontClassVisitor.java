@@ -7,11 +7,11 @@ import org.objectweb.asm.*;
  *
  * Created by Jefferson Mangue on 09/06/2016.
  */
-class FrontClassVisitor extends ClassVisitor {
+public class FrontClassVisitor extends ClassVisitor {
 
     public static final int API = Opcodes.ASM5;
     public static final String BACK_FIELD = "_back__";
-    private static final int COMPILER_VERSION = 52;
+    private static final int COMPILER_VERSION = 51;
     private final ClassWriter backClassWriter;
     private final BackClassVisitor backClassVisitor;
 
@@ -43,7 +43,7 @@ class FrontClassVisitor extends ClassVisitor {
         super.visit(COMPILER_VERSION, access, rawName, signature, superName, interfaces);
         // Creating the back class inside the any package, by concatenating "_BackFactory".
         // Now creating a back factory class, placed inside the package java/any".
-        createBackClassVisitor(version, rawName);
+        createBackClassVisitor(COMPILER_VERSION, rawName);
         // Creating an Object field inside the class. It will be used to store the back class at runtime.
         super.visitField(Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL, BACK_FIELD, "Ljava/lang/Object;", null, null);
         createFrontSpecializationConstructor(rawName);
@@ -88,7 +88,7 @@ class FrontClassVisitor extends ClassVisitor {
     }
 
     private void createBackClassVisitor(int version, String rawName) {
-        backClassVisitor.visit(version, Opcodes.ACC_PUBLIC, rawName, null, "java/lang/Object", null);
+        backClassVisitor.visit(COMPILER_VERSION, Opcodes.ACC_PUBLIC, rawName, null, "java/lang/Object", null);
         backFactoryName = backClassVisitor.getName();
     }
 

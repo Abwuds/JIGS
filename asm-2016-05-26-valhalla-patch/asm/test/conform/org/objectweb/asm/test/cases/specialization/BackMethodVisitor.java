@@ -252,7 +252,6 @@ class BackMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitTypedInsn(String name, int typedOpcode) {
-        System.out.println("BackMethodVisitor#visitTypedInsn : name = [" + name + "], typedOpcode = [" + typedOpcode + "]");
         /*super.visitTypedInsn(name, typedOpcode);
         // TODO replace this by the switch of typed opcode.
         if (typedOpcode <= Opcodes.ALOAD_0 || typedOpcode <= Opcodes.ALOAD_3){

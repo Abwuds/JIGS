@@ -6,11 +6,10 @@ import org.objectweb.asm.*;
  *
  * Created by Jefferson Mangue on 09/06/2016.
  */
-class BackClassVisitor extends ClassVisitor {
+public class BackClassVisitor extends ClassVisitor {
 
-    public static final String ANY_PACKAGE = "java/any/";
+    public static final String ANY_PACKAGE = "any/";
     public static final String BACK_FACTORY_NAME = "_BackFactory";
-    private static final int COMPILER_VERSION = 52; // Java 1.8
 
     // Sets when visiting the class prototype.
     private String name;
@@ -24,7 +23,7 @@ class BackClassVisitor extends ClassVisitor {
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
         frontName = name;
         this.name = ANY_PACKAGE + name + BACK_FACTORY_NAME;
-        super.visit(COMPILER_VERSION, access, this.name, signature, superName, interfaces);
+        super.visit(version, access, this.name, signature, superName, interfaces);
     }
 
     @Override
