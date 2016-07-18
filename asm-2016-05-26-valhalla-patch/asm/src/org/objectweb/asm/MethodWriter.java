@@ -884,8 +884,13 @@ class MethodWriter extends MethodVisitor {
     @Override
     public void visitMethodInsn(final int opcode, final String owner,
             final String name, final String desc, final boolean itf) {
+        // TODO keep this signature inside the substitution table ?
+        String oowner = owner;
+        if (oowner.startsWith("$")) {
+            oowner = Type.rawName(owner);
+        }
         lastCodeOffset = code.length;
-        Item i = cw.newMethodItem(owner, name, desc, itf);
+        Item i = cw.newMethodItem(oowner, name, desc, itf);
         int argSize = i.intVal;
         // Label currentBlock = this.currentBlock;
         if (currentBlock != null) {

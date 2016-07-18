@@ -4,7 +4,7 @@ package rt;
  *
  * Created by Jefferson Mangue on 15/07/2016.
  */
-public class Types {
+class Types {
 
     /**
      * The type of instructions without any argument.

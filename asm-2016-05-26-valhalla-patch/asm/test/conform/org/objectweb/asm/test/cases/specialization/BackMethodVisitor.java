@@ -1,10 +1,7 @@
 package org.objectweb.asm.test.cases.specialization;
 
 
-import org.objectweb.asm.Handle;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
+import org.objectweb.asm.*;
 
 import java.lang.invoke.CallSite;
 import java.lang.invoke.MethodHandles;
@@ -38,41 +35,41 @@ class BackMethodVisitor extends MethodVisitor {
                 new AbstractMap.SimpleEntry<>("F", Opcodes.FLOAD),
                 new AbstractMap.SimpleEntry<>("D", Opcodes.DLOAD)));
         INSTRS.put(Opcodes.ALOAD_0, Arrays.asList(
-                new AbstractMap.SimpleEntry<>("I", Opcodes.ILOAD_0),
-                new AbstractMap.SimpleEntry<>("B", Opcodes.ILOAD_0),
-                new AbstractMap.SimpleEntry<>("S", Opcodes.ILOAD_0),
-                new AbstractMap.SimpleEntry<>("C", Opcodes.ILOAD_0),
-                new AbstractMap.SimpleEntry<>("Z", Opcodes.ILOAD_0),
-                new AbstractMap.SimpleEntry<>("J", Opcodes.LLOAD_0),
-                new AbstractMap.SimpleEntry<>("F", Opcodes.FLOAD_0),
-                new AbstractMap.SimpleEntry<>("D", Opcodes.DLOAD_0)));
+                new AbstractMap.SimpleEntry<>("I", Opcodes.ILOAD),
+                new AbstractMap.SimpleEntry<>("B", Opcodes.ILOAD),
+                new AbstractMap.SimpleEntry<>("S", Opcodes.ILOAD),
+                new AbstractMap.SimpleEntry<>("C", Opcodes.ILOAD),
+                new AbstractMap.SimpleEntry<>("Z", Opcodes.ILOAD),
+                new AbstractMap.SimpleEntry<>("J", Opcodes.LLOAD),
+                new AbstractMap.SimpleEntry<>("F", Opcodes.FLOAD),
+                new AbstractMap.SimpleEntry<>("D", Opcodes.DLOAD)));
         INSTRS.put(Opcodes.ALOAD_1, Arrays.asList(
-                new AbstractMap.SimpleEntry<>("I", Opcodes.ILOAD_1),
-                new AbstractMap.SimpleEntry<>("B", Opcodes.ILOAD_1),
-                new AbstractMap.SimpleEntry<>("S", Opcodes.ILOAD_1),
-                new AbstractMap.SimpleEntry<>("C", Opcodes.ILOAD_1),
-                new AbstractMap.SimpleEntry<>("Z", Opcodes.ILOAD_1),
-                new AbstractMap.SimpleEntry<>("J", Opcodes.LLOAD_1),
-                new AbstractMap.SimpleEntry<>("F", Opcodes.FLOAD_1),
-                new AbstractMap.SimpleEntry<>("D", Opcodes.DLOAD_1)));
+                new AbstractMap.SimpleEntry<>("I", Opcodes.ILOAD),
+                new AbstractMap.SimpleEntry<>("B", Opcodes.ILOAD),
+                new AbstractMap.SimpleEntry<>("S", Opcodes.ILOAD),
+                new AbstractMap.SimpleEntry<>("C", Opcodes.ILOAD),
+                new AbstractMap.SimpleEntry<>("Z", Opcodes.ILOAD),
+                new AbstractMap.SimpleEntry<>("J", Opcodes.LLOAD),
+                new AbstractMap.SimpleEntry<>("F", Opcodes.FLOAD),
+                new AbstractMap.SimpleEntry<>("D", Opcodes.DLOAD)));
         INSTRS.put(Opcodes.ALOAD_2, Arrays.asList(
-                new AbstractMap.SimpleEntry<>("I", Opcodes.ILOAD_2),
-                new AbstractMap.SimpleEntry<>("B", Opcodes.ILOAD_2),
-                new AbstractMap.SimpleEntry<>("S", Opcodes.ILOAD_2),
-                new AbstractMap.SimpleEntry<>("C", Opcodes.ILOAD_2),
-                new AbstractMap.SimpleEntry<>("Z", Opcodes.ILOAD_2),
-                new AbstractMap.SimpleEntry<>("J", Opcodes.LLOAD_2),
-                new AbstractMap.SimpleEntry<>("F", Opcodes.FLOAD_2),
-                new AbstractMap.SimpleEntry<>("D", Opcodes.DLOAD_2)));
+                new AbstractMap.SimpleEntry<>("I", Opcodes.ILOAD),
+                new AbstractMap.SimpleEntry<>("B", Opcodes.ILOAD),
+                new AbstractMap.SimpleEntry<>("S", Opcodes.ILOAD),
+                new AbstractMap.SimpleEntry<>("C", Opcodes.ILOAD),
+                new AbstractMap.SimpleEntry<>("Z", Opcodes.ILOAD),
+                new AbstractMap.SimpleEntry<>("J", Opcodes.LLOAD),
+                new AbstractMap.SimpleEntry<>("F", Opcodes.FLOAD),
+                new AbstractMap.SimpleEntry<>("D", Opcodes.DLOAD)));
         INSTRS.put(Opcodes.ALOAD_3, Arrays.asList(
-                new AbstractMap.SimpleEntry<>("I", Opcodes.ILOAD_3),
-                new AbstractMap.SimpleEntry<>("B", Opcodes.ILOAD_3),
-                new AbstractMap.SimpleEntry<>("S", Opcodes.ILOAD_3),
-                new AbstractMap.SimpleEntry<>("C", Opcodes.ILOAD_3),
-                new AbstractMap.SimpleEntry<>("Z", Opcodes.ILOAD_3),
-                new AbstractMap.SimpleEntry<>("J", Opcodes.LLOAD_3),
-                new AbstractMap.SimpleEntry<>("F", Opcodes.FLOAD_3),
-                new AbstractMap.SimpleEntry<>("D", Opcodes.DLOAD_3)));
+                new AbstractMap.SimpleEntry<>("I", Opcodes.ILOAD),
+                new AbstractMap.SimpleEntry<>("B", Opcodes.ILOAD),
+                new AbstractMap.SimpleEntry<>("S", Opcodes.ILOAD),
+                new AbstractMap.SimpleEntry<>("C", Opcodes.ILOAD),
+                new AbstractMap.SimpleEntry<>("Z", Opcodes.ILOAD),
+                new AbstractMap.SimpleEntry<>("J", Opcodes.LLOAD),
+                new AbstractMap.SimpleEntry<>("F", Opcodes.FLOAD),
+                new AbstractMap.SimpleEntry<>("D", Opcodes.DLOAD)));
         INSTRS.put(Opcodes.ASTORE, Arrays.asList(
                 new AbstractMap.SimpleEntry<>("I", Opcodes.ISTORE),
                 new AbstractMap.SimpleEntry<>("B", Opcodes.ISTORE),
@@ -83,41 +80,41 @@ class BackMethodVisitor extends MethodVisitor {
                 new AbstractMap.SimpleEntry<>("F", Opcodes.FSTORE),
                 new AbstractMap.SimpleEntry<>("D", Opcodes.DSTORE)));
         INSTRS.put(Opcodes.ASTORE_0, Arrays.asList(
-                new AbstractMap.SimpleEntry<>("I", Opcodes.ISTORE_0),
-                new AbstractMap.SimpleEntry<>("B", Opcodes.ISTORE_0),
-                new AbstractMap.SimpleEntry<>("S", Opcodes.ISTORE_0),
-                new AbstractMap.SimpleEntry<>("C", Opcodes.ISTORE_0),
-                new AbstractMap.SimpleEntry<>("Z", Opcodes.ISTORE_0),
-                new AbstractMap.SimpleEntry<>("J", Opcodes.LSTORE_0),
-                new AbstractMap.SimpleEntry<>("F", Opcodes.FSTORE_0),
-                new AbstractMap.SimpleEntry<>("D", Opcodes.DSTORE_0)));
+                new AbstractMap.SimpleEntry<>("I", Opcodes.ISTORE),
+                new AbstractMap.SimpleEntry<>("B", Opcodes.ISTORE),
+                new AbstractMap.SimpleEntry<>("S", Opcodes.ISTORE),
+                new AbstractMap.SimpleEntry<>("C", Opcodes.ISTORE),
+                new AbstractMap.SimpleEntry<>("Z", Opcodes.ISTORE),
+                new AbstractMap.SimpleEntry<>("J", Opcodes.LSTORE),
+                new AbstractMap.SimpleEntry<>("F", Opcodes.FSTORE),
+                new AbstractMap.SimpleEntry<>("D", Opcodes.DSTORE)));
         INSTRS.put(Opcodes.ASTORE_1, Arrays.asList(
-                new AbstractMap.SimpleEntry<>("I", Opcodes.ISTORE_1),
-                new AbstractMap.SimpleEntry<>("B", Opcodes.ISTORE_1),
-                new AbstractMap.SimpleEntry<>("S", Opcodes.ISTORE_1),
-                new AbstractMap.SimpleEntry<>("C", Opcodes.ISTORE_1),
-                new AbstractMap.SimpleEntry<>("Z", Opcodes.ISTORE_1),
-                new AbstractMap.SimpleEntry<>("J", Opcodes.LSTORE_1),
-                new AbstractMap.SimpleEntry<>("F", Opcodes.FSTORE_1),
-                new AbstractMap.SimpleEntry<>("D", Opcodes.DSTORE_1)));
+                new AbstractMap.SimpleEntry<>("I", Opcodes.ISTORE),
+                new AbstractMap.SimpleEntry<>("B", Opcodes.ISTORE),
+                new AbstractMap.SimpleEntry<>("S", Opcodes.ISTORE),
+                new AbstractMap.SimpleEntry<>("C", Opcodes.ISTORE),
+                new AbstractMap.SimpleEntry<>("Z", Opcodes.ISTORE),
+                new AbstractMap.SimpleEntry<>("J", Opcodes.LSTORE),
+                new AbstractMap.SimpleEntry<>("F", Opcodes.FSTORE),
+                new AbstractMap.SimpleEntry<>("D", Opcodes.DSTORE)));
         INSTRS.put(Opcodes.ASTORE_2, Arrays.asList(
-                new AbstractMap.SimpleEntry<>("I", Opcodes.ISTORE_2),
-                new AbstractMap.SimpleEntry<>("B", Opcodes.ISTORE_2),
-                new AbstractMap.SimpleEntry<>("S", Opcodes.ISTORE_2),
-                new AbstractMap.SimpleEntry<>("C", Opcodes.ISTORE_2),
-                new AbstractMap.SimpleEntry<>("Z", Opcodes.ISTORE_2),
-                new AbstractMap.SimpleEntry<>("J", Opcodes.LSTORE_2),
-                new AbstractMap.SimpleEntry<>("F", Opcodes.FSTORE_2),
-                new AbstractMap.SimpleEntry<>("D", Opcodes.DSTORE_2)));
+                new AbstractMap.SimpleEntry<>("I", Opcodes.ISTORE),
+                new AbstractMap.SimpleEntry<>("B", Opcodes.ISTORE),
+                new AbstractMap.SimpleEntry<>("S", Opcodes.ISTORE),
+                new AbstractMap.SimpleEntry<>("C", Opcodes.ISTORE),
+                new AbstractMap.SimpleEntry<>("Z", Opcodes.ISTORE),
+                new AbstractMap.SimpleEntry<>("J", Opcodes.LSTORE),
+                new AbstractMap.SimpleEntry<>("F", Opcodes.FSTORE),
+                new AbstractMap.SimpleEntry<>("D", Opcodes.DSTORE)));
         INSTRS.put(Opcodes.ASTORE_3, Arrays.asList(
-                new AbstractMap.SimpleEntry<>("I", Opcodes.ASTORE_3),
-                new AbstractMap.SimpleEntry<>("B", Opcodes.ASTORE_3),
-                new AbstractMap.SimpleEntry<>("S", Opcodes.ASTORE_3),
-                new AbstractMap.SimpleEntry<>("C", Opcodes.ASTORE_3),
-                new AbstractMap.SimpleEntry<>("Z", Opcodes.ASTORE_3),
-                new AbstractMap.SimpleEntry<>("J", Opcodes.ASTORE_3),
-                new AbstractMap.SimpleEntry<>("F", Opcodes.ASTORE_3),
-                new AbstractMap.SimpleEntry<>("D", Opcodes.ASTORE_3)));
+                new AbstractMap.SimpleEntry<>("I", Opcodes.ISTORE),
+                new AbstractMap.SimpleEntry<>("B", Opcodes.ISTORE),
+                new AbstractMap.SimpleEntry<>("S", Opcodes.ISTORE),
+                new AbstractMap.SimpleEntry<>("C", Opcodes.ISTORE),
+                new AbstractMap.SimpleEntry<>("Z", Opcodes.ISTORE),
+                new AbstractMap.SimpleEntry<>("J", Opcodes.LSTORE),
+                new AbstractMap.SimpleEntry<>("F", Opcodes.FSTORE),
+                new AbstractMap.SimpleEntry<>("D", Opcodes.DSTORE)));
         INSTRS.put(Opcodes.AALOAD, Arrays.asList(
                 new AbstractMap.SimpleEntry<>("I", Opcodes.IALOAD),
                 new AbstractMap.SimpleEntry<>("B", Opcodes.IALOAD),
@@ -255,14 +252,16 @@ class BackMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitTypedInsn(String name, int typedOpcode) {
-        super.visitTypedInsn(name, typedOpcode);
+        System.out.println("BackMethodVisitor#visitTypedInsn : name = [" + name + "], typedOpcode = [" + typedOpcode + "]");
+        /*super.visitTypedInsn(name, typedOpcode);
         // TODO replace this by the switch of typed opcode.
         if (typedOpcode <= Opcodes.ALOAD_0 || typedOpcode <= Opcodes.ALOAD_3){
             visitVarInsn(Opcodes.ALOAD, typedOpcode - Opcodes.ALOAD_0);
             return;
         }
         visitInsn(typedOpcode);
-       /* Label end = new Label();
+       */
+        Label end = new Label();
         List<Map.Entry<String, Integer>> tests = INSTRS.get(typedOpcode);
         if (tests == null) {
             throw new IllegalArgumentException("Invalid Opcode following TYPED instruction : " + typedOpcode);
@@ -275,14 +274,35 @@ class BackMethodVisitor extends MethodVisitor {
             visitLdcInsn(name);
             visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z", false);
             Label label = new Label();
-            visitJumpInsn(Opcodes.IFNE, label);
-            visitInsn(newOpcode);
+            visitJumpInsn(Opcodes.IFEQ, label);
+            switch(typedOpcode) {
+                case Opcodes.ALOAD_0:
+                case Opcodes.ALOAD_1:
+                case Opcodes.ALOAD_2:
+                case Opcodes.ALOAD_3:
+                    visitVarInsn(newOpcode, typedOpcode - Opcodes.ALOAD_0);
+                    break;
+                case Opcodes.ASTORE_0:
+                case Opcodes.ASTORE_1:
+                case Opcodes.ASTORE_2:
+                case Opcodes.ASTORE_3:
+                    visitVarInsn(newOpcode, typedOpcode - Opcodes.ASTORE_0);
+                    break;
+                case Opcodes.ARETURN:
+                    visitInsn(newOpcode);
+                    break;
+                default:
+                    // TODO ACONST_NULL, AASTORE, AALOAD.
+                    System.err.println("BackMethodVisitor#visitTypedInsn : TypedCode not handled : " + typedOpcode);
+                    break;
+            }
             visitJumpInsn(Opcodes.GOTO, end);
             visitLabel(label);
+           // visitFrame(Opcodes.F_APPEND, 0, null, 0, null);
         }
 
         // If none of them worked, doing the original then.
         visitInsn(typedOpcode);
-        visitLabel(end);*/
+        visitLabel(end);
     }
 }

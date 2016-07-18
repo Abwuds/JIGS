@@ -31,7 +31,9 @@ import java.lang.invoke.*;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -39,7 +41,7 @@ import java.util.Objects;
  */
 public class RT {
 
-    // TODO move this in one file and share it with org.objectweb.asm.test.cases.specialization.
+    private static final Unsafe UNSAFE = initUnsafe();
     private static final String ANY_PACKAGE = "java/any/";
     private static final String BACK_FACTORY_NAME = "_BackFactory";
     private static final MethodType GET_BACK_FIELD_TYPE = MethodType.methodType(Object.class, MethodHandles.Lookup.class, Class.class, Object.class, String.class);
@@ -104,27 +106,26 @@ public class RT {
 
     private static MethodHandle createBackSpecies(MethodHandles.Lookup lookup, MethodType type, Class<?> frontClass)
             throws NoSuchFieldException, IllegalAccessException, NoSuchMethodException {
-        // TODO put unsafe into a constant.
-        Class<?> unsafeClass = Unsafe.class;
-        Field theUnsafe = unsafeClass.getDeclaredField("theUnsafe");
-        theUnsafe.setAccessible(true);
-        Unsafe unsafe = (Unsafe) theUnsafe.get(null);
-        byte[] backCode = BACK_FACTORY.get(frontClass);
-
+        System.out.println("RT#createBackSpecies : lookup = [" + lookup + "], type = [" + type + "], frontClass = [" + frontClass + "]");
+        System.out.println("Param number : " + type.parameterArray().length);
         // Reading the specialization attributes.
-        /*ClassReader reader = new ClassReader(backCode);
-        ClassWriter writer = new ClassWriter(reader, 0);
-        int index = writer.newConst("Hello");
-        System.out.println("createBackSpecies - Hello index : " + index);*/
         // TODO store the Substitution table in a couple values for the key class in classValue.
+        byte[] backCode = BACK_FACTORY.get(frontClass);
         SubstitutionTable substitutionTable = SubstitutionTableReader.read(backCode);
         System.out.println("After the substitutionTable : " + substitutionTable);
 
+        // Creating substitution pool.
+        Object[] pool = new Object[substitutionTable.getMax() + 1];
+        for (Map.Entry<Integer, Map.Entry<String, String>> descs : substitutionTable.getDescriptors().entrySet()) {
+            Integer index = descs.getKey();
+            String descriptor = descs.getValue().getValue();
+            pool[index] = Type.specializeDescriptor(descriptor, type.parameterArray());
+            System.out.println("Index : " + index + " val : " + descs.getValue() + "Pool result : " + pool[index]);
+        }
 
         // TODO get pool size by reading the class file and specialize.
-        Object[] pool = new Object[0];
         // Has to launch with -noverify for the moment...
-        Class<?> backClass = unsafe.defineAnonymousClass(frontClass, backCode, pool);
+        Class<?> backClass = UNSAFE.defineAnonymousClass(frontClass, backCode, pool);
         return lookup.findConstructor(backClass, type.changeReturnType(void.class)).asType(type);
     }
 
@@ -142,6 +143,21 @@ public class RT {
 
     private static Object getBack__(MethodHandles.Lookup lookup, Object owner) throws Throwable {
         return lookup.findGetter(owner.getClass(), "_back__", Object.class).invoke(owner);
+    }
+
+    private static Unsafe initUnsafe() {
+        try {
+            Class<?> unsafeClass = Unsafe.class;
+            Field theUnsafe = null;
+            theUnsafe = unsafeClass.getDeclaredField("theUnsafe");
+            theUnsafe.setAccessible(true);
+            return (Unsafe) theUnsafe.get(null);
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     /**
