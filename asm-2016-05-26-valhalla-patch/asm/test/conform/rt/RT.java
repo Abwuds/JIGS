@@ -110,9 +110,9 @@ public class RT {
         return new ConstantCallSite(mh);
     }
 
-    private static MethodHandle createBackSpecies(MethodHandles.Lookup lookup, MethodType type, Class<?> frontClass)
+    private static MethodHandle createBackSpecies(MethodHandles.Lookup frontClassLookup, MethodType type, Class<?> frontClass)
             throws NoSuchFieldException, IllegalAccessException, NoSuchMethodException {
-        System.out.println("RT#createBackSpecies : lookup = [" + lookup + "], type = [" + type + "], frontClass = [" + frontClass + "]");
+        System.out.println("RT#createBackSpecies : frontClassLookup = [" + frontClassLookup + "], type = [" + type + "], frontClass = [" + frontClass + "]");
         System.out.println("Param number : " + type.parameterArray().length);
         // Reading the specialization attributes.
         // TODO store the Substitution table in a couple values for the key class in classValue.
@@ -132,9 +132,10 @@ public class RT {
         // TODO get pool size by reading the class file and specialize.
         // Passing Object.class
         Class<?> backClass = UNSAFE.defineAnonymousClass(Object.class, backCode, pool);
-        MethodHandle constructor = lookup.findConstructor(backClass, type.changeReturnType(void.class));
+        MethodType backConstructorType = type.insertParameterTypes(0, MethodHandles.Lookup.class).changeReturnType(void.class);
+        MethodHandle constructor = frontClassLookup.findConstructor(backClass, backConstructorType); // TODO insert frontClassLookup.
         System.out.println("Constructor : " + constructor);
-        MethodHandle methodHandle = constructor.asType(type);
+        MethodHandle methodHandle = constructor.bindTo(frontClassLookup).asType(type); // TODO set return type to Object.class and nothing else.
         return methodHandle;
     }
 

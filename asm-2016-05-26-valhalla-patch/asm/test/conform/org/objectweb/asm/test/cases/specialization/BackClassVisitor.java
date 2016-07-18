@@ -2,6 +2,9 @@ package org.objectweb.asm.test.cases.specialization;
 
 import org.objectweb.asm.*;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+
 /**
  *
  * Created by Jefferson Mangue on 09/06/2016.
@@ -36,18 +39,14 @@ public class BackClassVisitor extends ClassVisitor {
         int methodAccess;
         String methodDescriptor;
         if (name.equals("<init>")) {
+            // We want to insert the front class lookup in each Back class species.
             methodAccess = access;
-            methodDescriptor = desc;
+            methodDescriptor = insertMethodArgumentType(desc, Type.getType(MethodHandles.Lookup.class));
         } else {
             // For each method of the back but the constructor, transforming it into a static method taking
             // in first parameter the front class.
             methodAccess = access + Opcodes.ACC_STATIC;
-            Type mType = Type.getType(desc);
-            Type[] argumentTypes = mType.getArgumentTypes();
-            Type[] parameterTypes = new Type[argumentTypes.length + 1];
-            parameterTypes[0] = Type.getType('L' + frontName + ';');
-            for (int i = 1; i < parameterTypes.length; i++) { parameterTypes[i] = argumentTypes[i - 1]; }
-            methodDescriptor =  Type.getMethodDescriptor(mType.getReturnType(), parameterTypes);
+            methodDescriptor =  insertMethodArgumentType(desc, Type.getType('L' + frontName + ';'));
         }
         return new BackMethodVisitor(api, name, frontName, this.name, super.visitMethod(methodAccess, name, methodDescriptor, null, exceptions));
     }
@@ -55,4 +54,14 @@ public class BackClassVisitor extends ClassVisitor {
     public String getName() {
         return name;
     }
+
+    private String insertMethodArgumentType(String desc, Type insertedType) {
+        Type mType = Type.getMethodType(desc);
+        Type[] argumentTypes = mType.getArgumentTypes();
+        Type[] parameterTypes = new Type[argumentTypes.length + 1];
+        parameterTypes[0] = insertedType;
+        for (int i = 1; i < parameterTypes.length; i++) { parameterTypes[i] = argumentTypes[i - 1]; }
+        return Type.getMethodDescriptor(mType.getReturnType(), parameterTypes);
+    }
+
 }

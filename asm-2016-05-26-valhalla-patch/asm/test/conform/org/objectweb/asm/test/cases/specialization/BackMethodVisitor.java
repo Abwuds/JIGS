@@ -250,7 +250,7 @@ class BackMethodVisitor extends MethodVisitor {
         super.visitFieldInsn(opcode, owner, name, Type.rawDesc(desc));
     }
 
-    private void noSwitch(String name, int typedOpcode) {
+    private void noReplacedTyped(String name, int typedOpcode) {
         super.visitTypedInsn(name, typedOpcode);
         // TODO replace this by the switch of typed opcode.
         if (typedOpcode <= Opcodes.ALOAD_0 || typedOpcode <= Opcodes.ALOAD_3){
@@ -262,7 +262,7 @@ class BackMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitTypedInsn(String name, int typedOpcode) {
-        noSwitch(name, typedOpcode);
+        noReplacedTyped(name, typedOpcode);
 /*
         Label end = new Label();
         List<Map.Entry<String, Integer>> tests = INSTRS.get(typedOpcode);
