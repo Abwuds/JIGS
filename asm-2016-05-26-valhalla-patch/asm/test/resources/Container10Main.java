@@ -10,11 +10,11 @@ public class Container10Main {
             }
         };
         System.out.println("Hello");
-        Container10<int, Runnable, float> c = new Container10<int, Runnable, float>(42, r, 66.6f);
+        Container10<String, Runnable, String> c = new Container10<String, Runnable, String>("Arg1", r, "Arg3");
         System.out.println(c.getT());
         System.out.println(c.getU());
         System.out.println(c.getX());
-        c.setT(18);
+        c.setT("newArg1");
         System.out.println(c.getT());
        // System.out.println(c.getT() + " " + c.getX() + " " + c.getU());
     }

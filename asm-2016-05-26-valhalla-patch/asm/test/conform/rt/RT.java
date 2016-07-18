@@ -24,6 +24,7 @@
  */
 package rt;
 
+import com.sun.scenario.effect.impl.sw.sse.SSEBlend_SRC_OUTPeer;
 import org.objectweb.asm.test.cases.specialization.BackClassVisitor;
 import org.objectweb.asm.test.cases.specialization.FrontClassVisitor;
 import sun.misc.Unsafe;
@@ -81,15 +82,18 @@ public class RT {
     }
 
     public static CallSite bsm_delegateCall(MethodHandles.Lookup lookup, String name, MethodType type) throws Throwable {
+        // System.out.println("BSM_DELEGATE_CALL : lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "]");
         MethodHandle mh = lookup.findStatic(RT.class, "invokeCall", INVOKE_CALL_TYPE);
         // Dropping name, receiver to have the delegate method type.
         mh = mh.bindTo(lookup).bindTo(type.dropParameterTypes(0, 2));
         // Collecting trailing arguments inside an Object[] array. (- 2 for name, receiver).
         mh = mh.asCollector(Object[].class, type.parameterCount() - 2).asType(type);
+        System.out.println("DELEGATE CALL MH : " + mh);
         return new ConstantCallSite(mh);
     }
 
     public static Object invokeCall(MethodHandles.Lookup lookup, MethodType type, String name, Object receiver, Object... args) throws Throwable {
+        System.out.println("invokeCall : lookup = [" + lookup + "], type = [" + type + "], name = [" + name + "], receiver = [" + receiver + "], args = [" + args + "]");
         MethodHandle mh = lookup.findStatic(receiver.getClass(), name, type).asType(type).asSpreader(Object[].class, args.length);
         return type.returnType().cast(mh.invoke(args));
     }
@@ -122,13 +126,16 @@ public class RT {
             Integer index = descs.getKey();
             String descriptor = descs.getValue().getValue();
             pool[index] = Type.specializeDescriptor(descriptor, type.parameterArray());
-            System.out.println("Index : " + index + " val : " + descs.getValue() + "Pool result : " + pool[index]);
+            // System.out.println("Index : " + index + " val : " + descs.getValue() + "Pool result : " + pool[index]);
         }
 
         // TODO get pool size by reading the class file and specialize.
         // Passing Object.class
         Class<?> backClass = UNSAFE.defineAnonymousClass(Object.class, backCode, pool);
-        return lookup.findConstructor(backClass, type.changeReturnType(void.class)).asType(type);
+        MethodHandle constructor = lookup.findConstructor(backClass, type.changeReturnType(void.class));
+        System.out.println("Constructor : " + constructor);
+        MethodHandle methodHandle = constructor.asType(type);
+        return methodHandle;
     }
 
     public static Object getBackField(MethodHandles.Lookup lookup, Class<?> fieldType, Object owner, String name)

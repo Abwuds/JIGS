@@ -9,7 +9,7 @@ import org.objectweb.asm.*;
 public class BackClassVisitor extends ClassVisitor {
 
     public static final String ANY_PACKAGE = "any/";
-    public static final String BACK_FACTORY_NAME = "_BackFactory";
+    public static final String BACK_FACTORY_NAME = "$BackFactory";
 
     // Sets when visiting the class prototype.
     private String name;
