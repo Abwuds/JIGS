@@ -31,10 +31,10 @@ public class BackClassVisitor extends ClassVisitor {
         super.visitEnd();
         // Telling the substitution table contained inside the ClassWriter to register placeholder referencing method handles
         // of the RT package at runtime.
-        ClassWriter cv = (ClassWriter) this.cv;
-        cv.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_NEW);
-        cv.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_GET_FIELD);
-        cv.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_PUT_FIELD);
+        ClassWriter cw = (ClassWriter) this.cv;
+        cw.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_NEW);
+        cw.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_GET_FIELD);
+        cw.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_PUT_FIELD);
     }
 
     @Override

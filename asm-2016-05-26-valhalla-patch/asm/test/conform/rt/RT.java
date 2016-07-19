@@ -36,10 +36,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Bootstrap class for virtual access adaptations
@@ -50,6 +47,7 @@ public class RT {
     private static final String ANY_PACKAGE = BackClassVisitor.ANY_PACKAGE;
     private static final String BACK_FACTORY_NAME = BackClassVisitor.BACK_FACTORY_NAME;
     private static final MethodType BSMS_TYPE = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
+    private static final MethodType INVOKE_FRONT_TYPE = MethodType.methodType(Object.class, MethodHandles.Lookup.class, MethodHandle.class, Class.class, Object[].class);
     private static final MethodType GET_BACK_FIELD_TYPE = MethodType.methodType(Object.class, MethodHandles.Lookup.class, Class.class, Object.class, String.class);
     private static final MethodType PUT_BACK_FIELD_TYPE = MethodType.methodType(void.class, MethodHandles.Lookup.class, Class.class, Object.class, Object.class, String.class);
     private static final MethodType INVOKE_CALL_TYPE = MethodType.methodType(Object.class, MethodHandles.Lookup.class, MethodType.class, String.class, Object.class, Object[].class); private static final ClassValue<byte[]> BACK_FACTORY = new ClassValue<byte[]>() {
@@ -65,13 +63,22 @@ public class RT {
     };
 
     public static CallSite bsm_new(MethodHandles.Lookup lookup, String name, MethodType type) throws Throwable {
+        // TODO the lookup here has to be the lookup of the front class in case of a new from a back class.
         System.out.println("BSM_NEW lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "]");
         Class<?> frontClass = type.returnType();
         System.out.println("Return type wanted : " + frontClass);
         // Allocate specialized class - with object for the moment - and return one of its constructor.
-        MethodHandle mh = createBackSpecies(lookup, type, frontClass);
-        System.out.println("Constructor found : " + mh);
-        return new ConstantCallSite(mh);
+        MethodHandle backMH = createBackSpecies(lookup, type, frontClass);
+        MethodHandle frontMH = lookup.findStatic(RT.class, "invokeFront",  INVOKE_FRONT_TYPE);
+        frontMH = frontMH.bindTo(lookup).bindTo(backMH).bindTo(type.returnType()).asCollector(Object[].class, type.parameterCount()).asType(type);
+        System.out.println("Back constructor : " + backMH);
+        System.out.println("Front constructor built : " + frontMH);
+        return new ConstantCallSite(frontMH);
+    }
+
+    public static Object invokeFront(MethodHandles.Lookup lookup, MethodHandle backConstructor, Class<?> frontClass, Object...args) throws Throwable {
+        Object back = backConstructor.asSpreader(Object[].class, args.length).invoke(args);
+        return lookup.findConstructor(frontClass, MethodType.methodType(void.class, Void.class, Object.class)).bindTo(null).bindTo(back).invoke();
     }
 
     public static CallSite bsm_newBackSpecies(MethodHandles.Lookup lookup, String name, MethodType type, String owner) throws Throwable {
@@ -114,9 +121,8 @@ public class RT {
     private static MethodHandle createBackSpecies(MethodHandles.Lookup frontClassLookup, MethodType type, Class<?> frontClass)
             throws NoSuchFieldException, IllegalAccessException, NoSuchMethodException {
         System.out.println("RT#createBackSpecies : frontClassLookup = [" + frontClassLookup + "], type = [" + type + "], frontClass = [" + frontClass + "]");
-        System.out.println("Param number : " + type.parameterArray().length);
         // Reading the specialization attributes.
-        // TODO store the Substitution table in a couple values for the key class in classValue.
+        // TODO store the Substitution table in a couple values for the key class in classValue so it is not read every time.
         byte[] backCode = BACK_FACTORY.get(frontClass);
         SubstitutionTable substitutionTable = SubstitutionTableReader.read(backCode);
         System.out.println("After the substitutionTable : " + substitutionTable);
@@ -131,11 +137,11 @@ public class RT {
             String descriptor = ownerAndDescriptor.getValue();
             if (!owner.equals(BackClassVisitor.RT_METHOD_HANDLE_TYPE)) {
                 pool[index] = Type.specializeDescriptor(descriptor, type.parameterArray());
+                System.out.println("Index : " + index + "  Value : " + owner + " :: " + pool[index]);
                 continue;
             }
 
             if (descriptor.equals(BackClassVisitor.HANDLE_RT_BSM_NEW)) {
-                //pool[index] = frontClassLookup.findStatic(RT.class, "bsm_new", BSMS_TYPE); // Idx : 1
                 // Preparing the method handle for the invoke call with Object varargs.
                 MethodHandle bsm_new = frontClassLookup.findStatic(RT.class, "bsm_new", BSMS_TYPE);
                 pool[index] = bsm_new.asSpreader(Object[].class, 3).asType(MethodType.methodType(Object.class, Object[].class));
@@ -148,14 +154,14 @@ public class RT {
                 MethodHandle bsm_putBackField = frontClassLookup.findStatic(RT.class, "bsm_putBackField", BSMS_TYPE);
                 pool[index] = bsm_putBackField.asSpreader(Object[].class, 3).asType(MethodType.methodType(Object.class, Object[].class));
             }
+
         }
 
         // Passing Object.class
         Class<?> backClass = UNSAFE.defineAnonymousClass(Object.class, backCode, pool);
         MethodHandle constructor = frontClassLookup.findConstructor(backClass, type.changeReturnType(void.class));
         // We set the front class lookup parameter, and we want to cast the result to an Object instead of the plain anonymous BackClass.
-        MethodHandle methodHandle = constructor.asType(type.changeReturnType(Object.class));
-        return methodHandle;
+        return constructor.asType(type.changeReturnType(Object.class));
     }
 
     public static Object getBackField(MethodHandles.Lookup lookup, Class<?> fieldType, Object owner, String name)

@@ -132,7 +132,7 @@ final class FieldWriter extends FieldVisitor {
         // substitutionTable;
         // TODO register inside the substitution table if TypeVar or ParameterizedType.
         String retroDesc = Type.typeToObject(Type.getType(desc)).toString();
-        this.desc = cw.newUTF8(retroDesc);
+        this.desc = cw.newTypedUTF8(name, desc);
         if (ClassReader.SIGNATURES && signature != null) {
             this.signature = cw.newUTF8(signature);
         }
