@@ -2,11 +2,6 @@ package org.objectweb.asm.test.cases.specialization;
 
 import org.objectweb.asm.*;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import java.util.Objects;
-
 /**
  *
  * Created by Jefferson Mangue on 09/06/2016.
@@ -28,11 +23,18 @@ public class BackClassVisitor extends ClassVisitor {
 
     BackClassVisitor(int api, ClassWriter cw) {
         super(api, cw);
+    }
+
+
+    @Override
+    public void visitEnd() {
+        super.visitEnd();
         // Telling the substitution table contained inside the ClassWriter to register placeholder referencing method handles
         // of the RT package at runtime.
-        cw.registerConstantPoolPlaceHolder(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_NEW);
-        cw.registerConstantPoolPlaceHolder(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_GET_FIELD);
-        cw.registerConstantPoolPlaceHolder(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_PUT_FIELD);
+        ClassWriter cv = (ClassWriter) this.cv;
+        cv.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_NEW);
+        cv.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_GET_FIELD);
+        cv.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_PUT_FIELD);
     }
 
     @Override

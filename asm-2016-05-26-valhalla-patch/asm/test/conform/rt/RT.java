@@ -136,15 +136,17 @@ public class RT {
 
             if (descriptor.equals(BackClassVisitor.HANDLE_RT_BSM_NEW)) {
                 //pool[index] = frontClassLookup.findStatic(RT.class, "bsm_new", BSMS_TYPE); // Idx : 1
+                // Preparing the method handle for the invoke call with Object varargs.
+                MethodHandle bsm_new = frontClassLookup.findStatic(RT.class, "bsm_new", BSMS_TYPE);
+                pool[index] = bsm_new.asSpreader(Object[].class, 3).asType(MethodType.methodType(Object.class, Object[].class));
             } else if (descriptor.equals(BackClassVisitor.HANDLE_RT_BSM_GET_FIELD)) {
-                // TODO get the index into
                 // Preparing the method handle for the invoke call with Object varargs.
                 MethodHandle bsm_getBackField = frontClassLookup.findStatic(RT.class, "bsm_getBackField", BSMS_TYPE);
-                pool[64] = bsm_getBackField.asSpreader(Object[].class, 3).asType(MethodType.methodType(Object.class, Object[].class));
+                pool[index] = bsm_getBackField.asSpreader(Object[].class, 3).asType(MethodType.methodType(Object.class, Object[].class));
             } else if (descriptor.equals(BackClassVisitor.HANDLE_RT_BSM_PUT_FIELD)) {
                 // Preparing the method handle for the invoke call with Object varargs.
                 MethodHandle bsm_putBackField = frontClassLookup.findStatic(RT.class, "bsm_putBackField", BSMS_TYPE);
-                pool[84] = bsm_putBackField.asSpreader(Object[].class, 3).asType(MethodType.methodType(Object.class, Object[].class));
+                pool[index] = bsm_putBackField.asSpreader(Object[].class, 3).asType(MethodType.methodType(Object.class, Object[].class));
             }
         }
 

@@ -1475,7 +1475,7 @@ public class ClassWriter extends ClassVisitor {
     Item newFieldItem(final String owner, final String name, final String desc) {
         key3.set(FIELD, owner, name, desc);
         Item result = get(key3);
-        if (result == null) {// TODO do we pass the owner ?
+        if (result == null) { // TODO do we pass the owner ? Does not seem important.
             put122(FIELD, newClass(owner), newNameType(name, desc));
             result = new Item(index++, key3);
             put(result);
@@ -1891,7 +1891,16 @@ public class ClassWriter extends ClassVisitor {
         pool.put11(b1, b2).putShort(s);
     }
 
-    public void registerConstantPoolPlaceHolder(String owner, String placeHolderName) {
-        substitutionTable.putUTF8(newUTF8(placeHolderName), owner, placeHolderName);
+    /**
+     * Warning : Only call it during visitEnd. If the placeholderName are registered inside the Substitution Table
+     * before they newConst(placeHolderName) is called by other method like visitInvokeDynamics on its arguments.
+     * They will have different indices because of the mechanism preventing the crushing of basic constant pool values
+     * by replaced constant pool values.
+     *
+     * @param owner
+     * @param placeHolderName
+     */
+    public void copyConstantPoolPlaceholderToSubstitutionTable(String owner, String placeHolderName) {
+        substitutionTable.putUTF8(newConst(placeHolderName), owner, placeHolderName);
     }
 }
