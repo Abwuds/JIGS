@@ -20,7 +20,7 @@ public class BackClassVisitor extends ClassVisitor {
     public static final String HANDLE_RT_BSM_GET_FIELD = "handle_rt_bsm_getField";
     public static final String HANDLE_RT_BSM_PUT_FIELD = "handle_rt_bsm_putField";
     public static final String BSM_RT_BRIDGE = "bsm_rtBridge";
-    public static final String BSM_RT_BRIDGE_DESC = "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/Object;)Ljava/lang/invoke/CallSite;";
+    public static final String BSM_RT_BRIDGE_DESC = "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;)Ljava/lang/invoke/CallSite;";
 
     // Sets when visiting the class prototype.
     private String name;

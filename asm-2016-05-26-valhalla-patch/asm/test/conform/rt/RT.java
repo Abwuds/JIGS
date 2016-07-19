@@ -95,7 +95,6 @@ public class RT {
     }
 
     public static Object invokeCall(MethodHandles.Lookup lookup, MethodType type, String name, Object receiver, Object... args) throws Throwable {
-        System.out.println("invokeCall : lookup = [" + lookup + "], type = [" + type + "], name = [" + name + "], receiver = [" + receiver + "], args = [" + args + "]");
         MethodHandle mh = lookup.findStatic(receiver.getClass(), name, type).asType(type).asSpreader(Object[].class, args.length);
         return type.returnType().cast(mh.invoke(args));
     }
@@ -150,9 +149,7 @@ public class RT {
         }
 
         // Passing Object.class
-        System.out.println("Defining");
         Class<?> backClass = UNSAFE.defineAnonymousClass(Object.class, backCode, pool);
-        System.out.println("Defined");
         MethodHandle constructor = frontClassLookup.findConstructor(backClass, type.changeReturnType(void.class));
         // We set the front class lookup parameter, and we want to cast the result to an Object instead of the plain anonymous BackClass.
         MethodHandle methodHandle = constructor.asType(type.changeReturnType(Object.class));
