@@ -147,16 +147,6 @@ class BackMethodVisitor extends MethodVisitor {
         // TODO case ANEWARRAY
     }
 
-    private static final Handle BSM_GETBACKFIELD;
-    private static final Handle BSM_PUTBACKFIELD;
-
-    static {
-        MethodType mtGetBackField = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
-        MethodType mtPutBackField = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
-        BSM_GETBACKFIELD = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_getBackField", mtGetBackField.toMethodDescriptorString(), false);
-        BSM_PUTBACKFIELD = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_putBackField", mtPutBackField.toMethodDescriptorString(), false);
-    }
-
     // The name of the front class of the enclosing class.
     private final String frontOwner;
     private final String methodName;
@@ -240,13 +230,12 @@ class BackMethodVisitor extends MethodVisitor {
             String returnDescriptor = Type.rawDesc(desc);
             // Normally inserting the front owner : "(L" + frontOwner + ";". But instead inserting its Object erasure.
             visitInvokeDynamicInsn("getBackField", "(Ljava/lang/Object;" + "Ljava/lang/String;)" + returnDescriptor, bsmRTBridge, BackClassVisitor.HANDLE_RT_BSM_GET_FIELD);
-            // visitInvokeDynamicInsn("getBackField", "(Ljava/lang/Object;" + "Ljava/lang/String;)" + returnDescriptor, BSM_GETBACKFIELD);
             return;
         }
 
         if (opcode == Opcodes.PUTFIELD) {
             visitLdcInsn(name);
-            visitInvokeDynamicInsn("putBackField", "(Ljava/lang/Object;" + desc + "Ljava/lang/String;)V", BSM_PUTBACKFIELD);
+            visitInvokeDynamicInsn("putBackField", "(Ljava/lang/Object;" + desc + "Ljava/lang/String;)V", bsmRTBridge, BackClassVisitor.HANDLE_RT_BSM_PUT_FIELD);
             return;
         }
 
