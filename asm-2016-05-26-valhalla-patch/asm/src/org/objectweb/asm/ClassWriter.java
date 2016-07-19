@@ -1890,4 +1890,8 @@ public class ClassWriter extends ClassVisitor {
     private void put112(final int b1, final int b2, final int s) {
         pool.put11(b1, b2).putShort(s);
     }
+
+    public void registerConstantPoolPlaceHolder(String owner, String placeHolderName) {
+        substitutionTable.putUTF8(newUTF8(placeHolderName), owner, placeHolderName);
+    }
 }

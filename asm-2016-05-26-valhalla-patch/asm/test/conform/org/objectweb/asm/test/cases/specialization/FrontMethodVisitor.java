@@ -77,7 +77,8 @@ class FrontMethodVisitor extends MethodVisitor {
         // Delegating the call and the arguments.
         mv.visitVarInsn(Opcodes.ALOAD, 0);// PutField on this for the field _back__.
         loadArguments(mv, type);
-        String delegateDesc = createDelegateCallDescriptor(type, 'L' + frontName + ';');
+        // Normally loading the front class descriptor : 'L' + frontName + ';'. But instead its Object erasure.
+        String delegateDesc = createDelegateCallDescriptor(type, "Ljava/lang/Object;");
         mv.visitInvokeDynamicInsn("delegateCall", delegateDesc, BSM_DELEGATE_CALL);
 
         // The return.

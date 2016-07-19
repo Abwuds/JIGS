@@ -17,9 +17,15 @@ public class Container10Main {
         c.setT("newArg1");
         System.out.println(c.getT());
        // System.out.println(c.getT() + " " + c.getX() + " " + c.getU());
+        varargsTest(new Object(),new Object(),new Object(),new Object());
     }
 
 
+    public static void varargsTest(Object... arg) {
+        for (Object o : arg) {
+            System.out.println(o);
+        }
+    }
     /* Problem when compiling this with :
             javac -XDstringConcat=inline Container10Main.java -Xlint:unchecked
     public static void main(String[]args){

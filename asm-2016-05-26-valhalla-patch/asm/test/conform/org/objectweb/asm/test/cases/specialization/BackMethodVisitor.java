@@ -163,6 +163,7 @@ class BackMethodVisitor extends MethodVisitor {
     // The enclosing class name.
     private final String owner;
     private final InvokeAnyAdapter invokeAnyAdapter;
+    private final Handle bsmRTBridge;
 
     BackMethodVisitor(int api, String methodName, String frontOwner, String owner, MethodVisitor mv) {
         super(api, mv);
@@ -170,6 +171,7 @@ class BackMethodVisitor extends MethodVisitor {
         this.frontOwner = frontOwner;
         this.owner = owner;
         invokeAnyAdapter = new InvokeAnyAdapter(this);
+        bsmRTBridge = new Handle(Opcodes.H_INVOKESTATIC, owner, BackClassVisitor.BSM_RT_BRIDGE, BackClassVisitor.BSM_RT_BRIDGE_DESC, false);
     }
 
     /**
@@ -236,7 +238,9 @@ class BackMethodVisitor extends MethodVisitor {
             visitLdcInsn(name);
             // TODO in case this particular return descriptor is TypeVar or ParameterizedType, it has to be recorded inside the substitution table !
             String returnDescriptor = Type.rawDesc(desc);
-            visitInvokeDynamicInsn("getBackField", "(L" + frontOwner + ";Ljava/lang/String;)" + returnDescriptor, BSM_GETBACKFIELD);
+            // Normally inserting the front owner : "(L" + frontOwner + ";". But instead inserting its Object erasure.
+            visitInvokeDynamicInsn("getBackField", "(Ljava/lang/Object;" + "Ljava/lang/String;)" + returnDescriptor, bsmRTBridge, BackClassVisitor.HANDLE_RT_BSM_GET_FIELD);
+            // visitInvokeDynamicInsn("getBackField", "(Ljava/lang/Object;" + "Ljava/lang/String;)" + returnDescriptor, BSM_GETBACKFIELD);
             return;
         }
 

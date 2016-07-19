@@ -1029,4 +1029,43 @@ public class Type {
         if (!name.startsWith("$")) { return name; }
         return name.substring(1, name.indexOf('<')); // Erasing type variables.
     }
+
+    private static int getTypeVarIndex(Type type) {
+        if (type.sort != TYPE_VAR) { return -1; }
+        return Character.getNumericValue(type.getDescriptor().charAt(1));
+    }
+
+    /**
+     * Erases to Object each Object sub type into the given method descriptor not contained into the package java/lang.
+     * @param methodDesc
+     * @return the erased method type.
+     */
+    public static String eraseNotJavaLangMethod(String methodDesc) {
+        Type type = Type.getMethodType(methodDesc);
+        Type[] argumentTypes = type.getArgumentTypes();
+        for (int i = 0; i < argumentTypes.length; i++) {
+            argumentTypes[i] = eraseNotJavaLangReference(argumentTypes[i]);
+        }
+        return Type.getMethodDescriptor(eraseNotJavaLangReference(type.getReturnType()), argumentTypes);
+    }
+
+    private static Type eraseNotJavaLangReference(Type type) {
+        String desc = type.getDescriptor();
+        switch (type.sort) {
+            case OBJECT:
+                return desc.startsWith("Ljava/lang/") ? type : getType(Object.class);
+            case TYPE_VAR:
+                // Inside java/lang package.
+                if (desc.contains("Ljava/lang/")) {
+                    return type;
+                }
+                // Erasing the variable and keeping its Type Var nature.
+                int index = getTypeVarIndex(type);
+                return getType('T' + index + "/Ljava/lang/Object;");
+            case PARAMETERIZED_TYPE:
+                return desc.startsWith("$java/lang/") ? type : getType(Object.class);
+            default: // Primitive types and so on.
+                return type;
+        }
+    }
 }

@@ -25,6 +25,7 @@
 package rt;
 
 import com.sun.scenario.effect.impl.sw.sse.SSEBlend_SRC_OUTPeer;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.test.cases.specialization.BackClassVisitor;
 import org.objectweb.asm.test.cases.specialization.FrontClassVisitor;
 import sun.misc.Unsafe;
@@ -32,6 +33,7 @@ import sun.misc.Unsafe;
 import java.io.IOException;
 import java.lang.invoke.*;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -47,6 +49,7 @@ public class RT {
     private static final Unsafe UNSAFE = initUnsafe();
     private static final String ANY_PACKAGE = BackClassVisitor.ANY_PACKAGE;
     private static final String BACK_FACTORY_NAME = BackClassVisitor.BACK_FACTORY_NAME;
+    private static final MethodType BSMS_TYPE = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
     private static final MethodType GET_BACK_FIELD_TYPE = MethodType.methodType(Object.class, MethodHandles.Lookup.class, Class.class, Object.class, String.class);
     private static final MethodType PUT_BACK_FIELD_TYPE = MethodType.methodType(void.class, MethodHandles.Lookup.class, Class.class, Object.class, Object.class, String.class);
     private static final MethodType INVOKE_CALL_TYPE = MethodType.methodType(Object.class, MethodHandles.Lookup.class, MethodType.class, String.class, Object.class, Object[].class); private static final ClassValue<byte[]> BACK_FACTORY = new ClassValue<byte[]>() {
@@ -88,7 +91,6 @@ public class RT {
         mh = mh.bindTo(lookup).bindTo(type.dropParameterTypes(0, 2));
         // Collecting trailing arguments inside an Object[] array. (- 2 for name, receiver).
         mh = mh.asCollector(Object[].class, type.parameterCount() - 2).asType(type);
-        System.out.println("DELEGATE CALL MH : " + mh);
         return new ConstantCallSite(mh);
     }
 
@@ -98,9 +100,9 @@ public class RT {
         return type.returnType().cast(mh.invoke(args));
     }
 
-    public static CallSite bsm_getBackField(MethodHandles.Lookup lookup, String name, MethodType type) throws Throwable {
-        MethodHandle mh = lookup.findStatic(RT.class, name, GET_BACK_FIELD_TYPE);
-        mh = mh.bindTo(lookup).bindTo(type.returnType()).asType(type);
+    public static CallSite bsm_getBackField(MethodHandles.Lookup frontLookup, String name, MethodType type) throws Throwable {
+        MethodHandle mh = frontLookup.findStatic(RT.class, name, GET_BACK_FIELD_TYPE);
+        mh = mh.bindTo(frontLookup).bindTo(type.returnType()).asType(type);
         return new ConstantCallSite(mh);
     }
 
@@ -120,22 +122,39 @@ public class RT {
         SubstitutionTable substitutionTable = SubstitutionTableReader.read(backCode);
         System.out.println("After the substitutionTable : " + substitutionTable);
 
+
         // Creating substitution pool.
         Object[] pool = new Object[substitutionTable.getMax() + 1];
         for (Map.Entry<Integer, Map.Entry<String, String>> descs : substitutionTable.getDescriptors().entrySet()) {
             Integer index = descs.getKey();
-            String descriptor = descs.getValue().getValue();
-            pool[index] = Type.specializeDescriptor(descriptor, type.parameterArray());
-            // System.out.println("Index : " + index + " val : " + descs.getValue() + "Pool result : " + pool[index]);
+            Map.Entry<String, String> ownerAndDescriptor = descs.getValue();
+            String owner = ownerAndDescriptor.getKey();
+            String descriptor = ownerAndDescriptor.getValue();
+            if (!owner.equals(BackClassVisitor.RT_METHOD_HANDLE_TYPE)) {
+                pool[index] = Type.specializeDescriptor(descriptor, type.parameterArray());
+                continue;
+            }
+
+            if (descriptor.equals(BackClassVisitor.HANDLE_RT_BSM_NEW)) {
+                //pool[index] = frontClassLookup.findStatic(RT.class, "bsm_new", BSMS_TYPE); // Idx : 1
+            } else if (descriptor.equals(BackClassVisitor.HANDLE_RT_BSM_GET_FIELD)) {
+                // Preparing the method handle for the invoke call with Object varargs.
+                MethodHandle bsm_getBackField = frontClassLookup.findStatic(RT.class, "bsm_getBackField", BSMS_TYPE);
+                pool[66] = bsm_getBackField.asSpreader(Object[].class, 3).asType(MethodType.methodType(Object.class, Object[].class));
+            } else if (descriptor.equals(BackClassVisitor.HANDLE_RT_BSM_PUT_FIELD)) {
+                // Preparing the method handle for the invoke call with Object varargs.
+               // MethodHandle bsm_putBackField = frontClassLookup.findStatic(RT.class, "bsm_putBackField", BSMS_TYPE);
+               // pool[67] = bsm_putBackField.asSpreader(Object[].class, 3).asType(MethodType.methodType(Object.class, Object[].class));
+            }
         }
 
-        // TODO get pool size by reading the class file and specialize.
         // Passing Object.class
+        System.out.println("Defining");
         Class<?> backClass = UNSAFE.defineAnonymousClass(Object.class, backCode, pool);
-        MethodType backConstructorType = type.insertParameterTypes(0, MethodHandles.Lookup.class).changeReturnType(void.class);
-        MethodHandle constructor = frontClassLookup.findConstructor(backClass, backConstructorType); // TODO insert frontClassLookup.
-        System.out.println("Constructor : " + constructor);
-        MethodHandle methodHandle = constructor.bindTo(frontClassLookup).asType(type); // TODO set return type to Object.class and nothing else.
+        System.out.println("Defined");
+        MethodHandle constructor = frontClassLookup.findConstructor(backClass, type.changeReturnType(void.class));
+        // We set the front class lookup parameter, and we want to cast the result to an Object instead of the plain anonymous BackClass.
+        MethodHandle methodHandle = constructor.asType(type.changeReturnType(Object.class));
         return methodHandle;
     }
 
