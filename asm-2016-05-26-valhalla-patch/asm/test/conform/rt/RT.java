@@ -49,8 +49,8 @@ public class RT {
     private static final String BACK_FACTORY_NAME = BackClassVisitor.BACK_FACTORY_NAME;
     public static final MethodType BSMS_TYPE = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
     private static final MethodType INVOKE_FRONT_TYPE = MethodType.methodType(Object.class, MethodHandles.Lookup.class, MethodHandle.class, Class.class, Object[].class);
-    private static final MethodType GET_BACK_FIELD_TYPE = MethodType.methodType(Object.class, MethodHandles.Lookup.class, Class.class, Object.class, String.class);
-    private static final MethodType PUT_BACK_FIELD_TYPE = MethodType.methodType(void.class, MethodHandles.Lookup.class, Class.class, Object.class, Object.class, String.class);
+    private static final MethodType GET_BACK_FIELD_TYPE = MethodType.methodType(MethodHandle.class, MethodHandles.Lookup.class, Class.class, String.class, Object.class);
+    private static final MethodType PUT_BACK_FIELD_TYPE = MethodType.methodType(MethodHandle.class, MethodHandles.Lookup.class, Class.class, String.class, Object.class);
     private static final MethodType INVOKE_CALL_TYPE = MethodType.methodType(MethodHandle.class, MethodHandles.Lookup.class, MethodType.class, String.class, Object.class);
     private static final ClassValue<byte[]> BACK_FACTORY = new ClassValue<byte[]>() {
         @Override
@@ -97,6 +97,7 @@ public class RT {
         System.out.println("BSM_INLINED_BACK_CALL : lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "]");
         MethodHandle getBackMethod = lookup.findStatic(RT.class, "invokeInlinedCall", INVOKE_CALL_TYPE);
         // Setting the lookup, the method type.
+        // TODO remove prints.
         getBackMethod = getBackMethod.bindTo(lookup).bindTo(type).bindTo(name);
         System.out.println("GetBackMethod : " + getBackMethod);
         MethodHandle target = MethodHandles.exactInvoker(type.dropParameterTypes(0, 1));
@@ -127,15 +128,41 @@ public class RT {
     }
 
     public static CallSite bsm_getBackField(MethodHandles.Lookup frontLookup, String name, MethodType type) throws Throwable {
-        MethodHandle mh = frontLookup.findStatic(RT.class, name, GET_BACK_FIELD_TYPE);
-        mh = mh.bindTo(frontLookup).bindTo(type.returnType()).asType(type);
-        return new ConstantCallSite(mh);
+        MethodHandle getterMH = frontLookup.findStatic(RT.class, "getBackField", GET_BACK_FIELD_TYPE);
+        getterMH = getterMH.bindTo(frontLookup).bindTo(type.returnType()).bindTo(name);
+
+        // TODO make a method and remove all prints
+        System.out.println("Getter field : " + getterMH);
+        MethodHandle target = MethodHandles.exactInvoker(type.dropParameterTypes(0, 1));
+        System.out.println("target : " + target);
+        MethodHandle methodHandle = MethodHandles.collectArguments(target, 0, getterMH);
+        System.out.println("Res : " + methodHandle);
+        return new ConstantCallSite(methodHandle);
     }
 
     public static CallSite bsm_putBackField(MethodHandles.Lookup lookup, String name, MethodType type) throws Throwable {
-        MethodHandle mh = lookup.findStatic(RT.class, name, PUT_BACK_FIELD_TYPE);
-        mh = mh.bindTo(lookup).bindTo(type.parameterType(1)); // The field type is the parameter n:1.
-        return new ConstantCallSite(mh);
+        MethodHandle setterMH = lookup.findStatic(RT.class, "putBackField", PUT_BACK_FIELD_TYPE);
+        setterMH = setterMH.bindTo(lookup).bindTo(type.parameterType(1)).bindTo(name); // The field type is the parameter n:1.
+
+        // TODO remove prints.
+        System.out.println("Setter field : " + setterMH);
+        MethodHandle target = MethodHandles.exactInvoker(type.dropParameterTypes(0, 1));
+        System.out.println("target : " + target);
+        MethodHandle methodHandle = MethodHandles.collectArguments(target, 0, setterMH);
+        System.out.println("Res : " + methodHandle);
+        return new ConstantCallSite(methodHandle);
+    }
+
+    public static MethodHandle getBackField(MethodHandles.Lookup lookup, Class<?> fieldType, String name, Object owner)
+            throws Throwable {
+        Object backField = getBack__(lookup, owner);
+        return lookup.findGetter(backField.getClass(), name, fieldType).bindTo(backField);
+    }
+
+    public static MethodHandle putBackField(MethodHandles.Lookup lookup, Class<?> fieldType, String name, Object owner)
+            throws Throwable {
+        Object backField = getBack__(lookup, owner);
+        return lookup.findSetter(backField.getClass(), name, fieldType).bindTo(backField);
     }
 
     private static MethodHandle createBackSpecies(MethodHandles.Lookup frontClassLookup, MethodType type, Class<?> frontClass)
@@ -182,18 +209,6 @@ public class RT {
         MethodHandle constructor = frontClassLookup.findConstructor(backClass, type.changeReturnType(void.class));
         // We set the front class lookup parameter, and we want to cast the result to an Object instead of the plain anonymous BackClass.
         return constructor.asType(type.changeReturnType(Object.class));
-    }
-
-    public static Object getBackField(MethodHandles.Lookup lookup, Class<?> fieldType, Object owner, String name)
-            throws Throwable {
-        Object backField = getBack__(lookup, owner);
-        return lookup.findGetter(backField.getClass(), name, fieldType).invoke(backField);
-    }
-
-    public static void putBackField(MethodHandles.Lookup lookup, Class<?> fieldType, Object owner, Object value, String name)
-            throws Throwable {
-        Object backField = getBack__(lookup, owner);
-        lookup.findSetter(backField.getClass(), name, fieldType).invoke(backField, value);
     }
 
     private static Object getBack__(MethodHandles.Lookup lookup, Object owner) throws Throwable {

@@ -225,17 +225,15 @@ class BackMethodVisitor extends MethodVisitor {
             // Every getfield/putfield in method which are not <init>, is transformed in a getfield/putfield
             // on the back field. To do so, we pass the logic to an invokedynamic which will
             // get the field value or push the value in the field contained inside the back class.
-            visitLdcInsn(name);
-            // TODO in case this particular return descriptor is TypeVar or ParameterizedType, it has to be recorded inside the substitution table !
-            String returnDescriptor = Type.rawDesc(desc);
+
+            String returnDescriptor = Type.rawDesc(desc); // Removing parameterized types.
             // Normally inserting the front owner : "(L" + frontOwner + ";". But instead inserting its Object erasure.
-            visitInvokeDynamicInsn("getBackField", "(Ljava/lang/Object;" + "Ljava/lang/String;)" + returnDescriptor, bsmRTBridge, BackClassVisitor.HANDLE_RT_BSM_GET_FIELD);
+            visitInvokeDynamicInsn(name, "(Ljava/lang/Object;)" + returnDescriptor, bsmRTBridge, BackClassVisitor.HANDLE_RT_BSM_GET_FIELD);
             return;
         }
 
         if (opcode == Opcodes.PUTFIELD) {
-            visitLdcInsn(name);
-            visitInvokeDynamicInsn("putBackField", "(Ljava/lang/Object;" + desc + "Ljava/lang/String;)V", bsmRTBridge, BackClassVisitor.HANDLE_RT_BSM_PUT_FIELD);
+            visitInvokeDynamicInsn(name, "(Ljava/lang/Object;" + desc + ")V", bsmRTBridge, BackClassVisitor.HANDLE_RT_BSM_PUT_FIELD);
             return;
         }
 
@@ -276,12 +274,14 @@ class BackMethodVisitor extends MethodVisitor {
                 case Opcodes.ALOAD_1:
                 case Opcodes.ALOAD_2:
                 case Opcodes.ALOAD_3:
+                    printASMMsg("Choosing : " + name + " Type : " + newOpcode, this);
                     visitVarInsn(newOpcode, typedOpcode - Opcodes.ALOAD_0);
                     break;
                 case Opcodes.ASTORE_0:
                 case Opcodes.ASTORE_1:
                 case Opcodes.ASTORE_2:
                 case Opcodes.ASTORE_3:
+                    printASMMsg("Choosing : " + name + " Type : " + newOpcode, this);
                     visitVarInsn(newOpcode, typedOpcode - Opcodes.ASTORE_0);
                     break;
                 case Opcodes.ARETURN:
