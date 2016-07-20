@@ -26,7 +26,7 @@ class FrontMethodVisitor extends MethodVisitor {
         MethodType mtNewBack = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String.class);
         MethodType mtDelegateCall = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
         BSM_NEW_BACK = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_newBackSpecies", mtNewBack.toMethodDescriptorString(), false);
-        BSM_DELEGATE_CALL = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_delegateCall", mtDelegateCall.toMethodDescriptorString(), false);
+        BSM_DELEGATE_CALL = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_delegateBackCall", mtDelegateCall.toMethodDescriptorString(), false);
     }
 
     private FrontMethodVisitor(int api, MethodVisitor mv) {
@@ -79,7 +79,7 @@ class FrontMethodVisitor extends MethodVisitor {
         loadArguments(mv, type);
         // Normally loading the front class descriptor : 'L' + frontName + ';'. But instead its Object erasure.
         String delegateDesc = createDelegateCallDescriptor(type, "Ljava/lang/Object;");
-        mv.visitInvokeDynamicInsn("delegateCall", delegateDesc, BSM_DELEGATE_CALL);
+        mv.visitInvokeDynamicInsn("bsm_delegateBackCall", delegateDesc, BSM_DELEGATE_CALL);
 
         // The return.
         Type returnType = type.getReturnType();
@@ -97,8 +97,8 @@ class FrontMethodVisitor extends MethodVisitor {
         Type[] argsSrc = type.getArgumentTypes();
         Type[] args = new Type[argsSrc.length + 3];
         args[0] = Type.getType("Ljava/lang/String;"); // method name.
-        args[1] = Type.getType("Ljava/lang/Object;"); // receiver.
-        args[2] = Type.getType(frontDesc); // receiver.
+        args[1] = Type.getType("Ljava/lang/Object;"); // front#_back__ field := receiver.
+        args[2] = Type.getType(frontDesc); // front receiver.
         // args[2] = Type.getType("[Ljava/lang/Object;"); // receiver.
         System.arraycopy(argsSrc, 0, args, 3, argsSrc.length); // method args.
         return Type.getMethodDescriptor(type.getReturnType(), args);

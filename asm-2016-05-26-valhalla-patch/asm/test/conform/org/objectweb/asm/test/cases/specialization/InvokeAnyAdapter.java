@@ -4,6 +4,7 @@ import org.objectweb.asm.Handle;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import rt.RT;
 
 import java.lang.invoke.CallSite;
 import java.lang.invoke.MethodHandles;
@@ -79,10 +80,20 @@ public class InvokeAnyAdapter {
         return false;
     }
 
-    public boolean visitMethodInsn(final int opcode, final String owner,
-                                final String name, final String desc, final boolean itf) {
+    public boolean visitMethodInsn(final int opcode, final String owner, final String name, final String desc,
+                                   final boolean itf) {
+        if (opcode == Opcodes.INVOKEVIRTUAL && Type.isParameterizedType(owner)) {
+            String inlinedBackCallDesc = createInlinedBackCallDescriptor(Type.getType(desc), "Ljava/lang/Object;");
+            // TODO remove this mv.visitLdcInsn(name);
+            Handle bsm_inlinedBackCall = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_inlinedBackCall", RT.BSMS_TYPE.toMethodDescriptorString(), false);
+            mv.visitInvokeDynamicInsn(name, inlinedBackCallDesc, bsm_inlinedBackCall);
+            // Case handled.
+            return true;
+        }
+
+
         if (opcode != Opcodes.INVOKESPECIAL) {
-            // Writing the call inside the class.
+            // Writing the call inside the class. Case not handled.
             return false;
         }
 
@@ -96,6 +107,7 @@ public class InvokeAnyAdapter {
                 // The name has to be <init>, but this is not a valid bsm identifier because of "<" and ">".
                 mv.visitInvokeDynamicInsn(BSM_NAME, newDesc, BSM_NEW);
                 invokeSpecialStack.pop();
+                // Case handled.
                 return true;
             }
             // IGNORED_DUP. Popping the current stack level.
@@ -104,4 +116,15 @@ public class InvokeAnyAdapter {
         // Writing method call.
         return false;
     }
+
+
+    private static String createInlinedBackCallDescriptor(Type type, String frontDesc) {
+        Type[] argsSrc = type.getArgumentTypes();
+        int argsLength = argsSrc.length;
+        Type[] args = new Type[argsLength + 1];
+        args[0] = Type.getType(frontDesc); // front to perform front#getField:_back__ and delegate it the call.
+        System.arraycopy(argsSrc, 0, args, 1, argsLength); // method args.
+        return Type.getMethodDescriptor(type.getReturnType(), args);
+    }
+
 }

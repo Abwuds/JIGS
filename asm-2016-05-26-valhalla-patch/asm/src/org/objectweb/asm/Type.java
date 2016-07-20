@@ -982,6 +982,10 @@ public class Type {
         return type.getReturnType().sort == TYPE_VAR;
     }
 
+    public static boolean isParameterizedType(String owner) {
+        return getType(owner).sort == PARAMETERIZED_TYPE;
+    }
+
     public static String translateType(Type type) {
         switch(type.sort) {
             case METHOD:

@@ -43,14 +43,16 @@ import java.util.*;
  */
 public class RT {
 
+    public static final MethodType SPECIALIZED_CONSTRUCTOR_TYPE = MethodType.methodType(void.class, Void.class, Object.class);
     private static final Unsafe UNSAFE = initUnsafe();
     private static final String ANY_PACKAGE = BackClassVisitor.ANY_PACKAGE;
     private static final String BACK_FACTORY_NAME = BackClassVisitor.BACK_FACTORY_NAME;
-    private static final MethodType BSMS_TYPE = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
+    public static final MethodType BSMS_TYPE = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
     private static final MethodType INVOKE_FRONT_TYPE = MethodType.methodType(Object.class, MethodHandles.Lookup.class, MethodHandle.class, Class.class, Object[].class);
     private static final MethodType GET_BACK_FIELD_TYPE = MethodType.methodType(Object.class, MethodHandles.Lookup.class, Class.class, Object.class, String.class);
     private static final MethodType PUT_BACK_FIELD_TYPE = MethodType.methodType(void.class, MethodHandles.Lookup.class, Class.class, Object.class, Object.class, String.class);
-    private static final MethodType INVOKE_CALL_TYPE = MethodType.methodType(Object.class, MethodHandles.Lookup.class, MethodType.class, String.class, Object.class, Object[].class); private static final ClassValue<byte[]> BACK_FACTORY = new ClassValue<byte[]>() {
+    private static final MethodType INVOKE_CALL_TYPE = MethodType.methodType(MethodHandle.class, MethodHandles.Lookup.class, MethodType.class, String.class, Object.class);
+    private static final ClassValue<byte[]> BACK_FACTORY = new ClassValue<byte[]>() {
         @Override
         protected byte[] computeValue(Class<?> type) {
             String backName = ANY_PACKAGE + type.getName() + BACK_FACTORY_NAME + ".class";
@@ -78,7 +80,7 @@ public class RT {
 
     public static Object invokeFront(MethodHandles.Lookup lookup, MethodHandle backConstructor, Class<?> frontClass, Object...args) throws Throwable {
         Object back = backConstructor.asSpreader(Object[].class, args.length).invoke(args);
-        return lookup.findConstructor(frontClass, MethodType.methodType(void.class, Void.class, Object.class)).bindTo(null).bindTo(back).invoke();
+        return lookup.findConstructor(frontClass,  SPECIALIZED_CONSTRUCTOR_TYPE).bindTo(null).bindTo(back).invoke();
     }
 
     public static CallSite bsm_newBackSpecies(MethodHandles.Lookup lookup, String name, MethodType type, String owner) throws Throwable {
@@ -91,10 +93,28 @@ public class RT {
         return new ConstantCallSite(mh);
     }
 
-    public static CallSite bsm_delegateCall(MethodHandles.Lookup lookup, String name, MethodType type) throws Throwable {
+    public static CallSite bsm_inlinedBackCall(MethodHandles.Lookup lookup, String name, MethodType type) throws Throwable {
+        System.out.println("BSM_INLINED_BACK_CALL : lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "]");
+        MethodHandle getBackMethod = lookup.findStatic(RT.class, "invokeInlinedCall", INVOKE_CALL_TYPE);
+        // Setting the lookup, the method type.
+        getBackMethod = getBackMethod.bindTo(lookup).bindTo(type).bindTo(name);
+        System.out.println("GetBackMethod : " + getBackMethod);
+        MethodHandle target = MethodHandles.exactInvoker(type.dropParameterTypes(0, 1));
+        System.out.println("target : " + target);
+        MethodHandle methodHandle = MethodHandles.collectArguments(target, 0, getBackMethod);
+        System.out.println("MH returned : " + methodHandle);
+        return new ConstantCallSite(methodHandle.asType(type));
+    }
+
+    public static MethodHandle invokeInlinedCall(MethodHandles.Lookup lookup, MethodType type, String methodName, Object front) throws Throwable {
+        System.out.println("lookup = [" + lookup + "], type = [" + type + "], methodName = [" + methodName + "], front = [" + front.getClass() + "]");
+        return lookup.findStatic(getBack__(lookup, front).getClass(), methodName, type).bindTo(front);
+    }
+
+    public static CallSite bsm_delegateBackCall(MethodHandles.Lookup lookup, String name, MethodType type) throws Throwable {
         // System.out.println("BSM_DELEGATE_CALL : lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "]");
         MethodHandle mh = lookup.findStatic(RT.class, "invokeCall", INVOKE_CALL_TYPE);
-        // Dropping name, receiver to have the delegate method type.
+        // Dropping name, receiver to have the delegate method type (-2 for front receiver, delegate target name).
         mh = mh.bindTo(lookup).bindTo(type.dropParameterTypes(0, 2));
         // Collecting trailing arguments inside an Object[] array. (- 2 for name, receiver).
         mh = mh.asCollector(Object[].class, type.parameterCount() - 2).asType(type);
@@ -103,7 +123,7 @@ public class RT {
 
     public static Object invokeCall(MethodHandles.Lookup lookup, MethodType type, String name, Object receiver, Object... args) throws Throwable {
         MethodHandle mh = lookup.findStatic(receiver.getClass(), name, type).asType(type).asSpreader(Object[].class, args.length);
-        return type.returnType().cast(mh.invoke(args));
+        return type.returnType().cast(mh.invoke(args)); // TODO remove the cast.
     }
 
     public static CallSite bsm_getBackField(MethodHandles.Lookup frontLookup, String name, MethodType type) throws Throwable {

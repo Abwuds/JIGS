@@ -608,6 +608,12 @@ public abstract class MethodVisitor {
         }
     }
 
+    public void visitLdcTypedString(final String owner, final String cst) {
+        if (mv != null) {
+            mv.visitLdcTypedString(owner, cst);
+        }
+    }
+
     /**
      * Visits an IINC instruction.
      * 

@@ -255,8 +255,8 @@ class BackMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitTypedInsn(String name, int typedOpcode) {
-        noReplacedTyped(name, typedOpcode);
-/*
+       // noReplacedTyped(name, typedOpcode);
+
         Label end = new Label();
         List<Map.Entry<String, Integer>> tests = INSTRS.get(typedOpcode);
         if (tests == null) {
@@ -267,7 +267,7 @@ class BackMethodVisitor extends MethodVisitor {
             String key = test.getKey();
             int newOpcode = test.getValue();
             visitLdcInsn(key);
-            visitLdcInsn(name);
+            visitLdcTypedString("Test on : " + name.substring(0, 2), name); // Prefixing the test by TX.
             visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z", false);
             Label label = new Label();
             visitJumpInsn(Opcodes.IFEQ, label);
@@ -285,6 +285,7 @@ class BackMethodVisitor extends MethodVisitor {
                     visitVarInsn(newOpcode, typedOpcode - Opcodes.ASTORE_0);
                     break;
                 case Opcodes.ARETURN:
+                    printASMMsg("Choosing : " + name + " Type : " + newOpcode, this);
                     visitInsn(newOpcode);
                     break;
                 default:
@@ -298,8 +299,15 @@ class BackMethodVisitor extends MethodVisitor {
         }
 
         // If none of them worked, doing the original then.
+        printASMMsg("Choosing : " + name + " Type[Object] : " + typedOpcode, this);
         visitInsn(typedOpcode);
-        visitLabel(end); */
+        visitLabel(end);
+    }
+
+    private static void printASMMsg(String msg, MethodVisitor mv) {
+        mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        mv.visitLdcInsn(msg);
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
     }
 
 }
