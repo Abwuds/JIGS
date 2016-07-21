@@ -132,6 +132,7 @@ public class RT {
         getterMH = getterMH.bindTo(frontLookup).bindTo(type.returnType()).bindTo(name);
 
         // TODO make a method and remove all prints
+        // TODO rename bsm_name "name" so something like ["Field_" + name] to be clever inside the BackMethodVisitor substitution of getField and setField.
         System.out.println("Getter field : " + getterMH);
         MethodHandle target = MethodHandles.exactInvoker(type.dropParameterTypes(0, 1));
         System.out.println("target : " + target);
@@ -190,6 +191,7 @@ public class RT {
 
             if (descriptor.equals(BackClassVisitor.HANDLE_RT_BSM_NEW)) {
                 // Preparing the method handle for the invoke call with Object varargs.
+                // TODO make a method.
                 MethodHandle bsm_new = frontClassLookup.findStatic(RT.class, "bsm_new", BSMS_TYPE);
                 pool[index] = bsm_new.asSpreader(Object[].class, 3).asType(MethodType.methodType(Object.class, Object[].class));
             } else if (descriptor.equals(BackClassVisitor.HANDLE_RT_BSM_GET_FIELD)) {

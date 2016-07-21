@@ -4,6 +4,20 @@
  */
 public class Container10Main {
     public static void main(String[] args) {
+        // testContainer10();
+        testAnyArrayList();
+    }
+
+
+    public static void testAnyArrayList() {
+        AnyArrayList<Object> list = new AnyArrayList<Object>();
+        System.out.println("List size : " + list.size());
+        AnyArrayList<int> list2 = new AnyArrayList<int>();
+        System.out.println("List2 size : " + list2.size());
+    }
+
+
+    public static void testContainer10() {
         Runnable r = new Runnable() {
             @Override
             public void run() {
@@ -16,7 +30,7 @@ public class Container10Main {
         System.out.println(c.getX());
         c.setT(99);
         System.out.println(c.getT());
-       // System.out.println(c.getT() + " " + c.getX() + " " + c.getU());
+        // Old problem when calling toString here : System.out.println(c.getT() + " " + c.getX() + " " + c.getU());
     }
 
 
