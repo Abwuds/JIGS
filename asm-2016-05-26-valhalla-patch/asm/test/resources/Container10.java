@@ -20,13 +20,8 @@ public class Container10<any T, U extends Runnable, any X> {
         System.out.println("Inside the Back constructor fox !");
     }
 
-    public Container10(T t, X x) {
-        this.t = t;
+    public Container10(U u, X x) {
         this.x = x;
-    }
-
-    public Container10(T t, U u) {
-        this.t = t;
         this.u = u;
     }
 

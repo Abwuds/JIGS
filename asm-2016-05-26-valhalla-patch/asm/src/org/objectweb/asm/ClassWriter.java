@@ -1192,6 +1192,17 @@ public class ClassWriter extends ClassVisitor {
         return result;
     }
 
+    Item newTypedClassItem(final String owner, final String value) {
+        key2.set(CLASS, value, null, null);
+        Item result = get(key2);
+        if (result == null) {
+            pool.put12(CLASS, newTypedUTF8(owner, value));
+            result = new Item(index++, key2);
+            put(result);
+        }
+        return result;
+    }
+
     /**
      * Adds a class reference to the constant pool of the class being build.
      * Does nothing if the constant pool already contains a similar item.

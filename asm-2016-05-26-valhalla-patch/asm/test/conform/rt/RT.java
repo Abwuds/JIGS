@@ -141,6 +141,7 @@ public class RT {
         return new ConstantCallSite(methodHandle);
     }
 
+    // TODO
     public static CallSite bsm_putBackField(MethodHandles.Lookup lookup, String name, MethodType type) throws Throwable {
         MethodHandle setterMH = lookup.findStatic(RT.class, "putBackField", PUT_BACK_FIELD_TYPE);
         setterMH = setterMH.bindTo(lookup).bindTo(type.parameterType(1)).bindTo(name); // The field type is the parameter n:1.
@@ -148,9 +149,7 @@ public class RT {
         // TODO remove prints.
         System.out.println("Setter field : " + setterMH);
         MethodHandle target = MethodHandles.exactInvoker(type.dropParameterTypes(0, 1));
-        System.out.println("target : " + target);
         MethodHandle methodHandle = MethodHandles.collectArguments(target, 0, setterMH);
-        System.out.println("Res : " + methodHandle);
         return new ConstantCallSite(methodHandle);
     }
 
@@ -203,7 +202,6 @@ public class RT {
                 MethodHandle bsm_putBackField = frontClassLookup.findStatic(RT.class, "bsm_putBackField", BSMS_TYPE);
                 pool[index] = bsm_putBackField.asSpreader(Object[].class, 3).asType(MethodType.methodType(Object.class, Object[].class));
             }
-
         }
 
         // Passing Object.class

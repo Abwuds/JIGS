@@ -7,7 +7,7 @@ public class AnyArrayList<any T> {
     T[] t;
 
     @SuppressWarnings("unchecked")
-    public AnyArrayList() {
+    public AnyArrayList(int size) { // TODO remove this fake argument.
         System.out.println("Inside the constructor ()AnyArrayList;");
         this.t = (T[]) new T[10];
     }

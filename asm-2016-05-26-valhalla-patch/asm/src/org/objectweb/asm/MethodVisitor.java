@@ -384,6 +384,11 @@ public abstract class MethodVisitor {
         }
     }
 
+    public void visitTypedTypeInsn(int opcode, String owner, String desc) {
+        if (mv != null) {
+            mv.visitTypedTypeInsn(opcode, owner, desc);
+        }
+    }
     /**
      * Visits a type instruction. A type instruction is an instruction that
      * takes the internal name of a class as parameter.

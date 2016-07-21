@@ -821,6 +821,28 @@ class MethodWriter extends MethodVisitor {
     }
 
     @Override
+    public void visitTypedTypeInsn(final int opcode, final String owner, final String desc) {
+        lastCodeOffset = code.length;
+        Item i = cw.newTypedClassItem(owner, desc);
+        // Label currentBlock = this.currentBlock;
+        if (currentBlock != null) {
+            if (compute == FRAMES) {
+                currentBlock.frame.execute(opcode, code.length, cw, i);
+            } else if (opcode == Opcodes.NEW) {
+                // updates current and max stack sizes only if opcode == NEW
+                // (no stack change for ANEWARRAY, CHECKCAST, INSTANCEOF)
+                int size = stackSize + 1;
+                if (size > maxStackSize) {
+                    maxStackSize = size;
+                }
+                stackSize = size;
+            }
+        }
+        // adds the instruction to the bytecode of the method
+        code.put12(opcode, i.index);
+    }
+
+    @Override
     public void visitTypeInsn(final int opcode, final String type) {
         lastCodeOffset = code.length;
         Item i = cw.newClassItem(type);

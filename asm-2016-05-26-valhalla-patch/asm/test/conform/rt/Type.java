@@ -33,6 +33,7 @@ import org.objectweb.asm.Opcodes;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 
 /**
  * A Java field or method type. This class can be used to make it easier to
@@ -1048,9 +1049,21 @@ class Type {
 
     private static Type getTypeVarInstantiation(Class<?>[] classes, Type type) {
         int index = getTypeVarIndex(type);
-        return getType(classes[index]);
+        // If this is a typeVar array :
+        String prefix = getTypeVarArrayDimension(type);
+        return getType(prefix + getDescriptor(classes[index]));
     }
 
+    private static String getTypeVarArrayDimension(Type type) {
+        String descriptor = type.getDescriptor();
+        if (type.sort != TYPE_VAR || !descriptor.contains("[")) { return ""; }
+        StringBuilder sb = new StringBuilder();
+        int end = descriptor.indexOf('/');
+        for (int i = descriptor.indexOf('['); i < end; i++) {
+            sb.append('[');
+        }
+        return sb.toString();
+    }
     private static int getTypeVarIndex(Type type) {
         if (type.sort != TYPE_VAR) { return -1; }
         return Character.getNumericValue(type.getDescriptor().charAt(1));

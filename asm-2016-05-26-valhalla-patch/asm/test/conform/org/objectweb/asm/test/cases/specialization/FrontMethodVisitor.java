@@ -53,6 +53,7 @@ class FrontMethodVisitor extends MethodVisitor {
 
         // Loading constructor arguments.
         Type[] argumentTypes = loadArguments(mv, type);
+        // TODO 1 : pass the specialization with object signature -> Meaning I have to use the bounds of every types (pass null argument ?)
         String indyDescriptor = Type.getMethodDescriptor(Type.getType("Ljava/lang/Object;"), argumentTypes);
         mv.visitInvokeDynamicInsn(BSM_NAME, indyDescriptor, BSM_NEW_BACK, frontName);
         mv.visitFieldInsn(Opcodes.PUTFIELD, frontName, FrontClassVisitor.BACK_FIELD, "Ljava/lang/Object;");
@@ -84,10 +85,32 @@ class FrontMethodVisitor extends MethodVisitor {
         // The return.
         Type returnType = type.getReturnType();
         int sort = returnType.getSort();
-        if (sort == Type.OBJECT || sort == Type.TYPE_VAR || sort == Type.PARAMETERIZED_TYPE) {
-            mv.visitInsn(Opcodes.ARETURN);
-        } else {
-            mv.visitInsn(Opcodes.RETURN);
+        switch(sort) {
+            case Type.OBJECT:
+            case Type.TYPE_VAR:
+            case Type.PARAMETERIZED_TYPE:
+                mv.visitInsn(Opcodes.ARETURN);
+                break;
+            case Type.BOOLEAN:
+            case Type.BYTE:
+            case Type.SHORT:
+            case Type.INT:
+            case Type.CHAR:
+                mv.visitInsn(Opcodes.IRETURN);
+                break;
+            case Type.FLOAT:
+                mv.visitInsn(Opcodes.FRETURN);
+                break;
+            case Type.LONG:
+                mv.visitInsn(Opcodes.LRETURN);
+                break;
+            case Type.DOUBLE:
+                mv.visitInsn(Opcodes.DRETURN);
+                break;
+            default: // void
+                mv.visitInsn(Opcodes.RETURN);
+                break;
+
         }
         mv.visitMaxs(0, 0);
         mv.visitEnd();

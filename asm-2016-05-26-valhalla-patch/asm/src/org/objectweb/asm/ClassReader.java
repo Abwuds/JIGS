@@ -227,6 +227,12 @@ public class ClassReader {
                 // }
                 size = 4 + readByte(index + 1) * 2;
                 break;
+            case ClassWriter.ARRAY_TYPE:
+                System.out.println("Array type : " + readByte(index));
+                System.out.println("Size : " + readByte(index + 1));
+                System.out.println("Type : " + readShort(index + 2));
+                size = 4;
+                break;
             // case ClassWriter.CLASS:
             // case ClassWriter.STR:
             // case ClassWriter.MTYPE
@@ -1504,6 +1510,10 @@ public class ClassReader {
                 mv.visitTypedInsn(readTypeVar(u + 1, c), typedOpcode);
                 u += 3;
                 u += 1;
+                if (typedOpcode == Opcodes.ANEWARRAY) {
+                    u += 2; // TODO list every typed opcode having their own parameters.
+                    // For ANEWARRAY, the TypeVar sent is sufficient.
+                }
                 break;
             case ClassWriter.IINC_INSN:
                 mv.visitIincInsn(b[u + 1] & 0xFF, b[u + 2]);
@@ -2580,6 +2590,31 @@ public class ClassReader {
     }
 
     /**
+     * Reads an ArrayType constant pool item in {@link #b b}. <i>This method is
+     * intended for {@link Attribute} sub classes, and is normally not needed by
+     * class generators or adapters.</i>
+     *
+     * @param index
+     *            the start index of an unsigned short value in {@link #b b},
+     *            whose value is the index of a ArrayType constant pool item.
+     * @param buf
+     *            buffer to be used to read the item. This buffer must be
+     *            sufficiently large. It is not automatically resized.
+     * @return the String corresponding to the specified TypeVar item.
+     */
+    public String readArrayType(final int index, final char[] buf) {
+        // computes the start index of the CONSTANT_TypeVar item in b
+        // and reads the CONSTANT_Utf8 item designated by
+        // the second and third bytes of this CONSTANT_TypeVar item
+        int item = items[readUnsignedShort(index)];
+        int dim = readByte(item);
+        StringBuilder sb = new StringBuilder(dim);
+        for (int i = 0 ; i < dim; i++) { sb.append('['); }
+        String[] split = readTypeVar(item + 1, buf).split("/", 2);
+        return split[0] + sb + '/' + split[1];
+    }
+
+    /**
      * Reads a MethodDescriptor constant pool item in {@link #b b}. <i>This method is
      * intended for {@link Attribute} sub classes, and is normally not needed by
      * class generators or adapters.</i>
@@ -2632,6 +2667,8 @@ public class ClassReader {
                 return readGenericClass(index, buf);
             case ClassWriter.METHOD_DESCRIPTOR:
                 return readMethodDescriptor(index, buf);
+            case ClassWriter.ARRAY_TYPE:
+                return readArrayType(index, buf);
             default: // case ClassWriter.UTF8
                 return readUTF8(index, buf);
         }
@@ -2665,6 +2702,8 @@ public class ClassReader {
         switch (readByte(items[readUnsignedShort(startOffset)] - 1)) {
             case ClassWriter.PARAMETERIZED_TYPE:
                 return readGenericClass(startOffset, buf);
+            case ClassWriter.ARRAY_TYPE:
+                return readArrayType(startOffset, buf);
             default: // case ClassWriter.UTF8
                 return readUTF8(startOffset, buf);
         }

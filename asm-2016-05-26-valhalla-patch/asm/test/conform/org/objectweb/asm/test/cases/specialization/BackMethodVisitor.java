@@ -1,6 +1,7 @@
 package org.objectweb.asm.test.cases.specialization;
 
 
+import jdk.nashorn.internal.runtime.regexp.joni.constants.OPCode;
 import org.objectweb.asm.*;
 
 import java.lang.invoke.CallSite;
@@ -142,9 +143,17 @@ class BackMethodVisitor extends MethodVisitor {
                 new AbstractMap.SimpleEntry<>("J", Opcodes.LCONST_0),
                 new AbstractMap.SimpleEntry<>("F", Opcodes.FCONST_0),
                 new AbstractMap.SimpleEntry<>("D", Opcodes.DCONST_0)));
+        INSTRS.put(Opcodes.ANEWARRAY, Arrays.asList(
+                new AbstractMap.SimpleEntry<>("I", Opcodes.T_INT),
+                new AbstractMap.SimpleEntry<>("B", Opcodes.T_BYTE),
+                new AbstractMap.SimpleEntry<>("S", Opcodes.T_SHORT),
+                new AbstractMap.SimpleEntry<>("C", Opcodes.T_CHAR),
+                new AbstractMap.SimpleEntry<>("Z", Opcodes.T_BOOLEAN),
+                new AbstractMap.SimpleEntry<>("J", Opcodes.T_LONG),
+                new AbstractMap.SimpleEntry<>("F", Opcodes.T_FLOAT),
+                new AbstractMap.SimpleEntry<>("D", Opcodes.T_DOUBLE)));
         // TODO case IF_ACMPEQ
         // TODO case IF_ACMPNE
-        // TODO case ANEWARRAY
     }
 
     // The name of the front class of the enclosing class.
@@ -154,6 +163,10 @@ class BackMethodVisitor extends MethodVisitor {
     private final String owner;
     private final InvokeAnyAdapter invokeAnyAdapter;
     private final Handle bsmRTBridge;
+
+    // Variable for the anewarray substitution.
+    private boolean isInstallingANewArray;
+    private Label end;
 
     BackMethodVisitor(int api, String methodName, String frontOwner, String owner, MethodVisitor mv) {
         super(api, mv);
@@ -173,8 +186,15 @@ class BackMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitTypeInsn(int opcode, String type) {
+        if (opcode == Opcodes.CHECKCAST && isInstallingANewArray) {
+            visitTypedTypeInsn(Opcodes.CHECKCAST, "CHECKCAST ON " + type.substring(0, 2), type);
+            visitLabel(end);
+            isInstallingANewArray = false;
+            return;
+        }
         if (!invokeAnyAdapter.visitTypeInsn(opcode, type)) {
             super.visitTypeInsn(opcode, type);
+            return;
         }
     }
 
@@ -255,7 +275,7 @@ class BackMethodVisitor extends MethodVisitor {
     public void visitTypedInsn(String name, int typedOpcode) {
        // noReplacedTyped(name, typedOpcode);
 
-        Label end = new Label();
+        end = new Label();
         List<Map.Entry<String, Integer>> tests = INSTRS.get(typedOpcode);
         if (tests == null) {
             throw new IllegalArgumentException("Invalid Opcode following TYPED instruction : " + typedOpcode);
@@ -265,7 +285,7 @@ class BackMethodVisitor extends MethodVisitor {
             String key = test.getKey();
             int newOpcode = test.getValue();
             visitLdcInsn(key);
-            visitLdcTypedString("Test on : " + name.substring(0, 2), name); // Prefixing the test by TX.
+            visitLdcTypedString("Type test on : " + name.substring(0, 2), name); // Test on TX.
             visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z", false);
             Label label = new Label();
             visitJumpInsn(Opcodes.IFEQ, label);
@@ -288,6 +308,10 @@ class BackMethodVisitor extends MethodVisitor {
                     printASMMsg("Choosing : " + name + " Type : " + newOpcode, this);
                     visitInsn(newOpcode);
                     break;
+                case Opcodes.ANEWARRAY:
+                    visitIntInsn(Opcodes.NEWARRAY, newOpcode);
+                    printASMMsg("Choosing : " + name + " Type : " + newOpcode, this);
+                    break;
                 default:
                     // TODO ACONST_NULL, AASTORE, AALOAD.
                     System.err.println("BackMethodVisitor#visitTypedInsn : TypedCode not handled : " + typedOpcode);
@@ -300,8 +324,16 @@ class BackMethodVisitor extends MethodVisitor {
 
         // If none of them worked, doing the original then.
         printASMMsg("Choosing : " + name + " Type[Object] : " + typedOpcode, this);
-        visitInsn(typedOpcode);
-        visitLabel(end);
+        // TODO MULTIANEWARRAY !!
+        if (typedOpcode == Opcodes.ANEWARRAY) {
+            isInstallingANewArray = true;
+            visitTypedTypeInsn(Opcodes.ANEWARRAY, "ANEWARRAY ON : " + name.substring(0, 2), name);
+            // Visiting the following CHECKCAST and visitLabel(end) inside the BackMethodVisitor#visitTypeIns to not
+            // Put the end label before the following CHECKCAST, and also retrieve right informations for it.
+        } else {
+            visitInsn(typedOpcode);
+            visitLabel(end);
+        }
     }
 
     private static void printASMMsg(String msg, MethodVisitor mv) {
