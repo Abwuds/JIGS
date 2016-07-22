@@ -304,6 +304,11 @@ class BackMethodVisitor extends MethodVisitor {
                     printASMMsg("Choosing : " + name + " Type : " + newOpcode, this);
                     visitVarInsn(newOpcode, typedOpcode - Opcodes.ASTORE_0);
                     break;
+                case Opcodes.AASTORE:
+                case Opcodes.AALOAD:
+                    printASMMsg("Choosing : " + name + " Type : " + newOpcode, this);
+                    visitInsn(newOpcode);
+                    break;
                 case Opcodes.ARETURN:
                     printASMMsg("Choosing : " + name + " Type : " + newOpcode, this);
                     visitInsn(newOpcode);

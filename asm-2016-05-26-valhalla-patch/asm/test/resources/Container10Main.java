@@ -16,8 +16,12 @@ public class Container10Main {
     public static void testAnyArrayList() {
         //AnyArrayList<Object> list = new AnyArrayList<Object>();
         //System.out.println("List size : " + list.size());
-        AnyArrayList<int> list2 = new AnyArrayList<int>(777);
-        System.out.println("List2 size : " + list2.size());
+        AnyArrayList<int> list = new AnyArrayList<int>(777);
+        list.add(3);
+        list.add(4);
+        System.out.println("List size = " + list.size());
+        System.out.println("List[0] = " + Integer.toString(list.get(0)));
+        System.out.println("List[1] = " + Integer.toString(list.get(1)));
     }
 
 
