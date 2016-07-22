@@ -8,8 +8,7 @@ public class AnyArrayList<any T> {
     int top;;
 
     @SuppressWarnings("unchecked")
-    public AnyArrayList(int size) { // TODO remove this fake argument.
-        System.out.println("Inside the constructor (I)AnyArrayList;");
+    public AnyArrayList() {
         array = (T[]) new T[10];
     }
 
@@ -37,6 +36,8 @@ public class AnyArrayList<any T> {
         this.array = array;
     }
 
+
+    // Problem with the metafactory generation.
     public String toString() {
         return "array : " + array;
     }

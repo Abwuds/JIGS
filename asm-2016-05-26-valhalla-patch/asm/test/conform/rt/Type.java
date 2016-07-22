@@ -33,7 +33,6 @@ import org.objectweb.asm.Opcodes;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.util.Arrays;
 
 /**
  * A Java field or method type. This class can be used to make it easier to
@@ -1033,12 +1032,11 @@ class Type {
         return name.substring(1, name.indexOf('<')); // Erasing type variables.
     }
 
-    public static String specializeDescriptor(String descriptor, Class<?>[] classes) {
+    public static String specializeDescriptor(String descriptor, String[] classes) throws ClassNotFoundException {
         Type type = getType(descriptor);
         switch (type.sort) {
-            case TYPE_VAR: {
+            case TYPE_VAR:
                 return getTypeVarInstantiation(classes, type).getDescriptor();
-            }
             case METHOD:
                 return specializeMethodDescriptor(type, classes);
             default:
@@ -1047,11 +1045,18 @@ class Type {
         return descriptor;
     }
 
-    private static Type getTypeVarInstantiation(Class<?>[] classes, Type type) {
+    private static Type getTypeVarInstantiation(String[] classes, Type type) throws ClassNotFoundException {
         int index = getTypeVarIndex(type);
         // If this is a typeVar array :
         String prefix = getTypeVarArrayDimension(type);
-        return getType(prefix + getDescriptor(classes[index]));
+        String clazz = classes[index];
+        // Erased.
+        if (clazz.equals("_")) {
+            String descriptor = type.getDescriptor();
+            clazz = descriptor.substring(descriptor.indexOf("/") + 1);
+            System.out.println("Class loaded : " + clazz);
+        }
+        return getType(prefix + clazz);
     }
 
     private static String getTypeVarArrayDimension(Type type) {
@@ -1069,11 +1074,12 @@ class Type {
         return Character.getNumericValue(type.getDescriptor().charAt(1));
     }
 
-    private static String specializeMethodDescriptor(Type type, Class<?>[] classes) {
+    private static String specializeMethodDescriptor(Type type, String[] classes) throws ClassNotFoundException {
         Type[] argumentTypes = type.getArgumentTypes();
         Type returnType = type.getReturnType();
-        Type[] resultArgsTypes = new Type[argumentTypes.length];
-        for (int i = 0; i < argumentTypes.length; i++) {
+        int argLength = argumentTypes.length;
+        Type[] resultArgsTypes = new Type[argLength];
+        for (int i = 0; i < argLength; i++) {
             if (argumentTypes[i].sort == TYPE_VAR) {
                 resultArgsTypes[i] = getTypeVarInstantiation(classes, argumentTypes[i]);
             } else {
@@ -1084,5 +1090,20 @@ class Type {
             return Type.getMethodDescriptor(getTypeVarInstantiation(classes, returnType), resultArgsTypes);
         }
         return Type.getMethodDescriptor(typeToObject(returnType), resultArgsTypes);
+    }
+
+    public static String[] getParameterizedTypeValues(String genericClass) {
+        Type type = getType(genericClass);
+        if (type.sort != PARAMETERIZED_TYPE) { return new String[0]; }
+        String types = genericClass.substring(genericClass.indexOf('<') + 1, genericClass.indexOf('>'));
+        // If a plain typeVar is contained inside the types, we return the full erased descriptor.
+        String[] split = types.split(",");
+        if (types.contains("/")) {
+            int length = split.length;
+            String[] result = new String[length];
+            for (int i = 0; i < length; i++) { result[i] = "_"; }
+            return result;
+        }
+        return split;
     }
 }

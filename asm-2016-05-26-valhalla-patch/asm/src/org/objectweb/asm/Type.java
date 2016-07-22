@@ -1072,4 +1072,11 @@ public class Type {
                 return type;
         }
     }
+
+    public static String[] getParameterizedTypeValues(String genericClass) {
+        Type type = getType(genericClass);
+        if (type.sort != PARAMETERIZED_TYPE) { return new String[0]; }
+        String types = genericClass.substring(genericClass.indexOf('<') + 1, genericClass.indexOf('>'));
+        return types.split(",");
+    }
 }

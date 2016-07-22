@@ -154,6 +154,7 @@ class BackMethodVisitor extends MethodVisitor {
                 new AbstractMap.SimpleEntry<>("D", Opcodes.T_DOUBLE)));
         // TODO case IF_ACMPEQ
         // TODO case IF_ACMPNE
+        // TODO case MULTIANEWARRAY ??
     }
 
     // The name of the front class of the enclosing class.
@@ -324,7 +325,6 @@ class BackMethodVisitor extends MethodVisitor {
             }
             visitJumpInsn(Opcodes.GOTO, end);
             visitLabel(label);
-           // visitFrame(Opcodes.F_APPEND, 0, null, 0, null);
         }
 
         // If none of them worked, doing the original then.

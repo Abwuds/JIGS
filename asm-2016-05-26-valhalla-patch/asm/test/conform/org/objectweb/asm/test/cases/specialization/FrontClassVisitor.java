@@ -27,15 +27,15 @@ public class FrontClassVisitor extends ClassVisitor {
 
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-        // At this step, only anyfied classes starts with the token '$'.
+        // At this step, only anyfied classes starting with the token '$'.
         if (!name.startsWith("$")) {
             frontClassName = name;
             super.visit(COMPILER_VERSION, access, name, signature, superName, interfaces);
             return;
         }
         // The class is anyfied. Cleaning the class frontClassName into the raw frontClassName.
+        frontClassName = name;
         String rawName = Type.rawName(name);
-        frontClassName = rawName;
         // The inheritance is not handled for anyfied class yet.
         if (superName != null && !superName.equals("java/lang/Object")) {
             throw new IllegalStateException("Not inheritance allowed.");

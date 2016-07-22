@@ -19,13 +19,13 @@ class FrontMethodVisitor extends MethodVisitor {
      * Invokedynamic constants.
      */
     private static final String BSM_NAME = "newBackSpecies";
-    private static final Handle BSM_NEW_BACK;
+    private static final Handle BSM_NEW_BACK_SPECIES;
     private static final Handle BSM_DELEGATE_CALL;
 
     static {
-        MethodType mtNewBack = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String.class);
+        MethodType mtNewBack = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String.class, String.class);
         MethodType mtDelegateCall = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
-        BSM_NEW_BACK = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_newBackSpecies", mtNewBack.toMethodDescriptorString(), false);
+        BSM_NEW_BACK_SPECIES = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_newBackSpecies", mtNewBack.toMethodDescriptorString(), false);
         BSM_DELEGATE_CALL = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_delegateBackCall", mtDelegateCall.toMethodDescriptorString(), false);
     }
 
@@ -38,15 +38,15 @@ class FrontMethodVisitor extends MethodVisitor {
         // For the front method :
         if (methodName.equals("<init>")) {
             // Creating compatibility constructor.
-            visitConstructor(frontName, fmw, type);
+            visitConstructor(Type.rawName(frontName), frontName, fmw, type);
         } else {
             // Instance methods :
-            visitInstanceMethod(frontName, methodName, fmw, type);
+            visitInstanceMethod(Type.rawName(frontName), methodName, fmw, type);
             // TODO handle static method.
         }
     }
 
-    private static void visitConstructor(String frontName, MethodVisitor mv, Type type) {
+    private static void visitConstructor(String frontName, String genericName, MethodVisitor mv, Type type) {
         mv.visitCode();
         visitSuperConstructor(mv);
         mv.visitVarInsn(Opcodes.ALOAD, 0);// PutField on this for the field _back__.
@@ -55,7 +55,7 @@ class FrontMethodVisitor extends MethodVisitor {
         Type[] argumentTypes = loadArguments(mv, type);
         // TODO 1 : pass the specialization with object signature -> Meaning I have to use the bounds of every types (pass null argument ?)
         String indyDescriptor = Type.getMethodDescriptor(Type.getType("Ljava/lang/Object;"), argumentTypes);
-        mv.visitInvokeDynamicInsn(BSM_NAME, indyDescriptor, BSM_NEW_BACK, frontName);
+        mv.visitInvokeDynamicInsn(BSM_NAME, indyDescriptor, BSM_NEW_BACK_SPECIES, frontName, genericName);
         mv.visitFieldInsn(Opcodes.PUTFIELD, frontName, FrontClassVisitor.BACK_FIELD, "Ljava/lang/Object;");
 
         mv.visitInsn(Opcodes.RETURN);

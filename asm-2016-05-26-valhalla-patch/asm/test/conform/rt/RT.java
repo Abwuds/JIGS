@@ -24,8 +24,6 @@
  */
 package rt;
 
-import com.sun.scenario.effect.impl.sw.sse.SSEBlend_SRC_OUTPeer;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.test.cases.specialization.BackClassVisitor;
 import org.objectweb.asm.test.cases.specialization.FrontClassVisitor;
 import sun.misc.Unsafe;
@@ -33,7 +31,6 @@ import sun.misc.Unsafe;
 import java.io.IOException;
 import java.lang.invoke.*;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -48,10 +45,12 @@ public class RT {
     private static final String ANY_PACKAGE = BackClassVisitor.ANY_PACKAGE;
     private static final String BACK_FACTORY_NAME = BackClassVisitor.BACK_FACTORY_NAME;
     public static final MethodType BSMS_TYPE = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
+    public static final MethodType BSM_NEW = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String.class);
     private static final MethodType INVOKE_FRONT_TYPE = MethodType.methodType(Object.class, MethodHandles.Lookup.class, MethodHandle.class, Class.class, Object[].class);
     private static final MethodType GET_BACK_FIELD_TYPE = MethodType.methodType(MethodHandle.class, MethodHandles.Lookup.class, Class.class, String.class, Object.class);
     private static final MethodType PUT_BACK_FIELD_TYPE = MethodType.methodType(MethodHandle.class, MethodHandles.Lookup.class, Class.class, String.class, Object.class);
-    private static final MethodType INVOKE_CALL_TYPE = MethodType.methodType(MethodHandle.class, MethodHandles.Lookup.class, MethodType.class, String.class, Object.class);
+    private static final MethodType INVOKE_INLINED_CALL_TYPE = MethodType.methodType(MethodHandle.class, MethodHandles.Lookup.class, MethodType.class, String.class, Object.class);
+    private static final MethodType INVOKE_CALL_TYPE = MethodType.methodType(Object.class, MethodHandles.Lookup.class, MethodType.class, String.class, Object.class, Object[].class);
     private static final ClassValue<byte[]> BACK_FACTORY = new ClassValue<byte[]>() {
         @Override
         protected byte[] computeValue(Class<?> type) {
@@ -64,13 +63,13 @@ public class RT {
         }
     };
 
-    public static CallSite bsm_new(MethodHandles.Lookup lookup, String name, MethodType type) throws Throwable {
+    public static CallSite bsm_new(MethodHandles.Lookup lookup, String name, MethodType type, String genericName) throws Throwable {
         // TODO the lookup here has to be the lookup of the front class in case of a new from a back class.
-        System.out.println("BSM_NEW lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "]");
+        System.out.println("BSM_NEW lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "], genericName = [" + genericName + "]");
         Class<?> frontClass = type.returnType();
         System.out.println("Return type wanted : " + frontClass);
         // Allocate specialized class - with object for the moment - and return one of its constructor.
-        MethodHandle backMH = createBackSpecies(lookup, type, frontClass);
+        MethodHandle backMH = createBackSpecies(lookup, type, frontClass, genericName);
         MethodHandle frontMH = lookup.findStatic(RT.class, "invokeFront",  INVOKE_FRONT_TYPE);
         frontMH = frontMH.bindTo(lookup).bindTo(backMH).bindTo(type.returnType()).asCollector(Object[].class, type.parameterCount()).asType(type);
         System.out.println("Back constructor : " + backMH);
@@ -83,19 +82,19 @@ public class RT {
         return lookup.findConstructor(frontClass,  SPECIALIZED_CONSTRUCTOR_TYPE).bindTo(null).bindTo(back).invoke();
     }
 
-    public static CallSite bsm_newBackSpecies(MethodHandles.Lookup lookup, String name, MethodType type, String owner) throws Throwable {
-        System.out.println("BSM_BACK_SPECIES lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "]");
+    public static CallSite bsm_newBackSpecies(MethodHandles.Lookup lookup, String name, MethodType type, String owner, String genericName) throws Throwable {
+        System.out.println("BSM_BACK_SPECIES lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "]" + "], genericName = [" + genericName + "]");
         Class<?> frontClass = ClassLoader.getSystemClassLoader().loadClass(owner);
         System.out.println("Return type wanted : " + frontClass);
         // Allocate specialized class - with object for the moment - and return one of its constructor.
-        MethodHandle mh = createBackSpecies(lookup, type, frontClass);
+        MethodHandle mh = createBackSpecies(lookup, type, frontClass, genericName);
         System.out.println("Constructor found : " + mh);
         return new ConstantCallSite(mh);
     }
 
     public static CallSite bsm_inlinedBackCall(MethodHandles.Lookup lookup, String name, MethodType type) throws Throwable {
         System.out.println("BSM_INLINED_BACK_CALL : lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "]");
-        MethodHandle getBackMethod = lookup.findStatic(RT.class, "invokeInlinedCall", INVOKE_CALL_TYPE);
+        MethodHandle getBackMethod = lookup.findStatic(RT.class, "invokeInlinedCall", INVOKE_INLINED_CALL_TYPE);
         // Setting the lookup, the method type.
         // TODO remove prints.
         getBackMethod = getBackMethod.bindTo(lookup).bindTo(type).bindTo(name);
@@ -123,8 +122,9 @@ public class RT {
     }
 
     public static Object invokeCall(MethodHandles.Lookup lookup, MethodType type, String name, Object receiver, Object... args) throws Throwable {
+        System.out.println("invokeCall : lookup = [" + lookup + "], type = [" + type + "], name = [" + name + "], receiver = [" + receiver + "], args = [" + args + "]");
         MethodHandle mh = lookup.findStatic(receiver.getClass(), name, type).asType(type).asSpreader(Object[].class, args.length);
-        return type.returnType().cast(mh.invoke(args)); // TODO remove the cast.
+        return mh.invoke(args); // TODO remove the cast.
     }
 
     public static CallSite bsm_getBackField(MethodHandles.Lookup frontLookup, String name, MethodType type) throws Throwable {
@@ -165,25 +165,31 @@ public class RT {
         return lookup.findSetter(backField.getClass(), name, fieldType).bindTo(backField);
     }
 
-    private static MethodHandle createBackSpecies(MethodHandles.Lookup frontClassLookup, MethodType type, Class<?> frontClass)
-            throws NoSuchFieldException, IllegalAccessException, NoSuchMethodException {
-        System.out.println("RT#createBackSpecies : frontClassLookup = [" + frontClassLookup + "], type = [" + type + "], frontClass = [" + frontClass + "]");
+    private static MethodHandle createBackSpecies(MethodHandles.Lookup frontClassLookup, MethodType type, Class<?> frontClass, String genericName)
+            throws NoSuchFieldException, IllegalAccessException, NoSuchMethodException, ClassNotFoundException {
+        // TODO the first lookup is not the "front lookup" when allocating from a back instance. So we have to pass 2 lookup the normal and the front to the calling methods : bsm_new and bsm_newBackSpecies
+        // TODO get the TX types and a classLoader using frontClassLookup.getClass.getClassLoader + Type.parse(genericName) !
+        System.out.println("RT#createBackSpecies : frontClassLookup = [" + frontClassLookup + "], type = [" + type + "], frontClass = [" + frontClass + "]" + " Generic name = [" + genericName + "]");
         // Reading the specialization attributes.
-        // TODO store the Substitution table in a couple values for the key class in classValue so it is not read every time.
+        // TODO store the Substitution table in a couple values for the key class in classValue so it is not read every time. Not needed, because bootstrap are not called too much.
         byte[] backCode = BACK_FACTORY.get(frontClass);
         SubstitutionTable substitutionTable = SubstitutionTableReader.read(backCode);
+
         System.out.println("After the substitutionTable : " + substitutionTable);
 
 
         // Creating substitution pool.
+        String[] classes = Type.getParameterizedTypeValues(genericName);
+        System.out.println("Class : " + Arrays.toString(classes));
         Object[] pool = new Object[substitutionTable.getMax() + 1];
         for (Map.Entry<Integer, Map.Entry<String, String>> descs : substitutionTable.getDescriptors().entrySet()) {
             Integer index = descs.getKey();
             Map.Entry<String, String> ownerAndDescriptor = descs.getValue();
             String owner = ownerAndDescriptor.getKey();
             String descriptor = ownerAndDescriptor.getValue();
+
             if (!owner.equals(BackClassVisitor.RT_METHOD_HANDLE_TYPE)) {
-                pool[index] = Type.specializeDescriptor(descriptor, type.parameterArray());
+                pool[index] = Type.specializeDescriptor(descriptor, classes);
                 System.out.println("Index : " + index + "  Value : " + owner + " :: " + pool[index]);
                 continue;
             }
@@ -191,8 +197,8 @@ public class RT {
             if (descriptor.equals(BackClassVisitor.HANDLE_RT_BSM_NEW)) {
                 // Preparing the method handle for the invoke call with Object varargs.
                 // TODO make a method.
-                MethodHandle bsm_new = frontClassLookup.findStatic(RT.class, "bsm_new", BSMS_TYPE);
-                pool[index] = bsm_new.asSpreader(Object[].class, 3).asType(MethodType.methodType(Object.class, Object[].class));
+                MethodHandle bsm_new = frontClassLookup.findStatic(RT.class, "bsm_new", BSM_NEW);
+                pool[index] = bsm_new.asSpreader(Object[].class, 4).asType(MethodType.methodType(Object.class, Object[].class));
             } else if (descriptor.equals(BackClassVisitor.HANDLE_RT_BSM_GET_FIELD)) {
                 // Preparing the method handle for the invoke call with Object varargs.
                 MethodHandle bsm_getBackField = frontClassLookup.findStatic(RT.class, "bsm_getBackField", BSMS_TYPE);
@@ -210,6 +216,8 @@ public class RT {
         // We set the front class lookup parameter, and we want to cast the result to an Object instead of the plain anonymous BackClass.
         return constructor.asType(type.changeReturnType(Object.class));
     }
+
+
 
     private static Object getBack__(MethodHandles.Lookup lookup, Object owner) throws Throwable {
         return lookup.findGetter(owner.getClass(), FrontClassVisitor.BACK_FIELD, Object.class).invoke(owner);

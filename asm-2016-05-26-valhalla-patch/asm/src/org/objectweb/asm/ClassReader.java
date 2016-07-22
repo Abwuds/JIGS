@@ -228,9 +228,6 @@ public class ClassReader {
                 size = 4 + readByte(index + 1) * 2;
                 break;
             case ClassWriter.ARRAY_TYPE:
-                System.out.println("Array type : " + readByte(index));
-                System.out.println("Size : " + readByte(index + 1));
-                System.out.println("Type : " + readShort(index + 2));
                 size = 4;
                 break;
             // case ClassWriter.CLASS:
@@ -1505,13 +1502,12 @@ public class ClassReader {
                 u += 3;
                 break;
             case ClassWriter.TYPED_INSN:
-                // TODO send the opcode of the next instruction !!
                 int typedOpcode = b[u + 3] & 0xFF;
                 mv.visitTypedInsn(readTypeVar(u + 1, c), typedOpcode);
                 u += 3;
                 u += 1;
                 if (typedOpcode == Opcodes.ANEWARRAY) {
-                    u += 2; // TODO list every typed opcode having their own parameters.
+                    u += 2; // TODO list every typed opcode having their own parameters -> No other.
                     // For ANEWARRAY, the TypeVar sent is sufficient.
                 }
                 break;

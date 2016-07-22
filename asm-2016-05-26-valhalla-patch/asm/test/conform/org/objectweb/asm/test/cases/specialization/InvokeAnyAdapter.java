@@ -23,8 +23,8 @@ public class InvokeAnyAdapter {
     public static final String BSM_NAME = "newAnyObject";
 
     static {
-        MethodType mtNew = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
-        BSM_NEW = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_new", mtNew.toMethodDescriptorString(), false);
+        MethodType mtNew = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String.class);
+        BSM_NEW = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_new", RT.BSM_NEW.toMethodDescriptorString(), false);
     }
 
     /**
@@ -105,7 +105,7 @@ public class InvokeAnyAdapter {
                 String newDesc = Type.translateMethodDescriptor(Type.getMethodType(Type.getType(owner),
                         type.getArgumentTypes()).toString());
                 // The name has to be <init>, but this is not a valid bsm identifier because of "<" and ">".
-                mv.visitInvokeDynamicInsn(BSM_NAME, newDesc, BSM_NEW);
+                mv.visitInvokeDynamicInsn(BSM_NAME, newDesc, BSM_NEW, owner);
                 invokeSpecialStack.pop();
                 // Case handled.
                 return true;
