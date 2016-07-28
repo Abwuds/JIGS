@@ -8,14 +8,15 @@ import org.objectweb.asm.*;
  */
 public class BackClassVisitor extends ClassVisitor {
 
-    public static final String ANY_PACKAGE = "any/";
+    public static final String ANY_PACKAGE = ""; // "any/";
     public static final String BACK_FACTORY_NAME = "$BackFactory";
     public static final String RT_METHOD_HANDLE_TYPE = "RTMethodHandle";
     public static final String HANDLE_RT_BSM_NEW = "handle_rt_bsm_new";
     public static final String HANDLE_RT_BSM_GET_FIELD = "handle_rt_bsm_getField";
     public static final String HANDLE_RT_BSM_PUT_FIELD = "handle_rt_bsm_putField";
+    public static final String HANDLE_RT_METAFACTORY = "handle_rt_metafactory";
     public static final String BSM_RT_BRIDGE = "bsm_rtBridge";
-    public static final String BSM_RT_BRIDGE_DESC = "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;)Ljava/lang/invoke/CallSite;";
+    public static final String BSM_RT_BRIDGE_DESC = "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/String;)Ljava/lang/invoke/CallSite;";
 
     // Sets when visiting the class prototype.
     private String name;
@@ -35,6 +36,7 @@ public class BackClassVisitor extends ClassVisitor {
         cw.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_NEW);
         cw.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_GET_FIELD);
         cw.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_PUT_FIELD);
+        cw.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_METAFACTORY);
     }
 
     @Override
@@ -47,7 +49,7 @@ public class BackClassVisitor extends ClassVisitor {
 
     @Override
     public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
-        return super.visitField(access, name, desc, null, value); // No parameterized signature.
+        return super.visitField(access, name, Type.eraseNotJavaLangReference(desc), null, value); // No parameterized signature.
     }
 
     @Override
@@ -65,7 +67,7 @@ public class BackClassVisitor extends ClassVisitor {
             // in first parameter the front class.
             methodAccess = access + Opcodes.ACC_STATIC;
             // Inserting the front name. Erasure of : Type.getType('L' + frontName + ';')
-            methodDescriptor =  insertMethodArgumentType(desc, Type.getType(Object.class));
+            methodDescriptor = insertMethodArgumentType(desc, Type.getType(Object.class));
         }
         return new BackMethodVisitor(api, name, frontName, this.name, super.visitMethod(methodAccess, name, methodDescriptor, null, exceptions));
     }
@@ -88,11 +90,15 @@ public class BackClassVisitor extends ClassVisitor {
         MethodVisitor mv = super.visitMethod(Opcodes.ACC_PRIVATE + Opcodes.ACC_STATIC, BSM_RT_BRIDGE, BSM_RT_BRIDGE_DESC,
                 null, null);
         mv.visitCode();
-
+        BackMethodVisitor.printASMMsg("Inside the BSMRTBridge for : ", mv);
+        mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        mv.visitVarInsn(Opcodes.ALOAD, 1);
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
+        // Loading the MethodHandle taking Object varargs.
         mv.visitVarInsn(Opcodes.ALOAD, 3);
 
-        // Boxing arguments.
-        mv.visitInsn(Opcodes.ICONST_3);
+        // Boxing arguments into the Object array to pass it to the MethodHandle.
+        mv.visitInsn(Opcodes.ICONST_4);
         mv.visitTypeInsn(Opcodes.ANEWARRAY, "java/lang/Object");
         mv.visitInsn(Opcodes.DUP);
         mv.visitInsn(Opcodes.ICONST_0);
@@ -105,6 +111,10 @@ public class BackClassVisitor extends ClassVisitor {
         mv.visitInsn(Opcodes.DUP);
         mv.visitInsn(Opcodes.ICONST_2);
         mv.visitVarInsn(Opcodes.ALOAD, 2);
+        mv.visitInsn(Opcodes.AASTORE);
+        mv.visitInsn(Opcodes.DUP);
+        mv.visitInsn(Opcodes.ICONST_3);
+        mv.visitVarInsn(Opcodes.ALOAD, 4);
         mv.visitInsn(Opcodes.AASTORE);
 
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/invoke/MethodHandle", "invoke", "([Ljava/lang/Object;)Ljava/lang/Object;", false);

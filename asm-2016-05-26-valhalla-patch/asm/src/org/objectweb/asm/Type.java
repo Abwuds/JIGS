@@ -1045,19 +1045,48 @@ public class Type {
      * @return the erased method type.
      */
     public static String eraseNotJavaLangMethod(String methodDesc) {
-        Type type = Type.getMethodType(methodDesc);
+        return eraseNotJavaLangMethod(Type.getMethodType(methodDesc)).toString();
+    }
+
+    /**
+     * Erases to Object each Object sub type into the given method descriptor not contained into the package java/lang.
+     * @return the erased method type.
+     */
+    public static Type eraseNotJavaLangMethod(Type type) {
         Type[] argumentTypes = type.getArgumentTypes();
         for (int i = 0; i < argumentTypes.length; i++) {
             argumentTypes[i] = eraseNotJavaLangReference(argumentTypes[i]);
         }
-        return Type.getMethodDescriptor(eraseNotJavaLangReference(type.getReturnType()), argumentTypes);
+        return Type.getMethodType(eraseNotJavaLangReference(type.getReturnType()), argumentTypes);
     }
 
-    private static Type eraseNotJavaLangReference(Type type) {
+    public static String eraseNotJavaLangReference(String desc) {
+        Type type = getType(desc);
+        switch (type.sort) {
+            case OBJECT:
+                return desc.startsWith("Ljava") ? desc : "Ljava/lang/Object;";
+            case PARAMETERIZED_TYPE:
+                return desc.startsWith("$java") ? desc : "Ljava/lang/Object;";
+            case TYPE_VAR:
+                // Inside java/lang package.
+                if (desc.contains("Ljava")) {
+                    return desc;
+                }
+                // Erasing the variable and keeping its Type Var nature.
+                int index = getTypeVarIndex(type);
+                return 'T' + index + "/Ljava/lang/Object;";
+            default: // Primitive types and so on.
+                return desc;
+        }
+    }
+
+    public static Type eraseNotJavaLangReference(Type type) {
         String desc = type.getDescriptor();
         switch (type.sort) {
             case OBJECT:
                 return desc.startsWith("Ljava/lang/") ? type : getType(Object.class);
+            case PARAMETERIZED_TYPE:
+                return desc.startsWith("$java/lang/") ? type : getType(Object.class);
             case TYPE_VAR:
                 // Inside java/lang package.
                 if (desc.contains("Ljava/lang/")) {
@@ -1066,8 +1095,6 @@ public class Type {
                 // Erasing the variable and keeping its Type Var nature.
                 int index = getTypeVarIndex(type);
                 return getType('T' + index + "/Ljava/lang/Object;");
-            case PARAMETERIZED_TYPE:
-                return desc.startsWith("$java/lang/") ? type : getType(Object.class);
             default: // Primitive types and so on.
                 return type;
         }

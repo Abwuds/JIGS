@@ -28,7 +28,7 @@ public class FrontClassVisitor extends ClassVisitor {
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
         // At this step, only anyfied classes starting with the token '$'.
-        if (!name.startsWith("$")) {
+        if (!Type.isParameterizedType(name)) {
             frontClassName = name;
             super.visit(COMPILER_VERSION, access, name, signature, superName, interfaces);
             return;
@@ -58,7 +58,7 @@ public class FrontClassVisitor extends ClassVisitor {
     @Override
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
         // If we have not created a back class, we use a visitor able to transform invocations in compatible invocations.
-        if (!hasBackFactory()) { return new InvokeAnyMethodVisitor(api, super.visitMethod(access, name, desc, signature, exceptions)); }
+        if (!hasBackFactory()) { return new InvokeAnyMethodVisitor(frontClassName, api, super.visitMethod(access, name, desc, signature, exceptions), name); }
         // TODO do not redirect static method to back class.
         // We have to turn every method into static method inside the back class.
         return createRetroValhallaMethodVisitor(access, name, desc, signature, exceptions);

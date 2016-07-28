@@ -29,6 +29,7 @@ class FrontMethodVisitor extends MethodVisitor {
         BSM_DELEGATE_CALL = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_delegateBackCall", mtDelegateCall.toMethodDescriptorString(), false);
     }
 
+    //TODO Use an InvokeAnyAdapter too.
     private FrontMethodVisitor(int api, MethodVisitor mv) {
         super(api, mv);
     }
@@ -42,18 +43,18 @@ class FrontMethodVisitor extends MethodVisitor {
         } else {
             // Instance methods :
             visitInstanceMethod(Type.rawName(frontName), methodName, fmw, type);
-            // TODO handle static method.
         }
+        // TODO handle static method.
     }
 
     private static void visitConstructor(String frontName, String genericName, MethodVisitor mv, Type type) {
         mv.visitCode();
         visitSuperConstructor(mv);
-        mv.visitVarInsn(Opcodes.ALOAD, 0);// PutField on this for the field _back__.
+        mv.visitVarInsn(Opcodes.ALOAD, 0); // PutField on this for the field _back__.
 
         // Loading constructor arguments.
-        Type[] argumentTypes = loadArguments(mv, type);
-        // TODO 1 : pass the specialization with object signature -> Meaning I have to use the bounds of every types (pass null argument ?)
+        loadArguments(mv, type);
+        Type[] argumentTypes = Type.eraseNotJavaLangMethod(type).getArgumentTypes();
         String indyDescriptor = Type.getMethodDescriptor(Type.getType("Ljava/lang/Object;"), argumentTypes);
         mv.visitInvokeDynamicInsn(BSM_NAME, indyDescriptor, BSM_NEW_BACK_SPECIES, frontName, genericName);
         mv.visitFieldInsn(Opcodes.PUTFIELD, frontName, FrontClassVisitor.BACK_FIELD, "Ljava/lang/Object;");
@@ -127,7 +128,7 @@ class FrontMethodVisitor extends MethodVisitor {
         return Type.getMethodDescriptor(type.getReturnType(), args);
     }
 
-    private static Type[] loadArguments(MethodVisitor mv, Type type) {
+    private static void loadArguments(MethodVisitor mv, Type type) {
         Type[] argumentTypes = type.getArgumentTypes();
         for (int i = 0; i < argumentTypes.length; i++) {
             Type arg = argumentTypes[i];
@@ -149,12 +150,14 @@ class FrontMethodVisitor extends MethodVisitor {
                 case Type.TYPE_VAR:
                 case Type.PARAMETERIZED_TYPE:
                     mv.visitVarInsn(Opcodes.ALOAD, i + 1);
+                    // TODO add type String[] under the object type.
+                /*case Type.ARRAY:
+                    mv.visitVarInsn(Opcodes.ALOAD, i + 1); AALOAD ?*/
                     break;
                 default:
                     throw new AssertionError("Type not handled : " + sort);
             }
         }
-        return argumentTypes;
     }
 
     static void createFrontSpecializerConstructor(String rawName, String backField, MethodVisitor mv) {

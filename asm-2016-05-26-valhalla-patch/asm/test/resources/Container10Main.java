@@ -43,7 +43,7 @@ public class Container10Main {
         System.out.println(c.getU());
         c.setT(99);
         System.out.println(c.getT());
-        // Old problem when calling toString here : System.out.println(c.getT() + " " + c.getX() + " " + c.getU());
+        System.out.println(c.getT() + " " + c.getX() + " " + c.getU());
     }
 
     public static void testContainer10_2() {

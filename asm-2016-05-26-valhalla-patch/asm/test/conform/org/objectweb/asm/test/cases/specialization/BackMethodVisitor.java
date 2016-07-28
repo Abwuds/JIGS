@@ -1,12 +1,8 @@
 package org.objectweb.asm.test.cases.specialization;
 
 
-import jdk.nashorn.internal.runtime.regexp.joni.constants.OPCode;
 import org.objectweb.asm.*;
 
-import java.lang.invoke.CallSite;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.util.*;
 
 /**
@@ -174,8 +170,26 @@ class BackMethodVisitor extends MethodVisitor {
         this.methodName = methodName;
         this.frontOwner = frontOwner;
         this.owner = owner;
-        invokeAnyAdapter = new InvokeAnyAdapter(this);
         bsmRTBridge = new Handle(Opcodes.H_INVOKESTATIC, owner, BackClassVisitor.BSM_RT_BRIDGE, BackClassVisitor.BSM_RT_BRIDGE_DESC, false);
+
+        InvokeAnyAdapter.InvokeFieldAdapter invokeFieldAdapter = new InvokeAnyAdapter.InvokeFieldAdapter() {
+            @Override
+            public void getField(String owner, String name, String desc) {
+                String returnDescriptor = Type.rawDesc(desc);
+                String erasedReturnDescriptor = Type.eraseNotJavaLangReference(returnDescriptor); // Removing parameterized types.
+                // Normally inserting the front enclosingClass : "(L" + frontOwner + ";". But instead inserting its Object erasure.
+                visitInvokeDynamicInsn(name, "(Ljava/lang/Object;)" + erasedReturnDescriptor, bsmRTBridge,
+                        BackClassVisitor.HANDLE_RT_BSM_GET_FIELD, "(L" + owner + ";)" + desc);
+            }
+
+            @Override
+            public void putField(String owner, String name, String desc) {
+                visitInvokeDynamicInsn(name, "(Ljava/lang/Object;" + Type.eraseNotJavaLangReference(desc) + ")V",
+                        bsmRTBridge, BackClassVisitor.HANDLE_RT_BSM_PUT_FIELD, "(L" + owner + ";" + desc + ")V");
+            }
+        };
+
+        invokeAnyAdapter = new InvokeAnyAdapter(owner, methodName, invokeFieldAdapter, this);
     }
 
     /**
@@ -200,16 +214,6 @@ class BackMethodVisitor extends MethodVisitor {
     }
 
     @Override
-    public void visitLdcInsn(Object cst) {
-        super.visitLdcInsn(cst);
-    }
-
-    @Override
-    public void visitVarInsn(int opcode, int var) {
-        super.visitVarInsn(opcode, var);
-    }
-
-    @Override
     public void visitInsn(int opcode) {
         if (!invokeAnyAdapter.visitInsn(opcode)) {
             super.visitInsn(opcode);
@@ -219,53 +223,35 @@ class BackMethodVisitor extends MethodVisitor {
     @Override
     public void visitMethodInsn(final int opcode, final String owner,
                                 final String name, final String desc, final boolean itf) {
-        if (!invokeAnyAdapter.visitMethodInsn(opcode, owner, name, desc, itf)) {
+        if (!invokeAnyAdapter.visitMethodInsn(opcode, owner, name, desc, itf, true)) {
             super.visitMethodInsn(opcode, owner, name, desc, itf);
         }
     }
 
     @Override
     public void visitFieldInsn(int opcode, String owner, String name, String desc) {
-        // The description is either an Object, a TypeVar, or a parameterized type.
-        // In the last case, we don't want it to propagate to the underlying classWriter.
-        owner = Type.rawName(owner);
-        if (frontOwner.equals(owner)) { owner = this.owner; }
+        if (!invokeAnyAdapter.visitFieldInsn(opcode, owner, name, desc)) {
+            // Erasing all description contained in this class.
+            owner = Type.rawName(owner);
+            if (owner.equals(this.frontOwner)) { owner = this.owner; }
+            super.visitFieldInsn(opcode, owner, name, Type.eraseNotJavaLangReference(desc));
+        }
+    }
 
-        // In case the field's owner is not the current back class, nothing is needed and it is
-        // a regular field access. Same thing when treating the owner#<init> method,
-        // the xxxfield opcodes must not be replaced by invokedynamic.
-        if (methodName.equals("<init>")) {
-            super.visitFieldInsn(opcode, owner, name, Type.rawDesc(desc));
+    @Override
+    public void visitInvokeDynamicInsn(String name, String desc, Handle bsm, Object... bsmArgs) {
+        if (bsm.getName().equals("metafactory")) {
+            visitInvokeDynamicInsn(name, desc, bsmRTBridge, BackClassVisitor.HANDLE_RT_METAFACTORY, "metafactory__");
             return;
         }
-        if (!this.owner.equals(owner)) {
-            super.visitFieldInsn(opcode, owner, name, Type.rawDesc(desc));
-            return;
-        }
-        if (opcode == Opcodes.GETFIELD) {
-            // Every getfield/putfield in method which are not <init>, is transformed in a getfield/putfield
-            // on the back field. To do so, we pass the logic to an invokedynamic which will
-            // get the field value or push the value in the field contained inside the back class.
-
-            String returnDescriptor = Type.rawDesc(desc); // Removing parameterized types.
-            // Normally inserting the front owner : "(L" + frontOwner + ";". But instead inserting its Object erasure.
-            visitInvokeDynamicInsn(name, "(Ljava/lang/Object;)" + returnDescriptor, bsmRTBridge, BackClassVisitor.HANDLE_RT_BSM_GET_FIELD);
-            return;
-        }
-
-        if (opcode == Opcodes.PUTFIELD) {
-            visitInvokeDynamicInsn(name, "(Ljava/lang/Object;" + desc + ")V", bsmRTBridge, BackClassVisitor.HANDLE_RT_BSM_PUT_FIELD);
-            return;
-        }
-
-        // Neither GETFIELD nor PUTFIELD.
-        super.visitFieldInsn(opcode, owner, name, Type.rawDesc(desc));
+        // Normal operations.
+        super.visitInvokeDynamicInsn(name, desc, bsm, bsmArgs);
     }
 
     private void noReplacedTyped(String name, int typedOpcode) {
         super.visitTypedInsn(name, typedOpcode);
         // TODO replace this by the switch of typed opcode.
-        if (typedOpcode <= Opcodes.ALOAD_0 || typedOpcode <= Opcodes.ALOAD_3){
+        if (typedOpcode <= Opcodes.ALOAD_0 || typedOpcode <= Opcodes.ALOAD_3) {
             visitVarInsn(Opcodes.ALOAD, typedOpcode - Opcodes.ALOAD_0);
             return;
         }
@@ -274,7 +260,7 @@ class BackMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitTypedInsn(String name, int typedOpcode) {
-       // noReplacedTyped(name, typedOpcode);
+        // noReplacedTyped(name, typedOpcode);
 
         end = new Label();
         List<Map.Entry<String, Integer>> tests = INSTRS.get(typedOpcode);
@@ -290,33 +276,33 @@ class BackMethodVisitor extends MethodVisitor {
             visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z", false);
             Label label = new Label();
             visitJumpInsn(Opcodes.IFEQ, label);
-            switch(typedOpcode) {
+            switch (typedOpcode) {
                 case Opcodes.ALOAD_0:
                 case Opcodes.ALOAD_1:
                 case Opcodes.ALOAD_2:
                 case Opcodes.ALOAD_3:
-                    printASMMsg("Choosing : " + name + " Type : " + newOpcode, this);
+                    printASMMsg("Choosing : " + name + " Type : " + newOpcode, mv);
                     visitVarInsn(newOpcode, typedOpcode - Opcodes.ALOAD_0);
                     break;
                 case Opcodes.ASTORE_0:
                 case Opcodes.ASTORE_1:
                 case Opcodes.ASTORE_2:
                 case Opcodes.ASTORE_3:
-                    printASMMsg("Choosing : " + name + " Type : " + newOpcode, this);
+                    printASMMsg("Choosing : " + name + " Type : " + newOpcode, mv);
                     visitVarInsn(newOpcode, typedOpcode - Opcodes.ASTORE_0);
                     break;
                 case Opcodes.AASTORE:
                 case Opcodes.AALOAD:
-                    printASMMsg("Choosing : " + name + " Type : " + newOpcode, this);
+                    printASMMsg("Choosing : " + name + " Type : " + newOpcode, mv);
                     visitInsn(newOpcode);
                     break;
                 case Opcodes.ARETURN:
-                    printASMMsg("Choosing : " + name + " Type : " + newOpcode, this);
+                    printASMMsg("Choosing : " + name + " Type : " + newOpcode, mv);
                     visitInsn(newOpcode);
                     break;
                 case Opcodes.ANEWARRAY:
                     visitIntInsn(Opcodes.NEWARRAY, newOpcode);
-                    printASMMsg("Choosing : " + name + " Type : " + newOpcode, this);
+                    printASMMsg("Choosing : " + name + " Type : " + newOpcode, mv);
                     break;
                 default:
                     // TODO ACONST_NULL, AASTORE, AALOAD.
@@ -341,7 +327,7 @@ class BackMethodVisitor extends MethodVisitor {
         }
     }
 
-    private static void printASMMsg(String msg, MethodVisitor mv) {
+    public static void printASMMsg(String msg, MethodVisitor mv) {
         mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
         mv.visitLdcInsn(msg);
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);

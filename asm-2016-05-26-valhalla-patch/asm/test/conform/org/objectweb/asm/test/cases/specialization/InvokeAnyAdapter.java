@@ -6,9 +6,6 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import rt.RT;
 
-import java.lang.invoke.CallSite;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.util.Stack;
 
 /**
@@ -19,13 +16,13 @@ public class InvokeAnyAdapter {
     /**
      * Invokedynamic constants.
      */
-    private static final Handle BSM_NEW;
-    public static final String BSM_NAME = "newAnyObject";
+    private static final Handle BSM_BSM_CREATE_ANY = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_createAny", RT.TYPE_BSM_CREATE_ANY.toMethodDescriptorString(), false);
+    public static final String BSM_NAME = "createAny";
+    private static final Handle BSM_BSM_CREATE_ANY_NO_LOOKUP = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_createAnyNoLookup", RT.TYPE_NO_LOOKUP_BSM_CREATE_ANY.toMethodDescriptorString(), false);;
+    private final String enclosingClass;
+    private final String methodName;
+    private final InvokeFieldAdapter invokeFieldAdapter;
 
-    static {
-        MethodType mtNew = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String.class);
-        BSM_NEW = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_new", RT.BSM_NEW.toMethodDescriptorString(), false);
-    }
 
     /**
      * Enumeration used for the detection of invoke special calls.
@@ -44,7 +41,10 @@ public class InvokeAnyAdapter {
 
     private final MethodVisitor mv;
 
-    public InvokeAnyAdapter(MethodVisitor mv) {
+    public InvokeAnyAdapter(String enclosingClass, String methodName, InvokeFieldAdapter invokeFieldAdapter, MethodVisitor mv) {
+        this.enclosingClass = enclosingClass;
+        this.methodName = methodName;
+        this.invokeFieldAdapter = invokeFieldAdapter;
         this.mv = mv;
     }
 
@@ -81,15 +81,18 @@ public class InvokeAnyAdapter {
     }
 
     public boolean visitMethodInsn(final int opcode, final String owner, final String name, final String desc,
-                                   final boolean itf) {
+                                   final boolean itf, boolean eraseInvoke) {
+        // Calling directly the back field of a virtual method call on a parameterized type.
+        // TODO do the same for back method but with ERASURE.
         if (opcode == Opcodes.INVOKEVIRTUAL && Type.isParameterizedType(owner)) {
             String inlinedBackCallDesc = createInlinedBackCallDescriptor(Type.getType(desc), "Ljava/lang/Object;");
-            // TODO remove this mv.visitLdcInsn(name);
             Handle bsm_inlinedBackCall = new Handle(Opcodes.H_INVOKESTATIC, "rt/RT", "bsm_inlinedBackCall", RT.BSMS_TYPE.toMethodDescriptorString(), false);
             mv.visitInvokeDynamicInsn(name, inlinedBackCallDesc, bsm_inlinedBackCall);
             // Case handled.
             return true;
         }
+
+        // TODO replace INVOKEVIRTUAL inside the back context by an invokedynamic of bsm_invokeSpecial.
 
 
         if (opcode != Opcodes.INVOKESPECIAL) {
@@ -101,11 +104,16 @@ public class InvokeAnyAdapter {
         if (!invokeSpecialStack.empty()) {
             InvokeSpecialVisited top = invokeSpecialStack.peek();
             if (InvokeSpecialVisited.REPLACED_DUP.equals(top)) {
-                Type type = Type.getMethodType(desc);
-                String newDesc = Type.translateMethodDescriptor(Type.getMethodType(Type.getType(owner),
-                        type.getArgumentTypes()).toString());
+
+                // Erasing the arguments. Because we are invoking a constructor of the back which are always erased.
+                // But we preserve the good return type to type correctly if no full erasure are requested
+                // (when invoking from a front code or a normal class code, typing normally.
+                Type type = Type.eraseNotJavaLangMethod(Type.getMethodType(desc));
+                Type returnType = Type.getType(owner);
+                if (eraseInvoke) { returnType = Type.eraseNotJavaLangReference(returnType); }
+                String methodDescription = Type.getMethodType(returnType, type.getArgumentTypes()).toString();
                 // The name has to be <init>, but this is not a valid bsm identifier because of "<" and ">".
-                mv.visitInvokeDynamicInsn(BSM_NAME, newDesc, BSM_NEW, owner);
+                mv.visitInvokeDynamicInsn(BSM_NAME, methodDescription, BSM_BSM_CREATE_ANY_NO_LOOKUP, owner);
                 invokeSpecialStack.pop();
                 // Case handled.
                 return true;
@@ -117,6 +125,43 @@ public class InvokeAnyAdapter {
         return false;
     }
 
+    public boolean visitFieldInsn(int opcode, String owner, String name, String desc) {
+        // Regular field enclosingClass (not parameterized type or so).
+        if (!Type.isParameterizedType(owner)) {
+            // If the enclosing class is the field's enclosingClass, then its a regular field visited.
+           // if (!this.enclosingClass.equals(enclosingClass)) {
+                return false; // super.visitFieldInsn(opcode, enclosingClass, name, Type.rawDesc(desc));
+            //}
+        }
+
+        owner = Type.rawName(owner);
+        // When the field owner is parameterized and we are inside its constructor, performing regular field operations.
+        if (getBackRepresentation(owner).equals(enclosingClass) && methodName.equals("<init>")) {
+            return false; // super.visitFieldInsn(opcode, enclosingClass, name, Type.eraseNotJavaLangReference(desc));
+        }
+
+        // Otherwise, we always perform an invoke dynamic to retrieve the field.
+        if (opcode == Opcodes.GETFIELD) {
+            // Every getfield/putfield in method which are not <init>, is transformed in a getfield/putfield
+            // on the back field. To do so, we pass the logic to an invokedynamic which will
+            // get the field value or push the value in the field contained inside the back class.
+            invokeFieldAdapter.getField(owner, name, desc);
+            return true;
+        }
+
+        if (opcode == Opcodes.PUTFIELD) {
+            invokeFieldAdapter.putField(owner, name, desc);
+            return true;
+        }
+
+        // Neither TYPE_GETFIELD nor PUTFIELD.
+        // super.visitFieldInsn(opcode, enclosingClass, name, Type.eraseNotJavaLangReference(desc));
+        return false;
+    }
+
+    public static String getBackRepresentation(String owner) {
+        return BackClassVisitor.ANY_PACKAGE + Type.rawName(owner) + BackClassVisitor.BACK_FACTORY_NAME;
+    }
 
     private static String createInlinedBackCallDescriptor(Type type, String frontDesc) {
         Type[] argsSrc = type.getArgumentTypes();
@@ -127,4 +172,9 @@ public class InvokeAnyAdapter {
         return Type.getMethodDescriptor(type.getReturnType(), args);
     }
 
+
+    interface InvokeFieldAdapter {
+        void getField(String owner, String name, String desc);
+        void putField(String owner, String name, String desc);
+    }
 }

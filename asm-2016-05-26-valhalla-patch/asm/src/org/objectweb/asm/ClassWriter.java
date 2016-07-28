@@ -1379,7 +1379,8 @@ public class ClassWriter extends ClassVisitor {
 
         // Substituting ObjectibleDispatch#metafactory to RT#metafactory.
         Handle bsm2 = bsm;
-        if (name.equals("metafactory") && bsm.owner.equals("java/lang/invoke/ObjectibleDispatch")) {
+        if ((name.equals("metafactory") || name.equals("equals") || name.equals("hashcode") || name.equals("toString"))
+                && bsm.owner.equals("java/lang/invoke/ObjectibleDispatch")) {
             bsm2 = new Handle(bsm.tag, "rt/RT", bsm.name, bsm.desc, bsm.itf);
         }
 
@@ -1486,7 +1487,7 @@ public class ClassWriter extends ClassVisitor {
     Item newFieldItem(final String owner, final String name, final String desc) {
         key3.set(FIELD, owner, name, desc);
         Item result = get(key3);
-        if (result == null) { // TODO do we pass the owner ? Does not seem important.
+        if (result == null) {
             put122(FIELD, newClass(owner), newNameType(name, desc));
             result = new Item(index++, key3);
             put(result);

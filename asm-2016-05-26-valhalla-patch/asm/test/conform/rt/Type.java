@@ -1036,20 +1036,32 @@ class Type {
         Type type = getType(descriptor);
         switch (type.sort) {
             case TYPE_VAR:
-                return getTypeVarInstantiation(classes, type).getDescriptor();
+                return getErasedTypeVarInstantiation(classes, type).getDescriptor();
             case METHOD:
-                return specializeMethodDescriptor(type, classes);
+                return getEraseTypeVarMethodDescriptor(type, classes);
             default:
                 break;
         }
         return descriptor;
     }
 
-    private static Type getTypeVarInstantiation(String[] classes, Type type) throws ClassNotFoundException {
+    private static Type getErasedTypeVarInstantiation(String[] classes, Type type) throws ClassNotFoundException {
         int index = getTypeVarIndex(type);
         // If this is a typeVar array :
         String prefix = getTypeVarArrayDimension(type);
         String clazz = classes[index];
+        switch (type.sort) {
+            case INT:
+            case SHORT:
+            case BOOLEAN:
+            case BYTE:
+            case LONG:
+            case FLOAT:
+            case DOUBLE:
+               return getType(prefix + clazz);
+            default:
+                break;
+        }
         // Erased.
         if (clazz.equals("_")) {
             String descriptor = type.getDescriptor();
@@ -1074,22 +1086,69 @@ class Type {
         return Character.getNumericValue(type.getDescriptor().charAt(1));
     }
 
-    private static String specializeMethodDescriptor(Type type, String[] classes) throws ClassNotFoundException {
+    public static String eraseNotJavaLangReference(String desc) {
+        Type type = getType(desc);
+        switch (type.sort) {
+            case OBJECT:
+                return desc.startsWith("Ljava/lang/") ? desc : "Ljava/lang/Object;";
+            case PARAMETERIZED_TYPE:
+                return desc.startsWith("$java/lang/") ? desc : "Ljava/lang/Object;";
+            case TYPE_VAR:
+                // Inside java/lang package.
+                if (desc.contains("Ljava/lang/")) {
+                    return desc;
+                }
+                // Erasing the variable and keeping its Type Var nature.
+                int index = getTypeVarIndex(type);
+                return 'T' + index + "/Ljava/lang/Object;";
+            default: // Primitive types and so on.
+                return desc;
+        }
+    }
+
+    public static Type eraseNotJavaLangReference(Type type) {
+        String desc = type.getDescriptor();
+        switch (type.sort) {
+            case OBJECT:
+                return desc.startsWith("Ljava/lang/") ? type : getType(Object.class);
+            case PARAMETERIZED_TYPE:
+                return desc.startsWith("$java/lang/") ? type : getType(Object.class);
+            case TYPE_VAR:
+                // Inside java/lang package.
+                if (desc.contains("Ljava/lang/")) {
+                    return type;
+                }
+                // Erasing the variable and keeping its Type Var nature.
+                int index = getTypeVarIndex(type);
+                return getType('T' + index + "/Ljava/lang/Object;");
+            default: // Primitive types and so on.
+                return type;
+        }
+    }
+    private static String getEraseTypeVarMethodDescriptor(Type type, String[] classes) throws ClassNotFoundException {
         Type[] argumentTypes = type.getArgumentTypes();
         Type returnType = type.getReturnType();
         int argLength = argumentTypes.length;
         Type[] resultArgsTypes = new Type[argLength];
         for (int i = 0; i < argLength; i++) {
             if (argumentTypes[i].sort == TYPE_VAR) {
-                resultArgsTypes[i] = getTypeVarInstantiation(classes, argumentTypes[i]);
+                resultArgsTypes[i] = getErasedTypeVarInstantiation(classes, argumentTypes[i]);
             } else {
-                resultArgsTypes[i] = typeToObject(argumentTypes[i]);
+                resultArgsTypes[i] = eraseNotJavaLangReference(typeToObject(argumentTypes[i]));
             }
         }
         if (returnType.sort == TYPE_VAR) {
-            return Type.getMethodDescriptor(getTypeVarInstantiation(classes, returnType), resultArgsTypes);
+            return Type.getMethodDescriptor(getErasedTypeVarInstantiation(classes, returnType), resultArgsTypes);
         }
         return Type.getMethodDescriptor(typeToObject(returnType), resultArgsTypes);
+    }
+
+    public static boolean isParameterizedType(String owner) {
+        return isParameterizedType(getType(owner));
+    }
+
+    public static boolean isParameterizedType(Type owner) {
+        return owner.sort == PARAMETERIZED_TYPE;
     }
 
     public static String[] getParameterizedTypeValues(String genericClass) {
