@@ -90,10 +90,10 @@ public class BackClassVisitor extends ClassVisitor {
         MethodVisitor mv = super.visitMethod(Opcodes.ACC_PRIVATE + Opcodes.ACC_STATIC, BSM_RT_BRIDGE, BSM_RT_BRIDGE_DESC,
                 null, null);
         mv.visitCode();
-        BackMethodVisitor.printASMMsg("Inside the BSMRTBridge for : ", mv);
-        mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        // BackMethodVisitor.printASMMsg("Inside the BSMRTBridge for : ", mv);
+        /*mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
         mv.visitVarInsn(Opcodes.ALOAD, 1);
-        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);*/
         // Loading the MethodHandle taking Object varargs.
         mv.visitVarInsn(Opcodes.ALOAD, 3);
 

@@ -15,22 +15,6 @@ public class Container10Main {
     }
 
 
-    public static void testAnyArrayList() {
-        AnyArrayList<Object> list = new AnyArrayList<Object>();
-        System.out.println("List size : " + Objects.toString(list.size()));
-        list.add("Hello");
-        list.add(42);
-        System.out.println("List[0] = " + list.get(0));
-        System.out.println("List[1] = " + list.get(1));
-        AnyArrayList<int> list2 = new AnyArrayList<int>();
-        list2.add(3);
-        list2.add(4);
-        System.out.println("List2 size = " + list2.size());
-        System.out.println("List2[0] = " + Objects.toString(list2.get(0)));
-        System.out.println("List2[1] = " + Objects.toString(list2.get(1)));
-    }
-
-
     public static void testContainer10() {
         Runnable r = new Runnable() {
             @Override

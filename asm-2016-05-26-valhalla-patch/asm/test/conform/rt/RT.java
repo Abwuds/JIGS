@@ -83,7 +83,7 @@ public class RT {
     };
 
 
-
+    // Getting the lookup.
     private static MethodHandle initLookupConstructor() {
         String PROXY_CLASS = "yv66vgAAADMAGgoABQASBwAUCgACABUHABYHABcBAAY8aW5pdD4BAAMoKVYB"
                 + "AARDb2RlAQAPTGluZU51bWJlclRhYmxlAQAGbG9va3VwAQAGTG9va3VwAQAM"
@@ -128,7 +128,7 @@ public class RT {
     }
 
     public static MethodHandle invokeInlinedCall(MethodHandles.Lookup lookup, MethodType type, String methodName, Object front) throws Throwable {
-        System.out.println("invokeInlinedCall : lookup = [" + lookup + "], type = [" + type + "], methodName = [" + methodName + "], front = [" + front.getClass() + "]");
+       // System.out.println("invokeInlinedCall : lookup = [" + lookup + "], type = [" + type + "], methodName = [" + methodName + "], front = [" + front.getClass() + "]");
         return lookup.findStatic(getBack__(lookup, front).getClass(), methodName, type).bindTo(front);
     }
 
@@ -193,7 +193,7 @@ public class RT {
     public static CallSite bsm_getField(MethodHandles.Lookup lookup, String name, MethodType erasedType,
                                         String notErasedDesc, MethodHandles.Lookup front)
             throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException {
-        System.out.println("BSM_GET_FIELD : lookup = [" + lookup + "], name = [" + name + "], erasedType = [" + erasedType + "], notErasedDesc = [" + notErasedDesc + "], front = [" + front + "]");
+        // System.out.println("BSM_GET_FIELD : lookup = [" + lookup + "], name = [" + name + "], erasedType = [" + erasedType + "], notErasedDesc = [" + notErasedDesc + "], front = [" + front + "]");
         MethodHandles.Lookup l = front == null ? lookup : front;
 
         // Loading the field class.
@@ -204,7 +204,7 @@ public class RT {
     }
 
     public static MethodHandle getField(MethodHandles.Lookup lookup, String name, Class<?> fieldClass, Object front) throws Throwable {
-        System.out.println("getField : lookup = [" + lookup + "], name = [" + name + "], fieldClass = [" + fieldClass + "], front = [" + front + "]");
+        // System.out.println("getField : lookup = [" + lookup + "], name = [" + name + "], fieldClass = [" + fieldClass + "], front = [" + front + "]");
         Object back__ = getBack__(lookup, front);
         Lookup backLookup = computeLookup(back__.getClass());
         // System.out.println("Back : " + back__);
@@ -298,7 +298,7 @@ public class RT {
 
         // Creating substitution pool.
         String[] classes = Type.getParameterizedTypeValues(genericName);
-        System.out.println("Class : " + Arrays.toString(classes));
+        // System.out.println("Class : " + Arrays.toString(classes));
         Object[] pool = new Object[substitutionTable.getMax() + 1];
         for (Map.Entry<Integer, Map.Entry<String, String>> descs : substitutionTable.getDescriptors().entrySet()) {
             Integer index = descs.getKey();
@@ -308,7 +308,7 @@ public class RT {
 
             if (!owner.equals(BackClassVisitor.RT_METHOD_HANDLE_TYPE)) {
                 pool[index] = Type.specializeDescriptor(descriptor, classes);
-                System.out.println("Index : " + index + "  Value : " + owner + " :: " + pool[index]);
+                // System.out.println("Index : " + index + "  Value : " + owner + " :: " + pool[index]);
                 continue;
             }
 
@@ -329,7 +329,7 @@ public class RT {
                 MethodHandle bsm_metafactory = frontClassLookup.findStatic(RT.class, "metafactory", TYPE_METAFACTORY);
                 // Inserting the frontLookup and dropping the "name" dummy argument received.
                 pool[index] = MethodHandles.insertArguments(bsm_metafactory, 3, frontClassLookup).asSpreader(Object[].class, 4).asType(MethodType.methodType(Object.class, Object[].class));
-                System.out.println("PoolIndex : " + pool[index]);
+                // System.out.println("PoolIndex : " + pool[index]);
                 // MethodHandle mh = MethodHandles.exactInvoker(MethodType.methodType(Object.class, Object.class, Object.class, Object.class, Object.class)).asSpreader(Object[].class, 4);
                 // MethodHandle factoryBound = MethodHandles.insertArguments(bsm_metafactory, 3, frontClassLookup);
                 // pool[index] = MethodHandles.insertArguments(MethodHandles.dropArguments(mh, 0, Object.class), 0, factoryBound);
