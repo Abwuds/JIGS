@@ -3,6 +3,7 @@ package org.objectweb.asm.test.cases.specialization;
 
 import org.objectweb.asm.*;
 
+import java.lang.invoke.MethodType;
 import java.util.*;
 
 /**
@@ -224,8 +225,20 @@ class BackMethodVisitor extends MethodVisitor {
     public void visitMethodInsn(final int opcode, final String owner,
                                 final String name, final String desc, final boolean itf) {
 
+        // From the back class, every method invocation is an invoke dynamic.
+        System.out.println("visitMethodInsn : opcode = [" + opcode + "], owner = [" + owner + "], name = ["
+                + name + "], desc = [" + desc + "], itf = [" + itf + "]");
+        // Virtual invocation
         if (opcode == Opcodes.INVOKEVIRTUAL && Type.isParameterizedType(owner)) {
+            visitInvokeDynamicInsn(name, Type.eraseNotJavaLangMethod(insertErasedReceiver(desc)), bsmRTBridge,
+                    BackClassVisitor.HANDLE_RT_BSM_INVOKE_SPECIAL_FROM_BACK, desc);
+            return;
+        }
 
+        // Static invocation
+        if (opcode == Opcodes.INVOKESTATIC && Type.isParameterizedType(owner)) {
+
+           // return;
         }
 
 
@@ -233,6 +246,15 @@ class BackMethodVisitor extends MethodVisitor {
         if (!invokeAnyAdapter.visitMethodInsn(opcode, owner, name, desc, itf, true)) {
             super.visitMethodInsn(opcode, owner, name, desc, itf);
         }
+    }
+
+    public String insertErasedReceiver(String desc) {
+        Type type = Type.getMethodType(desc);
+        Type[] argumentTypes = type.getArgumentTypes();
+        Type[] args = new Type[argumentTypes.length + 1];
+        args[0] = Type.getType("Ljava/lang/Object;");
+        for (int i = 0; i < argumentTypes.length; i++) { args[i + 1] = argumentTypes[i]; }
+        return Type.getMethodDescriptor(type.getReturnType(), args);
     }
 
     @Override
@@ -288,28 +310,23 @@ class BackMethodVisitor extends MethodVisitor {
                 case Opcodes.ALOAD_1:
                 case Opcodes.ALOAD_2:
                 case Opcodes.ALOAD_3:
-                    //printASMMsg("Choosing : " + name + " Type : " + newOpcode, mv);
                     visitVarInsn(newOpcode, typedOpcode - Opcodes.ALOAD_0);
                     break;
                 case Opcodes.ASTORE_0:
                 case Opcodes.ASTORE_1:
                 case Opcodes.ASTORE_2:
                 case Opcodes.ASTORE_3:
-                   // printASMMsg("Choosing : " + name + " Type : " + newOpcode, mv);
                     visitVarInsn(newOpcode, typedOpcode - Opcodes.ASTORE_0);
                     break;
                 case Opcodes.AASTORE:
                 case Opcodes.AALOAD:
-                    //printASMMsg("Choosing : " + name + " Type : " + newOpcode, mv);
                     visitInsn(newOpcode);
                     break;
                 case Opcodes.ARETURN:
-                    //printASMMsg("Choosing : " + name + " Type : " + newOpcode, mv);
                     visitInsn(newOpcode);
                     break;
                 case Opcodes.ANEWARRAY:
                     visitIntInsn(Opcodes.NEWARRAY, newOpcode);
-                    //printASMMsg("Choosing : " + name + " Type : " + newOpcode, mv);
                     break;
                 default:
                     // TODO ACONST_NULL, AASTORE, AALOAD.

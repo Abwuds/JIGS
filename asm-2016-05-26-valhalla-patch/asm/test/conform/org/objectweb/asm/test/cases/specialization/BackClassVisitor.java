@@ -12,6 +12,7 @@ public class BackClassVisitor extends ClassVisitor {
     public static final String BACK_FACTORY_NAME = "$BackFactory";
     public static final String RT_METHOD_HANDLE_TYPE = "RTMethodHandle";
     public static final String HANDLE_RT_BSM_NEW = "handle_rt_bsm_new";
+    public static final String HANDLE_RT_BSM_INVOKE_SPECIAL_FROM_BACK = "handle_rt_bsm_invoke_special";
     public static final String HANDLE_RT_BSM_GET_FIELD = "handle_rt_bsm_getField";
     public static final String HANDLE_RT_BSM_PUT_FIELD = "handle_rt_bsm_putField";
     public static final String HANDLE_RT_METAFACTORY = "handle_rt_metafactory";
@@ -34,6 +35,7 @@ public class BackClassVisitor extends ClassVisitor {
         // of the RT package at runtime.
         ClassWriter cw = (ClassWriter) this.cv;
         cw.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_NEW);
+        cw.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_INVOKE_SPECIAL_FROM_BACK);
         cw.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_GET_FIELD);
         cw.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_PUT_FIELD);
         cw.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_METAFACTORY);
@@ -90,10 +92,6 @@ public class BackClassVisitor extends ClassVisitor {
         MethodVisitor mv = super.visitMethod(Opcodes.ACC_PRIVATE + Opcodes.ACC_STATIC, BSM_RT_BRIDGE, BSM_RT_BRIDGE_DESC,
                 null, null);
         mv.visitCode();
-        // BackMethodVisitor.printASMMsg("Inside the BSMRTBridge for : ", mv);
-        /*mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
-        mv.visitVarInsn(Opcodes.ALOAD, 1);
-        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);*/
         // Loading the MethodHandle taking Object varargs.
         mv.visitVarInsn(Opcodes.ALOAD, 3);
 
