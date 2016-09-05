@@ -1,0 +1,989 @@
+\documentclass{report}
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[francais]{babel}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{array}
+\usepackage[french,onelanguage]{algorithm2e} %for psuedo code
+\usepackage{pdfpages}
+
+%Definitions
+\makeatletter
+
+\newcommand\frontmatter{%
+    \cleardoublepage
+  %\@mainmatterfalse
+  \pagenumbering{Roman}}
+
+\newcommand\mainmatter{%
+    \cleardoublepage
+ % \@mainmattertrue
+  \pagenumbering{arabic}}
+
+\newcommand\backmatter{%
+  \if@openright
+    \cleardoublepage
+  \else
+    \clearpage
+  \fi
+ % \@mainmatterfalse
+   }
+
+\makeatother
+%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%
+
+
+%\author{Jefferson \bsc{Mangue}}
+%\date{5 Septembre 2016}
+
+%\title{\bsc{Rapport de stage de Master 2}\\\emph{Backport} de la spécialisation à l'exécution des \emph{types génériques} de Java 10 à 7}
+
+\begin{document}
+
+\begin{titlepage}
+
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}} % Defines a new command for the horizontal lines, change thickness here
+
+\center % Center everything on the page
+ 
+%----------------------------------------------------------------------------------------
+%	HEADING SECTIONS
+%----------------------------------------------------------------------------------------
+
+\textsc{\LARGE Université Paris-Est Marne La Vallée}\\[1.5cm] % Name of your university/college
+\textsc{\Large Rapport de stage}\\[0.5cm] % Major heading such as course name
+\textsc{\large Master 2 Logiciels}\\[0.5cm] % Minor heading such as course title
+
+%----------------------------------------------------------------------------------------
+%	TITLE SECTION
+%----------------------------------------------------------------------------------------
+
+\HRule \\[0.4cm]
+{ \huge \bfseries \emph{Backport} de la spécialisation à l'exécution des types paramétrés de Java 10 à Java 7}\\[0.4cm] % Title of your document
+\HRule \\[1.5cm]
+ 
+%----------------------------------------------------------------------------------------
+%	AUTHOR SECTION
+%----------------------------------------------------------------------------------------
+
+\begin{minipage}{0.4\textwidth}
+\begin{flushleft} \large
+\emph{Auteur:}\\
+Jefferson \textsc{Mangue} % Your name
+\end{flushleft}
+\end{minipage}
+~
+\begin{minipage}{0.4\textwidth}
+\begin{flushright} \large
+\emph{Maître de stage:} \\
+Rémi \textsc{Forax} % Supervisor's Name
+\end{flushright}
+\end{minipage}\\[4cm]
+~
+\begin{minipage}{0.4\textwidth}
+\begin{center} \large
+\emph{Laboratoire d'informatique Gaspard-Monge} \\
+\end{center}
+\end{minipage}\\[3cm]
+
+% If you don't want a supervisor, uncomment the two lines below and remove the section above
+%\Large \emph{Author:}\\
+%John \textsc{Smith}\\[3cm] % Your name
+
+%----------------------------------------------------------------------------------------
+%	DATE SECTION
+%----------------------------------------------------------------------------------------
+
+{\large \today}\\[1cm] % Date, change the \today to a set date if you want to be precise
+
+%----------------------------------------------------------------------------------------
+%	LOGO SECTION
+%----------------------------------------------------------------------------------------
+
+%\includegraphics{Logo}\\[1cm] % Include a department/university logo - this will require the graphicx package
+ 
+%----------------------------------------------------------------------------------------
+
+\vfill % Fill the rest of the page with whitespace
+
+\end{titlepage}
+
+
+% RÉGLAGES
+% Réglages du sommaire
+\renewcommand{\contentsname}{Sommaire} % Dans le corps du document,avant la commande \tableofcontents.
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{3}
+%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%
+
+% Page de garde
+%\maketitle
+%%%%%%%%%%%%%%%%
+
+% Meta
+\frontmatter
+%\addcontentsline{toc}{chapter}{Résumé}
+%\chapter*{Résumé}
+%Résumé
+%\newline\emph{Mots clés} : Java, OpenJDK, machine virtuelle Java, types paramétrés, générique, spécialisation, programmation objet,
+%backport
+\newpage
+
+\addcontentsline{toc}{chapter}{Remerciements}
+\chapter*{Remerciements}
+J'aimerais tout d'abord remercier mon maître de stage Rémi \bsc{Forax}, de m'avoir accepté comme stagiaire au sein de l'équipe \bsc{LRT}.
+De m'avoir d'ores et déjà tant appris, conseillé et fait voyager. Je souhaite le remercier de m'avoir accepté comme doctorant sur un sujet aussi passionnant dans un domaine qui me tient à coeur.\\\\
+Je tiens à exprimer toute ma gratitude à Claire \bsc{David} pour son suivi depuis ma première année de licence, elle est l'une des personnes grâce à laquelle je débute une thèse aujourd'hui.\\\\
+Je remercie Xavier \bsc{Goaoc} pour sa lettre de recommendation à ma candidature à l'école doctorale ainsi que pour sa patience et sa prévenance.\\\\
+Je remercie vivement Cyril \bsc{Nicaud} de m'avoir assisté lors mon inscription en thèse et pour toute sa bienveillance depuis ma licence.\\\\Enfin, ces remerciements ne peuvent s'achever sans un mot à l'ensemble de mes professeurs, auxquels je sais gré pour leur passion et enseignement de qualité dont ils nous font part à chaque leçon.
+
+\newpage
+\tableofcontents
+%%%%%%%%%%%%%%%%
+
+\addcontentsline{toc}{chapter}{Liste des tableaux}
+\listoftables
+\addcontentsline{toc}{chapter}{Table des figures}
+\listoffigures
+\addcontentsline{toc}{chapter}{Listings}
+\lstlistoflistings
+
+% Développement
+\mainmatter
+
+% Introduction
+\addcontentsline{toc}{chapter}{Introduction} 
+\chapter*{Introduction}
+Ceci est le rapport du stage d'insertion professionnelle de Master 2 Logiciels que j'ai effectué au sein de l'université Paris-Est~Marne-La-Vallée,
+dans l'équipe Logiciels, réseaux, temps réel, du laboratoire d'informatique \bsc{Gaspard-Monge}, du 1\ier{} Avril au 27 Août 2016.\\
+L'équipe Logiciels, réseaux, temps réel et le laboratoire d'informatique \bsc{Gaspard-Monge} sont respectivement abrégés par \bsc{LRT} et \bsc{LIGM}.\\
+%Projet professionnel
+Ce stage m'a permis d'évoluer sous la tutelle de Rémi \bsc{Forax}, de déterminer un sujet de thèse adéquat, encadrée par lui-même ainsi que Julien \bsc{Cervelle},
+pour enfin obtenir un contrat doctoral au \bsc{LIGM}.\\
+%présentation mission
+La mission principale de ce stage fut la recherche et l'implantation d'un outil de récriture permettant le \og back-port \fg{} de la \emph{spécialisation des types paramétrés}
+prévue pour Java 10 et 11, à une utilisation sous Java 7 et 8.\\\newline
+%plan
+Ce rapport présente ma structure d'accueil : le laboratoire \bsc{LIGM}. Les détails de mes travaux et acquis. Mon voyage aux États-Unis avec Rémi \bsc{Forax}
+pour la présentation de notre avancement sur le \emph{backport} lors du \bsc{JVM} Summit 2016, et enfin les dernières étapes avant la publication qui en découle.
+
+\part{Partie 1 - Environnement}
+	\chapter{Découverte et prise en main de l'environnement de travail}
+		\section{Présentation du Laboratoire le \bsc{LIGM}}
+		Le laboratoire d'informatique Gaspard-Monge a été créé en 1992 par \\Maxime~\bsc{Crochemore}. Il regroupe aujourd'hui environ 70 chercheurs permanents, 70 non permanents, en informatique fondamentale et appliquée, et est dirigé par Cyril \bsc{Nicaud} \cite{ref}.\\\\
+		Le laboratoire est composé de cinq équipes :\\
+			\begin {itemize}
+			\item Algorithmes, architectures, analyse et synthèse d'images (\bsc{A3SI})
+			\item Combinatoire algébrique et calcul symbolique(\bsc{COMBI})
+			\item Logiciels, réseaux et temps réel (\bsc{LRT})
+			\begin{itemize}
+			 	\item Dans laquelle j'ai effectué mon stage
+			\end {itemize}
+			\item Modèles et algorithmes (\bsc{MOA})
+			\item Signal et communication (\bsc{SIGNAL})\\
+			\end {itemize}
+		Le laboratoire a la particularité d'être composé d'équipes de recherche où la collaboration, la bonne entente et le respect prônent.\\
+		De plus, la responsable administrative Corinne~\bsc{Palescandolo} à su mettre en place depuis son arrivée, des systèmes de tableurs partagés par les secrétaires administratives, afin d'accélérer le traitement des requêtes, les signatures de documents et d'assurer leur complétude avant toute sortie du laboratoire. Ces initiatives fluidifient grandement et augmente la cohésion de l'administration du laboratoire le \bsc{LIGM}.\\
+		Au niveau des financements, il participe entre autre au \emph{Domaine d'Intérêt Majeur} \og Réseau de Recherche Doctoral en Mathématiques de l'Ile-de-France (\bsc{RDM}-IdF) \fg{} \cite{ref}.
+		Ce réseau est un regroupement d'universités, d'institutions, d'écoles doctorales et de laboratoires d'île-de-France et constitue un support financier d'allocations doctorales subventionnées par la Région Ile-de-France.\\
+		Au niveau des infrastructures, le laboratoire est réparti en trois bâtiments sur le campus de Marne-la-Vallée.\\
+		Selon le rapport d'évaluation de l'agence d'évaluation de la recherche et de l'enseignement supérieur \cite{ref1}, il est un \og laboratoire d'excellence \fg{} menant des recherches au \og meilleur niveau mondial \fg{}.
+		\section{Présentation de l'équipe \bsc{LRT}}
+		L'équipe dans laquelle j'ai effectué mon stage est l'équipe LRT, dont le responsable est Laurent \bsc{George}. L'intégralité de ma mission s'est déroulée au sein des locaux du batiment Copernic.\\\\
+		Les différents thèmes de recherche de l'équipe sont :\\
+		\begin {itemize}
+			\item Ordonnancement temps-réel
+			\item Accès au canal et routage dans les réseaux multi-sauts sans fil.
+			\item Sécurité et services pour les réseaux multi-sauts sans fil.
+			\item Approches logicielles : détection de plagiat, amélioration de la plateforme Java, systèmes à contraintes mixtes\\
+		\end {itemize}
+		À savoir que mon maître de stage Rémi \bsc{Forax} est reconnu au niveau de la communauté Java et a été expert pour trois Java Specification Request : les \bsc{JSR} 292 (invokedynamic), \bsc{JSR} 335 (lambda) et \bsc{JSR} 376 (jigsaw).
+		
+		% (Équipe LRT)(activité, rayonnement international...)
+		% (Seuls en logiciel, avec Jérôme, Rémi... Explications)
+		% (Au sein de l'équipe : Rémi en relation avec/sur OpenJDK (définir ici ?) + Palmarès de Rémi)
+		\section{Ma place au sein de l'équipe \bsc{LRT}}
+		J'ai effectué mon stage sous la tutelle de Rémi \bsc{Forax}, enseignant-chercheur dans la section \emph{Logiciels} de l'équipe LRT.\\
+		La section \emph{Logiciels} possède, à l'heure actuelle peu de membres permanents entièrement dédiés à la recherche, car une grande partie d'entre eux est affectée à la direction de 
+		structures administratives de l'université.
+		Par exemple, Gilles \bsc{Roussel} est aujourd'hui président de l'Université Paris-Est Marne-la-Vallée et Étienne \bsc{Duris} directeur adjoint de l'école supérieure d'ingénieurs 
+		Paris-Est Marne-la-Vallée abrégée \bsc{ESIPE-MLV}, une composante de l'\bsc{UPEM} \cite{ref2}.
+		
+		\begin{figure}
+			\begin{center}
+				\includegraphics[scale=0.3]{Fig1_Diagramme_hierarchie.png} 
+			\end{center}
+			\caption{Ma place au sein de l'équipe \bsc{LRT}}
+		\end{figure}
+
+		\newpage
+		% (Diagramme)
+		% Réunions fréquentes
+		% (Au minimum hebdomadaires, à chaque problème sinon)
+		% (Prise de notes + capture du tableau + enregistrement vocal due à la haute technique)
+		% (Coller photo d'un tableau)
+		% (Écriture d'un rapport récapitulatif)
+		% (Exemple en Annexe : [#18 24_05 Meeting on ASM with Rémi]  (quiver-note-url/BEA2F734-6D7F-407D-AD97-CFD11AB47AAB))
+		\section{Obtention d'une bourse de thèse du \bsc{LIGM}}
+		Ce stage d'insertion en laboratoire était la première étape nécessaire à mon obtention d'une bourse de thèse au \bsc{LIGM}. Pour se faire,
+		j'ai du préparer un dossier de candidature me permettant d'être auditionné par l'école doctorale Mathématiques et Sciences et Technologies de l'Information et de la Communication (MSTIC)  le 17 juin 2016, devant une assemblée de 8 personnes.
+		Dans ce dossier se trouvaient en autre, mon sujet de thèse en adéquation avec mon stage, nommé : \emph{De la spécialisation sur la machine virtuelle Java}. Des lettres de recommendation, ainsi que l'ensemble de mes résultats à l'UPEM.\\
+		Toutes les interactions faites avec l'école doctorale MSTIC ont été faite avec leur responsable administrative Sylvie \bsc{Cach}.\\
+		Je serai dès septembre, étudiant en thèse d'informatique au LIGM sous la tutelle de Julien \bsc{Cervelle} et Rémi~\bsc{Forax}.
+	\chapter{Présentation du stage}
+		\section{Les objectifs du stage}
+		Les objectifs de mon stage ont été multiples.
+		Tout d'abord, il m'a été demandé de mettre en application mes acquis d'algorithmique, de programmation orientée objet en Java, ainsi que toutes mes notions du cours de machine virtuelle dispensée en Master 2 \emph{Logiciels}, afin de concevoir et de travailler avec Rémi \bsc{Forax} sur le \emph{backport} demandé. À savoir que mon maître de stage a été depuis le début de mes études supérieures, mon professeur de Java et de Design~Pattern. Il m'a donc été demandé de restituer mes connaissances en la matière.\\
+		Le second objectif du stage a été de mettre en avant mes capacités de recherche, en me dirigeant sur des publications du domaine, ou en étudiant directement leurs implantations comme celle des sources du 
+		\emph{Java Development Kit} de l'\emph{OpenJDK}.\\
+		Le troisième objectif du stage a été d'obtenir un financement pour l'écriture d'une thèse sous la tutelle de Rémi \bsc{Forax} et Julien \bsc{Cervelle}, prolongeant mon sujet de stage, en adéquation avec mon choix du domaine de recherche. De ce fait, un autre objectif de ce stage a été de me familiariser avec le contexte de la recherche et débuter mon travail de recherche.\\
+		Enfin, le quatrième objectif de ce stage a été de fournir une démonstration fonctionnelle du \emph{backport} dont les résultats ont été présentés au Java Virtual Machine summit 2016, se tenant à Santa Clara (US).
+		\section{Le matériel et les technologies du stage}
+		Afin de mener à bien les parties recherches et techniques de mes missions, seul un ordinateur fourni par la fac a été nécessaire. J'ai cependant utilisé mon propre ordinateur portable pour faciliter le transport
+		de mes travaux.\\
+		L'environnement de développement intégré (\bsc{IDE}) que j'ai utilisé pour développer le \emph{backport} est le logiciel IntellIJ conçu par JetBrains. Il est à mon sens l'\bsc{IDE} le plus développé et ergonomique
+		qui existe pour l'édition de code Java et sa synchronisation avec un logiciel de gestion de versions décentralisé. \\De plus, j'ai bénéficié depuis le début de ma scolarité à l'\bsc{UPEM} de licences étudiantes gratuites pour son utilisation.\\
+		Le logiciel de gestion de versions décentralisé que j'ai utilisé est \bsc{GIT}, assisté de l'hébergeur en ligne \url{www.github.com/Abwuds/JIGS/}.\\
+		Les deux principales technologies \emph{open sources} qu'il m'a été demandé d'utiliser, voir modifier sont \bsc{ASM}, un outil de manipulation de bytecode Java et d'analyse de \emph{framework}, ainsi que le 
+		\emph{Java Development Kit} de l'OpenJDK, qui est l'implantation libre de la société Oracle du standard Java.\\
+		
+		Afin d'améliorer la récolte des informations, j'ai décidé de me munir d'un cahier A4 dans lequel j'ai pu noter toutes les explications qui m'ont été faites, ainsi que toutes mes tâches réalisées
+		à chaque fin de journée, mes croquis, mes observations et les différentes notes de recherche.\\
+		Enfin, l'université a pris en charge l'ensemble des frais de transport et de gîte concernant mon voyage aux États-Unis.\\
+		
+		\section{Les spécifications du stage}
+		Travaillant sur un projet de recherche accompagné d'un prototype de démonstration, je n'ai pas eu autant de spécifications que l'aurait requis un stage en entreprise.
+		L'unique spécification à laquelle j'ai du me tenir a été celle du patch de l'outil ASM lors de l'ajout de fonctionnalités. Chaque paramètres des méthodes ajoutées ou modifiées ont été précédés du modificateur
+		\emph{final} au sein du projet, empêchant sa modification dans le corps de la méthode courante.\\
+		Bien entendu, la syntaxe \emph{CamelCase} et le maintient des patrons du code déjà présents ont été respectés.
+		
+\part{Partie 2 - Missions}
+	\chapter{\emph{Backport} de la spécialisation des \emph{generics} de Java~10 à 7}
+		\section{La spécialisation des \emph{generics} de Java~10}
+			\subsection{Contexte historique}
+				\subsubsection{\emph{OpenJDK}}
+				\emph{L'Open Java Development Kit} ou OpenJDK est une implantation libre et \emph{open source} de la plateforme Java \emph{Standard Edition}, depuis 2006 sous licence GNU \emph{General Public License} par \emph{Sun Microsystems}. Elle est l'implantation de référence de \emph{Java SE} depuis la version 7.
+				Après le rachat de {Sun Microsystems} par Oracle, ce dernier est devenu le principal contributeur.\\
+				L'évolution de l'OpenJDK se fait par un mécanisme développant les spécifications techniques standard de la technologie Java appelé \emph{Java Community Process} (\bsc{JCP}). Tout le monde peut devenir membre du \bsc{JCP} pour participer à l'étude et permettre une critique des \emph{Java Specification Requests} (\bsc{JSR}s).\\
+				Une \bsc{JSR}  est le document officiel décrivant une proposition de technologies et de spécifications à ajouter à la plateforme Java. \\Une \bsc{JSR} peut être proposée par tout membre du \bsc{JCP}. Une fois une \bsc{JSR} finalisée après avoir été soumise aux revues des membres du \bsc{JCP}, celle-ci est votée par un comité exécutif, le \bsc{JCP} \emph{Executive Committee} (\bsc{EC}).\\\\
+				
+				Le principal second moyen de faire évoluer l'OpenJDK est la proposition d'un \emph{Projet}. Un \emph{Projet} est un effort collaboratif produisant une partie de code, de documentation, ou tout autre matériel.
+				Les \emph{Projets} peuvent aller de la fonctionnalité mineure à la sortie d'un \bsc{JDK} entier. Les \emph{Projets} ne peuvent être proposés que par un \emph{chef OpenJDK} élu par Oracle et 
+				doivent être sponsorisés par le \emph{Conseil d'Administration}.\newpage
+				Le \emph{Conseil d'Administration} consiste en 5 contributeurs : \\
+					\begin{itemize}
+						\item {Le président, nommé par Oracle}
+						\item {Le vice-président, nommé par IBM}
+							\footnote{Oracle et IBM collaborent depuis 2010 dans la communauté de l'OpenJDK pour en faire le lieu principale du développement \emph{open-source} de \emph{JavaSE}
+							\cite {ref4}.}
+						\item {Le leader de l'OpenJDK, nommé par Oracle}
+						\item {Deux contributeurs, nommés par les membres de l'OpenJDK}
+					\end{itemize}
+								
+				\subsubsection{\emph{Projet Valhalla}}
+					J'ai effectué mon travail en marge du \emph{Projet Valhalla}, me basant sur les spécifications émergeantes.\\
+					Le \emph{Projet Valhalla} permet le développement de la plateforme Java à travers divers nouvelles fonctionnalités
+					comme le support des \emph{types valeurs} (ou \emph{value type}), et des \emph{volatiles améliorés} (ou \emph{enhanced volatiles}) \cite {ref3}.\\
+					Mais sa révision majeure concerne la \emph{spécialisation des types génériques} (ou \emph{generic specialization}), tout en restant retro-compatible.
+				
+					La programmation générique en Java s'effectue à l'aide des types génériques (ou \emph{generics}), introduits dans la \bsc{JSR 14} \cite {ref5}.
+					L'un des premiers compromis lors de leur introduction fut l'interdiction des types primitifs comme variables de types.
+					Depuis, ce compromis force les utilisateurs à se reposer sur \emph{l'Auto-Boxing} 
+						\footnote {\emph{L'Auto-boxing} représente le \emph{Boxing} et l'\emph{Unboxing} appliqués automatiquement par le compilateur. Le \emph{Boxing} est l'opération consistant à 
+						encapsuler une variable de type primitif dans un objet du type correspondant. Le type primitif {\tt int} correspond au type objet {\tt Integer}. L'\emph{Unboxing} est l'opération inverse.
+						\emph{L'Auto-boxing} est spécifié dans la JSR 201 \cite{ref6}.}
+					et induit des pertes de performance conséquentes, due à la manipulation de références en lieu et place des types primitifs, et tout particulièrement dans le cas de conteneurs génériques.\\\\
+					La spécialisation des types génériques, incubée par le \emph{Projet Valhalla} consiste en l'utilisation des types primitifs comme variables de types génériques.
+					Grâce au \emph{Projet Valhalla}, il sera possible et correcte d'écrire {\tt List<int>}.
+					% * Valhalla : Organisation (leader, experts etc)
+					
+			\subsection{Modèles de translation}
+				L'implantation des types paramétrés a jusqu'ici toujours nécessité un compromis entre l'empreinte du code, les capacités d'abstraction, et la spécificité du code. Différents langages de programmation ont
+				choisi différents types de compromis.
+				\subsubsection{Translation hétérogène}
+					Le langage de programmation C++ crée des classes spécialisées pour chaque instantiation de type paramétré, appelée spécialisation. De ce fait, différentes spécialisations n'auront
+					aucunes relation d'héritage ni de code partagé, et correspondront à différentes classes à l'exécution. Ceci est appelé la \emph{translation hétérogène}. \\
+					Elle permet un haut degré de spécificité d'une part, mais une large empreinte du code et peu d'abstraction, d'autre part, car l'écriture {\tt Foo<?>} de Java permettant de manipuler 
+					un type paramétré sans tenir compte de son type d'instantiation est impossible.\\
+					En définitif, cette translation permet la \emph{généricité} du comportement mais pas celle des données.
+					
+				\subsubsection{Translation homogène}
+					En Java, l'implantation actuelle des types paramétrés se base sur le fait que tout type d'objet est un sous-type de la classe {\tt Object}. De ce fait, il est possible de générer une seule
+					classe à partir d'un type paramétré en substituant la variable de type par le type {\tt Object} à la compilation. À l'exécution, les variables de type générique du code source 
+					seront typées  {\tt Object} et pourront contenir les références d'instances de n'importe quel type.
+					Cette translation est appelée \emph{translation homogène} (ou \emph{erasure}) elle a l'avantage de permettre la programmation générique en Java, sans être introduite dans la machine virtuelle.
+					Cependant, elle implique une perte d'information - le caractère générique d'une classe - à l'exécution, et rend impossible l'utilisation de types primitifs comme variable de type.\\
+					
+					Un tel choix a été fait dans le but de permettre une migration graduelle de compatibilité. Les types paramétrés ayant été introduits dans Java 5, il était à l'époque crucial de ne pas nécessité
+					de recompilation des projets existants, référant des types nouvellement génériques.
+					
+			\subsection{Choix d'une translation mixte}
+				Afin de permettre l'utilisation de types primitifs comme variables de type dans une future version de Java, c'est vers une translation mixte que se dirige le \emph{Projet Valhalla}.
+				Cette translation mixte effectue en premier lieu une translation homogène du type paramétré à la compilation. Puis, de façon \og paresseuse \fg{} une translation hétérogène à l'exécution,
+				en créant une spécialisation - correspondant à une nouvelle classe - pour chaque instantiation de type paramétré par un type primitif, en se servant d'une récriture du code généré par la
+				première translation homogène, comme modèle de spécialisation.
+			\subsection{Conséquences}
+				\subsubsection{Les avantages}
+				Les avantages de ce choix de translation mixte sont encore la migration graduelle de compatibilité, permettant de ne pas perdre les anciennes classes génériques, assurant donc
+				la rétro-compatibilité. Particulièrement, il est admit d'améliorer une classe générique et la rendre sujette à la spécialisation, sans re-compiler le reste des sources pouvant la
+				référer ou en héritant.
+				\subsubsection{Les inconvénients}
+				Les inconvénients de ce choix de translation mixte du  \emph{Projet Valhalla} sont multiples. Un fichier {\tt .class} est le résultat de la compilation d'une classe Java d'extension {\tt .java}
+				et est composé de deux sections : \\
+					
+					\begin{itemize}
+						\item{Une partie composée majoritairement d'instructions de \emph{bytecode}. Code exécuté par la machine virtuelle Java, représentant les méthodes et champs compilés d'une classe.}
+						\item{Un \emph{constant pool}. Zone dictionnaire regroupant toutes les constantes manipulées et référées par les instructions de \emph{bytecode}.} \\
+					\end{itemize}
+				
+				La spécialisation d'un type paramétré nécessite la création d'une nouvelle classe à partir de la récriture de zones précises du bytecode, contenu dans le fichier {\tt .class} résultant
+				de la translation homogène initiale. Ceci est impossible dans le format du bytecode actuellement généré, sans une nouvelle instruction servant de \og marqueur \fg{} à la récriture. \\
+				C'est pourquoi une nouvelle instruction de bytecode : {\tt TYPED} a été ajoutée. Rendant les nouveaux fichiers {\tt .class} incompatibles avec d'anciennes versions de la machine virtuelle Java.\\
+				De plus, de multiples types de constantes pour le \emph{constant pool} ont été ajoutées afin de stocker divers informations utiles à la spécialisation.
+				Une multitude de langages de programmation sont exécutés indépendamment de Java le langage, sur la machine virtuelle Java. L'ajout de ces constantes au \emph{constant pool} et l'introduction
+				de la spécialisation au sein de la machine virtuelle les couplent d'avantage et la complexifie pour un unique langage.
+				Enfin, cette nouvelle translation est sujette à poser problème au niveau des acquis des utilisateurs, pensant que la programmation générique en Java suit le procédé d'erasure, déjà difficile à assimiler.
+				
+				% avec cette représentation, nous ne pouvons avoir ArrayList<int> sous-type d'ArrayList<Integer>.
+				% Problèmes de règles non uniformes ArrayList<int> <: ArrayList<Integer>
+				
+				
+				
+			\subsection{Les modifications des \emph{generics}}
+				Le format des fichiers {\tt .java} et {\tt .class} a donc été modifié dans le \emph{Projet Valhalla} pour mettre en place la spécialisation. Les deux sections suivantes présentent le format des fichiers 
+				dans le format de Java~7 puis leur équivalent pour Valhalla (Java 10).
+				\subsubsection{\emph{Generics} de Java~7}
+					Comme expliqué précédemment, le fichier classe généré par la compilation d'une class Java est composé de deux parties.\newpage
+					\paragraph{Fichier \emph{.java}} Le fichier Java utilisé pour cet exemple représente un type paramétré par une variable T.
+						\lstset{caption=Exemple de Type Paramétré en Java 7, basicstyle=\footnotesize, frame=tb, xleftmargin=.2\textwidth, xrightmargin=.2\textwidth, language=Java}
+						\begin{lstlisting}
+public class ClassJava7<T> {
+    T t;
+
+    public ClassJava7(T t) {
+        this.t = t;
+    }
+
+    public T getT() {
+        return t;
+    }
+}
+						\end{lstlisting}
+					\paragraph{Fichier \emph{.class}}
+						Le compilateur utilise la translation homogène (ou \emph{erasure}) afin de générer le fichier {\tt .class} correspondant.
+
+						\lstset{caption=\emph{Constant pool} de la classe {\tt ClassJava7<T>}, basicstyle=\footnotesize, frame=tb, xleftmargin=.0\textwidth, xrightmargin=.1\textwidth}
+						\begin{lstlisting}
+Constant pool:
+   #1 = Methodref          #4.#20         // java/lang/Object."<init>":()V
+   #2 = Fieldref           #3.#21         // ClassJava7.t:Ljava/lang/Object;
+   #3 = Class              #22            // ClassJava7
+   #4 = Class              #23            // java/lang/Object
+   #5 = Utf8               t
+   #6 = Utf8               Ljava/lang/Object;
+   #7 = Utf8               Signature
+   #8 = Utf8               TT;
+   #9 = Utf8               <init>
+  #10 = Utf8               (Ljava/lang/Object;)V
+  #11 = Utf8               Code
+  #12 = Utf8               LineNumberTable
+  #13 = Utf8               (TT;)V
+  #14 = Utf8               getT
+  #15 = Utf8               ()Ljava/lang/Object;
+  #16 = Utf8               ()TT;
+  #17 = Utf8               <T:Ljava/lang/Object;>Ljava/lang/Object;
+  #18 = Utf8               SourceFile
+  #19 = Utf8               ClassJava7.java
+  #20 = NameAndType        #9:#24         // "<init>":()V
+  #21 = NameAndType        #5:#6          // t:Ljava/lang/Object;
+  #22 = Utf8               ClassJava7
+  #23 = Utf8               java/lang/Object
+  #24 = Utf8               ()V
+						\end{lstlisting}	
+					\newpage Le \emph{constant pool} stock et assigne des références à chaque constantes manipulées par le \emph{bytecode} Java. Ses constantes se réfèrent les unes les autres 
+					afin d'éviter toute redondance. \\\\Les constantes présentent sont :\\
+					\begin{itemize}
+						\item {\emph{Utf8}   :  Constante de base représentant une chaîne de caractère présente dans la classe compilée.} 
+						\item {\emph{Class} : Constante représentant le nom d'une classe, référant une chaîne de caractère du constant pool le décrivant.} 
+						\item {\emph{NameAndType} : Constante représentant un nom et un type, résultat de la concaténation de deux constantes \emph{Utf8} pour le nom et son type .} 
+						\item {\emph{Fieldref} : Constante représentant un champs, résultat de la concaténation de la constante \emph{Class} possédant le champs ainsi qu'un \emph{NameAndType} 
+						représentant le nom et la signature du champs.} 
+						\item {\emph{Methodref} : Constante représentant une méthode, résultat de la concaténation de la constante \emph{Class} possédant la méthode ainsi qu'un \emph{NameAndType} 
+						représentant le nom et la signature de la méthode.} \\\\
+					\end{itemize}	
+				
+					\lstset{caption=\label{bytecodeJava7}\emph{bytecode} simplifié des méthodes de la classe {\tt ClassJava7<T>}, basicstyle=\footnotesize, frame=tb, xleftmargin=.0\textwidth, xrightmargin=.1\textwidth}
+					\begin{lstlisting}
+				
+{
+
+  public ClassJava7(T);
+    Code:
+      stack=2, locals=2, args_size=2
+         0: aload_0
+         1: invokespecial #1 // Method java/lang/Object."<init>":()V
+         4: aload_0
+         5: aload_1
+         6: putfield      #2 // Field t:Ljava/lang/Object;
+         9: return
+
+  public T getT();
+    Code:
+      stack=1, locals=1, args_size=1
+         0: aload_0
+         1: getfield      #2 // Field t:Ljava/lang/Object;
+         4: areturn
+}
+						\end{lstlisting}
+				
+					Les deux méthodes compilées sont le constructeur et la méthode {\tt getV()} de la classe {\tt ClassJava7}.
+					Ici deux points sont à noter. 
+					\subparagraph{Instructions typées}
+						Certaines instructions de bytecode sont typées et contiennent un préfixe distinctif, dont la signification est indiqué dans le tableau~\ref{préfixes} page~\pageref{préfixes}. \\
+						\begin{table}
+							\begin{center}
+							\begin{tabular}{|l|c|}
+  						  		\hline
+								\emph{Prefix} & \emph{Type de l'opérande} \tabularnewline
+  						  		\hline
+    								i & integer \tabularnewline
+    								\hline
+    								l & long \tabularnewline
+    								\hline
+    								s & short \tabularnewline
+    								\hline
+    								b & byte \tabularnewline
+    								\hline
+								c & character \tabularnewline
+    								\hline
+								f & float \tabularnewline
+    								\hline
+								d & double \tabularnewline
+    								\hline
+								z & boolean \tabularnewline
+    								\hline
+								a & reference \tabularnewline
+    								\hline
+							\end{tabular}
+								\caption{\label{préfixes}Préfixes des bytecode typés}
+							\end{center}
+						\end{table}
+						À savoir que le tableau~\ref{préfixes} page~\pageref{préfixes} ne s'applique pas à tous les cas. Certaines instructions peuvent utiliser le préfixe des {\tt integer} pour la manipulation 
+						de {\tt short}, {\tt byte}, {\tt character} ou {\tt boolean}. En revanche, le préfixe désigne toujours le type indiqué.\\\\
+						Suite à la translation homogène, seul le préfixe désignant la manipulation de références apparaît. Ce qui est en accord avec la substitution de la variable de type par le type le plus
+						général : {\tt Object}.
+					\subparagraph{Références au \emph{constant pool}}
+						La seconde observation est la présence de références au type {\tt Object} désigné par sa signature\footnote{Une signature est la représentation du type d'une variable, d'un champs, 
+						ou d'une méthode au sein de la machine virtuelle Java.} {\tt Ljava/lang/Object;}. Ceci nous indique que les secondes instruction de bytecode manipulant des types font référence à leur 
+						signature présente dans le \emph{constante pool}.\\
+						Dans la section~\ref{récriture}, page~\pageref{récriture}, nous verrons que ces deux points peuvent être utiliser comme informations suffisante à la spécialisation d'une classe à l'exécution
+						sur une machine virtuelle Java 7.\newpage
+				\subsubsection{\emph{Generics} de Java~10}
+					L'apprentissage des règles de conception de la spécialisation des types paramétrés par le \emph{Projet Valhalla} s'est faite en plusieurs étapes, puisqu'il a été nécessaire de le renouveler autant de fois que
+					la spécification changeait. Le \emph{Projet Valhalla} étant en pleine évolution.\\
+					
+					Trois modèles de la spécialisations ont été testés. J'ai pu découvrir le dernier en date - à l'époque non indiqué sur la page du \emph{Projet Valhalla} - lorsque je me suis rendu compte que les
+					sources de l'OpenJDK du \emph{Projet Valhalla} ne décrivait pas le modèle décrit dans un \og draft \fg{} présent sur sa page datant de 2014 \cite{ref7}. Cherchant donc le plus d'informations possible,
+					je me suis mis à la lecture de chaque mails présents dans les archives des \emph{mailing lists valhalla-dev} \cite{ref8} et \emph{mailing lists valhalla-spec-experts} \cite{ref9}.\\
+					C'est dans l'un de ces mails que j'ai pu trouver la spécification du dernier modèle en date \cite{ref10}.\\
+					
+					J'ai par la suite lancé une série de compilations de cas typiques de types paramétrés, afin d'écrire un comparatif des classes génériques sur une machine virtuelle Java 7 et sur une machine 
+					virtuelle Java 10. Ces informations couplées à la théorie décrite dans \cite{ref10}, ainsi qu'à l'implantation du prototype de l'OpenJDK m'on permis de concrétiser mon travail.
+					Le comparatif peut être trouvé en annexe~\ref{draft comparaisons}, page~\pageref{draft comparaisons}.
+					\paragraph{Fichier \emph{.java}}
+						Pour améliorer les capacités d'un type paramétré et qu'il puisse être sujet à la spécialisation, chaque variable de type pouvant être substituée par un type primitif doit être précédée du 
+						modificateur {\tt any}.
+						\lstset{caption=Exemple de Type Paramétré en Java 10 \emph{Valhalla}, basicstyle=\footnotesize, frame=tb, xleftmargin=.2\textwidth, xrightmargin=.2\textwidth, language=Java}
+						\begin{lstlisting}
+public class ClassJava10<any T> {
+    T t;
+
+    public ClassJava10(T t) {
+        this.t = t;
+    }
+
+    public T getT() {
+        return t;
+    }
+}
+						\end{lstlisting}
+					\paragraph{Fichier \emph{.class}}
+						Le fichier {\tt .class} possède un nouvel attribut nommé \emph{TypeVariableMap} présenté par le listing~\ref{typeVariableMap}, page~\pageref{typeVariableMap}. Les attributs ne posent 
+						aucun problème de rétro-compatibilité puisqu'ils sont ignorés par la machine virtuelle si celle-ci ne les reconnait pas.\\
+						Cet attribut permet de distinguer les variables de type {\tt any}, des variables de type traditionnelles ne pouvant pas être instanciées par un type primitif.
+						\lstset{caption=\label{typeVariableMap}Attribut \emph{TypeVariableMap} de la classe {\tt ClassJava10<any T>}, basicstyle=\footnotesize, frame=tb, xleftmargin=.0\textwidth, xrightmargin=.1\textwidth}
+						\begin{lstlisting}
+TypeVariablesMap:
+  LClassJava10;:
+    Tvar  Flags  Bound
+    T     [ANY]  Ljava/lang/Object;
+						\end{lstlisting}
+						
+						D'après le listing~\ref{typeVariableMap}, page~\pageref{typeVariableMap}, la variable de type {\tt T} est bien de type {\tt any}.\\\\
+						Le \emph{constant pool} du fichier {\tt .class} présenté dans le listing~\ref{constantpool10}, page~\pageref{constantpool10} ressemble à celui destiné à la machine virtuelle Java 7.
+						À l'exception de l'introduction de 3 nouvelles constantes.
+						\lstset{caption=\label{constantpool10}\emph{Constant pool} simplifié de la classe {\tt ClassJava10<any T>}, basicstyle=\footnotesize, frame=tb, xleftmargin=.0\textwidth, xrightmargin=.1\textwidth}
+						\begin{lstlisting}
+Constant pool:
+   #1 = Utf8               java/lang/Object
+   #2 = Class              #1             // java/lang/Object
+   #3 = Utf8               <init>
+   #4 = Utf8               ()V
+   #5 = NameAndType        #3:#4          // "<init>":()V
+   #6 = Methodref          #2.#5          // java/lang/Object."<init>":()V
+   #7 = Utf8               Ljava/lang/Object;
+   #8 = TypeVar            0/#7           // T/Ljava/lang/Object;
+   #9 = Utf8               ClassJava10
+  #10 = Utf8               _
+  #11 = TypeVar            0/#10          // T/_
+  #12 = ParameterizedType  #9<#11>        // LClassJava10<T/_>
+  #13 = Class              #12            // "ClassJava10<T>"
+  #14 = Utf8               t
+  #15 = NameAndType        #14:#8         // t:T
+  #16 = Fieldref           #13.#15        // "ClassJava10<T>".t:T
+  #17 = Class              #9             // ClassJava10
+  #21 = Utf8               Signature
+  #22 = Utf8               TT;
+  #23 = Utf8               V
+  #24 = MethodDescriptor   (#8)#23        // (T/Ljava/lang/Object;)V
+  #25 = Utf8               Code
+  #26 = Utf8               LineNumberTable
+  #27 = Utf8               (TT;)V
+  #28 = Utf8               getT
+  #29 = MethodDescriptor   ()#8           // ()T/Ljava/lang/Object;
+  #30 = Utf8               ()TT;
+  #32 = Utf8               SourceFile
+  #35 = Utf8               LClassJava10;
+  #36 = Utf8               T
+						\end{lstlisting}
+				\newpage
+				Les constantes ajoutées par le \emph{Projet Valhalla} au \emph{constant	pool} permettant la spécialisation sont au nombre de quatre :\\
+				\begin{itemize}
+					\item{\emph{TypeVar} : Constante représentant une variable de type cette fois dans de la machine virtuelle. Elle est la concaténation d'un indice au sein du nouvel attribut
+					\emph{TypeVariableMap} et d'un indicateur d'érosion\footnote{Un type ayant subit \emph{l'erasure}.} ou d'une borne\footnote{Les variables de types peuvent avoir des bornes 
+					spécifiques autre que {\tt Object} permettant de limiter les instances possibles des variables de types à certaines familles de sous-types.}. L'indicateur d'érosion \og \_ \fg{} indique si une 
+					variable de type a subit l'érosion. Cette information est entre autre nécessaire pour la représentation des types paramétrés classiques.}
+					\item{\emph{ParameterizedType} : Constante représentant un type paramétré. Elle est la concaténation d'une constante \emph{Class} et d'une liste de constante \emph{TypeVar} ou \emph{ParameterizedType}.}
+					\item{\emph{MethodDescriptor} : Constante représentant une méthode où les types de la signature peuvent être des \emph{Class}, des \emph{ParameterizedType} ou des
+					\emph{TypeVar}.}
+					\item{\emph{ArrayType} : Constante décrivant un tableau de dimension N. Auparavant désigné par le descripteur de type des éléments du tableau suivi d'un nombre de {\tt [}
+					équivalent à la dimension du tableau (un tableau d'entiers à 2 dimensions : {\tt int[][]}). Cette technique ne peut plus être appliquée dans le cas où un descripteur ne possède pas de nom. Par exemple {\tt List<int>} doit être
+					représentée par une constante de type \emph{ParameterizedType}. Auparavant la translation homogène permettait de toujours avoir un nom de descripteur. Cette constante
+					est donc la concaténation d'un \emph{ParameterizedType} ou d'un \emph{TypeVar} et d'une dimension.}
+				\end{itemize}
+				
+				
+					\lstset{caption=\label{bytecodeJava10}\emph{bytecode} simplifié des méthodes de la classe {\tt ClassJava10<any T>}, basicstyle=\footnotesize, frame=tb, xleftmargin=.0\textwidth, xrightmargin=.1\textwidth}
+					\begin{lstlisting}
+				
+{
+  public ClassJava10<T>(T);
+     Code:
+      stack=2, locals=2, args_size=2
+         0: aload_0
+         1: invokespecial #6        // Method java/lang/Object."<init>":()V
+         4: aload_0
+         5: typed         #8        // TypeVar T/Ljava/lang/Object;
+         8: aload_1
+         9: putfield      #16       // Field t:T
+        12: return
+
+  public T getT();
+    Code:
+      stack=1, locals=1, args_size=1
+         0: aload_0
+         1: getfield      #16       // Field t:T
+         4: typed         #8        // TypeVar T/Ljava/lang/Object;
+         7: areturn
+}
+						\end{lstlisting}
+					Le \emph{bytecode} des méthodes du listing~\ref{bytecodeJava10}, page~\pageref{bytecodeJava10} est similaire à celui du listing~\ref{bytecodeJava7}, 
+					page~\pageref{bytecodeJava7} à l'exception de la présence de la nouvelle instruction {\tt TYPED}.\\
+					L'instruction {\tt TYPED} permet de récrire l'instruction typée suivante par le type d'instantiation de la spécialisation.
+					Cette instruction précède donc ici toutes les instructions ayant le préfixe \emph{a}. À l'exception des {\tt aload\_0} ne manipulant pas de variables paramétrées.
+				
+		\section{La spécialisation des \emph{generics} portée de\\Java~10 à~7}
+			Le portage de la spécialisation des types paramétrés à l'exécution, de Java 10 par le \emph{Projet Valhalla}, à Java 7 était ma mission principale durant ce stage de recherche.\\
+			Un tel portage porte le nom de \emph{backport}.
+			\subsection{Les intérêts}
+
+				Les intérêts d'un tel port sont multiples, et vont tous dans le sens des objectifs fixés au débuts de mon stage.
+				\paragraph{Personnellement} Le \emph{backport} m'a permis l'étude approfondie de l'environnement de l'OpenJDK et plus particulièrement le \emph{Projet Valhalla}, et de réaliser 
+				ce qu'ils sont scientifiquement et industriellement.
+				Il m'a forcé à avoir une véritable maîtrise du concept la spécialisation des types paramétrés.\\
+				Enfin, il est un projet mettant en exergue les capacités d'adaptation, car un \emph{backport} est par nature sujet à nombre de \og hack \fg{} très peu connus.
+				
+				\paragraph{Scientifiquement} Le \emph{backport} permet de déceler les incohérences de la spécialisation des types paramétrés en adoptant un point de vue différent.\\
+				Il permet aussi de déterminer si la transition peut se faire correctement en donnant accès à cette fonctionnalité à d'anciens programmes.\\
+				Il a permis de montrer qu'une implantation de la spécialisation pouvait admettre que le type instancié {\tt ArrayList<int>} puisse être considéré comme sous-type de la classe {\tt ArrayList}.\\
+				Enfin, les règles du \og modèle mental \fg{} déterminées pour notre \emph{backport} permettent à l'utilisateur de ne supposer que la translation homogène et ainsi de voir
+				la spécialisation comme une optimisation et non comme une fonctionnalité à part entière, limitant les difficultés d'apprentissage.\newpage
+			\subsection{Les contraintes}
+				Les contraintes de la conception du \emph{backport} sont assez simples. Elles sont soit des règles que nous avons voulu établir, soit les contraintes qui rendent une fonctionnalité
+				non rétro-compatible.\\
+				
+				La première des contraintes est l'un des points démontré en réalisant ce portage : la spécialisation des types génériques à l'exécution, réalisable en simulant la notion
+				de translation homogène du point de vu de l'utilisateur.
+				
+				Les deux contraintes suivantes sont des contraintes liées à l'environnement, qui ont entraîné la modification du format des fichiers {\tt .class} dans le \emph{Projet Valhalla}.\\
+				La première de ces deux contraintes est le nombre de constantes en moins du \emph{constante pool} que nous n'avons pas comparé au \emph{Projet Valhalla}. Cette contrainte
+				se trouve être l'une des plus simple à surmonter puisque chaque nouvelle constante possède un équivalent encodable dans une constante \emph{Utf8}.\\
+				La seconde de ces deux contraintes est le fait de ne pouvoir cibler les zones de récriture du \emph{bytecode} à l'aide de la nouvelle instruction {\tt TYPED}.\\
+				Cette dernière contrainte est responsable de la grande complexité de l'élaboration du \emph{backport}, puisque nous sommes dans l'incapacité de récrire le \emph{bytecode}.\\
+				C'est pourquoi nous opérons en une substitution du \emph{bytecode} et non en sa récriture pour effectuer la spécialisation.
+			\subsection{Les compromis}
+				Les compromis sont, un système de \emph{patching} du \emph{constant pool}, afin d'éviter la récriture mais de factoriser des substitutions des types référés par le \emph{bytecode}.
+				La génération de \emph{bytecode} non vérifiable, entrainant des hack de \emph{bypassing} du \emph{bytecode}.
+				L'ajout d'attributs aux classes génériques, comme la table de substitution décrite dans la section~\ref{implantation}, page~\pageref{implantation}.
+		\section{\label{récriture} Règles de récriture du \emph{backport}}
+			Le \emph{backport} de la spécialisation se fait en deux étapes. Au préalable, il est nécessaire d'avoir compilé les classes contenant ou instanciant des types paramétrés de type {\tt any} 
+			à l'aide du compilateur \emph{Javac} du \emph{Projet Valhalla}.
+			Une première étape consiste en une récriture statique par notre \emph{backport} des fichiers {\tt .class} générés. Les classes récrites sont alors exécutables sur une machine virtuelle Java 7.
+			 La seconde étape prend place à l'exécution, les classes récrites généreront automatiquement les spécialisations requises si initialement un type primitif était utilisé pour instancier un type paramétré.
+			 
+			 Les variable de type pouvant être de n'importe quel type, la spécialisation à principalement été réalisée à l'aide de l'API \emph{java.lang.invoke} permettant d'effectuer des 
+			 opérations déterminées à l'exécution en fonction des variables manipulées.
+			\subsection{Concept clé - \emph{InvokeDynamic}}
+				Le concept clé utilisé lors de ces deux récriture est \emph{InvokeDynamic}. \emph{InvokeDynamic} est une instruction de \emph{bytecode} permettant l'exécution de code
+				déterminé en fonction du contexte, et plus communément du type des variables manipulé. L'instruction \bsc{INVOKEDYNAMIC} ainsi que l'API \emph{java.lang.invoke} liée sont
+				un couple très efficace pour l'implantation de langage typés dynamiquement.\\
+				Le principale avantage de son utilisation dans notre \emph{backport} est aussi et surtout sa capacité à éviter toute opération de \emph{Boxing} et \emph{Unboxing} de variables. Ce qui
+				est le but principale de la spécialisation des types paramétrés à l'exécution, pour rappel.
+			\subsection{Récriture statique \emph{Ahead of time}}
+				La première récriture permet d'effacer toutes traces des nouvelles entités produites à la compilation des sources par le compilateur du \emph{Projet Valhalla}. Elle crée
+				pour chaque classe de type paramétrés {\tt any}, que nous appellerons \emph{Front}, une seconde classe qui contiendra un code similaire appelé \emph{Back}, servant de modèle 
+				à la création de spécialisations de la classe \emph{Front} à l'exécution.\\
+				La classe \emph{Front} sera une interface de compatibilité, servant à manipuler, dans le cas d'une spécialisation, cette spécialisation comme son type érodée. La classe \emph{Front}
+				contiendra un lien - ici un champ - sur une instance de la spécialisation basée sur le \emph{Back} (une classe créée à l'exécution, ressemblant au \emph{Back}, mais manipulant des types primitifs
+				au lieu de ses variables de types).\\\\
+				
+				Le résultat obtenu par la récriture du \emph{Front} est donc une classe ayant un champs - nommé {\tt \_back\_\_} - contenant une instance spécifique d'une version spécialisée du code 
+				initial de la classe. Toutes les méthodes d'instances du \emph{Front} délèguent leurs appels et arguments aux champs {\tt \_back\_\_}.\\
+				Tous les constructeurs du \emph{Front} font un \bsc{INVOKEDYNAMIC} allouant une version érodée de la classe et l'assigne au champs  {\tt \_back\_\_}, à des fins de compatibilité avec
+				un code appelant non récrit.\\
+				Pour les codes allouant des instances du \emph{Front} avec une demande de spécialisation, une substitution par un \bsc{INVOKEDYNAMIC} sera faite, allouant une spécialisation du code
+				et l'assignant au champs d'une nouvelle instance de la classe \emph{Front}.
+				 
+				Cette récriture insère un grand nombre de méta-données nécessaires à la spécialisation du code du \emph{Back} à l'exécution. \\
+				Enfin, elle retire les instructions TYPED du \emph{bytecode} pour les substituer par des tests sur le type de la spécialisation à l'exécution, afin de sélectionner l'instruction du bon type.
+				
+				
+				\lstset{caption=Séquence sélectionnant le \emph{bytecode} adéquat à l'exécution, basicstyle=\footnotesize, frame=tb, xleftmargin=.2\textwidth, xrightmargin=.2\textwidth, language=Java}
+				\begin{lstlisting}
+if (T == "i")      { iload; }
+else if (T == "f") { fload; }
+...		      ...
+else               { aload; } 
+				\end{lstlisting}
+		
+			Ce code pourra par la suite être optimisé par la machine virtuelle afin de toujours sélectionner la bonne instruction de \emph{bytecode}.\
+\paragraph{Algorithme}	
+\emph{Récriture statique 1}\\	
+\small
+		 	Pour chaque classe \emph{Front} du projet :\\
+			\indent Créer un champs {\tt \_back\_\_} de type {\tt Object} dans la classe \emph{Front}\\				
+			\indent Créer une classe \emph{Back} correspondante\\
+			\indent Copier les champs du \emph{Front} dans la \emph{Back}\\
+			\indent Pour chaque méthode d'instance mFront du \emph{Front}, sauf constructeur :\\
+			\indent\indent Créer une méthode statique mBack de même signature dans le \emph{Back}, \\\indent\indent avec une instance du \emph{Front} en première position\\
+			\emph{\indent\indent\indent// De ce fait le code du \emph{Front} recopié tel quel ne nécessitera pas\\\indent\indent\indent // de transformation, puisque l'ordre des paramètres ressemblera à celui
+			\\\indent\indent\indent // d'une méthode d'instance de \emph{Front}}\\
+			\indent\indent Pour chaque instructions I de bytecode de la méthode du \emph{Front} :\\
+			\indent\indent\indent Si I := TYPED :\\
+			\indent\indent\indent\indent Insérer dans mBack une séquence testant le type de la spécialisation \\\indent\indent\indent\indent et insérant la bonne instruction possédant le préfixe associé\\
+			\indent\indent\indent Si I := invocation :\\
+			\indent\indent\indent\indent Insérer dans mBack un INVOKEDYNAMIC effectuant cette même\\\indent\indent\indent\indent invocation en fonction des types de la spécialisation, sans Boxing\\
+			\indent\indent\indent Si I := accès à un champs :\\
+			\indent\indent\indent\indent Insérer dans mBack un INVOKEDYNAMIC ayant pour but l'accès\\\indent\indent\indent\indent à ce champs (la récupération ou l'assignation d'une valeur), sans Boxing\\
+			\indent\indent Remplacer le code de mFront par un INVOKEDYNAMIC délégant\\\indent\indent les arguments et l'appel au champs {\tt \_back\_\_}\\
+			\indent\indent Passer \emph{this} en tant que premier paramètre du constructeur\\
+			\indent Pour chaque constructeurs cFront du \emph{Front} :\\
+			\indent\indent Création d'un constructeur cBack du \emph{Back} de même signature :\\
+			\indent\indent\indent Pour chaque instructions I de bytecode de cFront :\\
+			\indent\indent\indent\indent Si I := TYPED :\\
+			\indent\indent\indent\indent\indent Insérer dans cBack une séquence testant le type de la spécialisation\\\indent\indent\indent\indent\indent et insérant la bonne instruction possédant le préfixe associé\\
+			\indent Pour chaque constructeurs présents, remplacer le code par un INVOKEDYNAMIC\\\indent allouant l'instance spécialisée correspondante de la classe \emph{Back}\\
+			\indent Assigner cette instance au champs {\tt \_back\_\_}\\
+			\indent Créer un constructeur de spécialisation recevant un argument de type Void\\\indent pour éviter les collisions ainsi qu'un argument de type {\tt Object} et assignant\\\indent ce dernier aux champs {\tt \_back\_\_} de la classe\\
+\normalsize
+	
+\paragraph{Remplacement des instanciations}
+				Les instanciations nécessitant la spécialisation sont remplacées par un INVOKEDYNAMIC allouant l'instance spécialisée construite à partir du \emph{Back}, puis est effectué un appel 
+				directe du constructeur de spécialisation du \emph{Front} avec comme paramètre l'instance spécialisée créée. Cette opération empêche tout \emph{Boxing}.
+
+\paragraph{Remplacement des invocations}
+				Les appels de méthodes ayant des arguments de type variables de type, instanciés par un type primitif sont remplacés par un INVOKEDYNAMIC effectuant un appel direct.
+				à la méthode du \emph{Back}. Si l'appel n'est pas récrit, par compatibilité avec les anciennes classes, la méthode déléguera les arguments \emph{boxés} à la méthode du \emph{Back}.
+				Voir les figures~\ref{deleg} page~\pageref{deleg} et \ref{indyy} page~\pageref{indyy}.
+					
+			\begin{figure}
+				\begin{center}
+					\includegraphics[scale=0.36]{rewrite_delegation} 
+				\end{center}
+				\caption{\label{deleg}Appel de compatibilité, délégué au \emph{Back}}
+			\end{figure}
+
+					
+			\begin{figure}
+				\begin{center}
+					\includegraphics[scale=0.36]{rewrite_indy} 
+				\end{center}
+				\caption{\label{indyy}Appel de spécialisation, invokedynamic jusqu'à la cible}
+			\end{figure}
+
+
+	\paragraph {Exemple de récriture statique}
+		Les trois extraits suivants sont : une classe générique {\tt any} du \emph{Projet Valhalla}, et ses deux récritures \emph{Front} et \emph{Back}.
+				\lstset{caption=Exemple de type paramétré {\tt any} du \emph{Projet Valhalla}, basicstyle=\footnotesize, frame=tb, xleftmargin=.0\textwidth, xrightmargin=.0\textwidth, language=Java}
+				\begin{lstlisting}
+public class Holder<any E> {
+    E element;
+
+    public Holder(E e) {
+        element = e;
+    }
+
+    public void f() {
+        f2(element);
+    }
+
+    public void f2(E e) {
+        System.out.println("Hello from f2: " + e.toString());
+    }
+}
+				\end{lstlisting}
+		
+				\lstset{caption=\emph{Front} du type paramétré {\tt any} en Java 7, basicstyle=\footnotesize, frame=tb, xleftmargin=.0\textwidth, xrightmargin=.0\textwidth, language=Java}
+				\begin{lstlisting}
+public class Holder<E> {
+    public final Object _back__;
+
+    public Holder(Void var1, Object back) {
+        _back__ = back;
+    }
+
+    public Holder(E var1) {
+        _back__ = newBackSpecies<invokedynamic>(var1);
+    }
+
+    public void f() {
+        delegateBack<invokedynamic>("f", _back__, this);
+    }
+
+    public void f2(E var1) {
+        delegateBack<invokedynamic>("f2", _back__, this, var1);
+    }
+}		
+				\end{lstlisting}
+		
+		
+		
+				\lstset{caption=\emph{Back} du type paramétré {\tt any} en Java 7, basicstyle=\footnotesize, frame=tb, xleftmargin=.0\textwidth, xrightmargin=.0\textwidth, language=Java}
+				\begin{lstlisting}
+public class Holder$BackFactory {
+    Object element;
+
+    public Holder$BackFactory(Object var1) {
+        Object var10001;
+        // La chaîne "Ljava/lang/Object;" représente le type 
+        // effectif de la spécialisation, à l'exécution.
+        if("I" ==  "Ljava/lang/Object;") {
+            var10001 = var1;  // Assignation pour un entier.
+        } else if("B" == "Ljava/lang/Object;") {
+            var10001 = var1;
+        } else if("S" == "Ljava/lang/Object;") {
+            var10001 = var1;
+        } else if("C" == "Ljava/lang/Object;") {
+            var10001 = var1;
+        } else if("Z" == "Ljava/lang/Object;") {
+            var10001 = var1;
+        } else if("J" == "Ljava/lang/Object;") {
+            var10001 = var1;
+        } else if("F" == "Ljava/lang/Object;") {
+            var10001 = var1;  // Assignation pour un float.
+        } else if("D" == "Ljava/lang/Object;") {
+            var10001 = var1;
+        } else {
+            var10001 = var1;
+        }
+
+        this.element = var10001;
+    }
+
+    public static void f(Object var0) {
+        f2<invokedynamic>(var0, ((Class)var0).element<invokedynamic>(var0));
+    }
+
+    public static void f2(Object var0, Object var1) {
+        PrintStream var10000 = System.out;
+        StringBuilder var10001 = (new StringBuilder())
+        		.append<invokedynamic>(new StringBuilder(), "Hello from f2: ");
+        Object var10002;
+        if("I" == "Ljava/lang/Object;") {
+            var10002 = var1;
+        } else if("B" == "Ljava/lang/Object;") {
+            var10002 = var1;
+        } else if("S" == "Ljava/lang/Object;") {
+            var10002 = var1;
+        } else if("C" == "Ljava/lang/Object;") {
+            var10002 = var1;
+        } else if("Z" == "Ljava/lang/Object;") {
+            var10002 = var1;
+        } else if("J" == "Ljava/lang/Object;") {
+            var10002 = var1;
+        } else if("F" == "Ljava/lang/Object;") {
+            var10002 = var1;
+        } else if("D" == "Ljava/lang/Object;") {
+            var10002 = var1;
+        } else {
+            var10002 = var1;
+        }
+
+	// System.out.println
+        var10000.println<invokedynamic>(var10000, 
+        		var10001.append<invokedynamic>(var10001, 
+		((Class)var10002).toString<invokedynamic>(var10002))
+		.toString<invokedynamic>(var10001.append<invokedynamic>(
+		var10001, ((Class)var10002).toString<invokedynamic>(var10002))));
+    }
+}		
+				\end{lstlisting}
+				
+			\subsection{Récriture dynamique à \emph{Runtime}}
+				À l'exécution, l'attribut inséré dans la classe \emph{Back} permet de baliser le \emph{constant pool} afin de connaître les constantes décrivant les types
+				manipulés par le \emph{bytecode}.
+				À la création d'une spécialisation, nous utilisons la méthode {\tt defineAnonymousClass} de la classe {\tt Unsafe.java} nous permettant de créer une classe anonyme.
+				La particularité de cette méthode est d'accepter un tableau d'{\tt Object} substituables aux constantes du \emph{constant pool}. C'est par ce procédé que nous
+				créons des spécialisations. Si la spécialisation entière est demandée, alors, remplacer la constante \emph{Utf8} \emph{"Ljava/lang/Object;"} par "I" nous permet
+				de manipuler des entiers au sein du \emph{bytecode}.\\
+				De plus, la suite de tests effectuée pour déterminer l'instruction de \emph{bytecode} typée adéquate n'étant pas considérée valide par l'interpréteur de \emph{bytecode} Java,
+				il est possible de contourner cette vérification en indiquant que la classe "hôte" de la spécialisation soit une des classes contenue dans un package {\tt java.*}.
+				
+			
+		\section{\label{implantation}Implantation du \emph{backport}}
+			% Utilisation d'ASM pour la récriture statique. En patchant (détail du patch dans la prochaine section) pour pouvoir s'adapter au JDK 10
+			\subsection{Patch du projet \bsc{ASM}}
+				\subsubsection{Intérêts du projet}
+				ASM est l'outil \emph{de facto} de manipulation de \emph{bytecode} Java et d'analyse de framework. Le nom ASM fait référence au mot-clé en C, permettant certaines fonctions 
+				d'être implantée en langage assembleur \_\_asm\_\_. Rémi \bsc{Forax} et Eric \bsc{Bruneton} en sont les principaux contributeurs. Grâce à un système de visiteurs, ASM a permis 
+				d'implanter plus efficacement l'étape de récriture statique du \emph{backport}.
+				\subsubsection{Patch 1 : Augmentation de l'\bsc{API}}
+					Afin d'utiliser ASM sur les classes produite par le \emph{Projet Valhalla}, il a fallut modifier ses sources une première fois, et permettre au \emph{Reader} de prendre en compte les 4 nouvelles constantes
+					du \emph{constante pool}, ainsi que la nouvelle instruction de \emph{bytecode} {\tt TYPED}.\\
+					{\tt ClassReader.java} est la classe qui a été modifiée. Elle analyse le tableau de byte du fichier visité.\\\\
+					L'utilisation d'ASM repose sur l'implantation des classes abstraites et interface qu'il propose, appelées lors de l'exécution de l'outil. Une fois le patch de lecture effectué, 
+					la majeure partie du travail restant s'est trouvée être le code de l'algorithme de récriture, ainsi que la mise en place d'un processus d'exécution automatisé.\newpage
+				\subsubsection{Patch 2 : Modifications avancées}
+					La seconde modification nécessaire s'est faite au niveau de la classe \\{\tt ClassWriter.java} cette fois. Nous ne pensions pas à avoir à modifier cette partie de l'outil, cette classe 
+					étant très bas niveau, et normalement déjà opérationnelle pour écrire des fichiers au format accepté par la machine virtuelle Java 7.\\
+					Cependant, afin de générer notre attribut permettant de patcher le \emph{constant pool} à l'exécution : la substitutionTable, et de l'écrire au sein de la classe \emph{Back}, il a été
+					nécessaire d'intercepter toute la construction du \emph{constante pool} effectuée au sein de cette classe.\\
+					Ce second patch m'a permis de saisir l'importance et le fonctionnement des classes {\tt Writer} d'ASM. De plus, après sa parfaite compréhension, il m'a été possible de détâcher
+					certaines classes nécessaires à la lecture de l'attribut à l'exécution, afin de ne pas dépendre de l'outil lors de l'exécution des sources.
+		\subsection{Architecture du \emph{backport}}
+			Le \emph{backport} est constitué de deux parties disjointes. La première présentée par la figure~\ref{archi1}, page~\pageref{archi1} est un module à l'intérieur d'ASM, lui permettant 
+			de bénéficier de l'ensemble des fonctionnalités des sources modifiées lors de l'étape de récriture statique. La seconde présentée par la figure~\ref{archi2}, page~\pageref{archi2} est 
+			un package nommé \emph{package rt} contenant toutes les méthodes appelées (\emph{bootstrap methods}) lors d'utilisations d'INVOKEDYNAMIC, ainsi que les méthodes permettant 
+			de manipuler la \emph{substitutionTable} à l'exécution.\\
+			Le \emph{package rt} est compilé et recopié automatiquement au sein du projet \og backporté \fg{} car nécessaire à la spécialisation qui se déroule à l'exécution.
+			
+	\chapter{Présentation des résultats au \emph{\bsc{JVM} summit 2016} (\bsc{US})}
+		À ce niveau d'avancement du projet, nous avions un prototype de démonstration fonctionnel. Durant ce stage, j'ai eu l'opportunité d'effectuer un voyage avec mon maître de stage à Santa-Clara, située en Californie (US).
+		\begin{figure}
+			\begin{center}
+				\includegraphics[scale=0.2]{san_francisco.JPG} 
+			\end{center}
+			\caption{Vue de San Francisco}
+		\end{figure}
+		\section{Contexte de la conférence}
+			Le contexte de ce voyage fut la présentation de notre travail, les résultats de la recherche sur le prototype, au Java Virtual Machine Summit 2016. Cette conférence était une réelle opportunité
+			et peu de personnes y ont accès. Rémi est celui qui a présenté nos travaux \cite{ref11} tout en ayant fait passer les observations quant aux choix
+			de ne pas rendre visible à l'utilisateur la spécialisation.
+
+		\section{Acquis relationnels}
+			Ce voyage m'a permis de développer mon sens du relationnel dans un pays étrangé. J'ai pu sympathiser avec d'autres programmeurs et chercheurs m'expliquant leur quotidien à la Silicon~Valley, et par la suite gardé contact avec eux. J'ai pu visiter une grande partie des paysages qu'offre la Californie. Comprendre d'avantage l'importance de l'anglais dans le domaine de la recherche informatique.
+			Avec Rémi, nous avons dîné avec le créateur d'Android Gmail Cedric \bsc{Beust}, qui est l'un de ses anciens collaborateurs sur l'OpenJDK. Nous avons aussi
+			dîné avec l'un de ses anciens élèves à l'UPEM, Michaël \bsc{Figuière}, ingénieur Cloud chez Netflix où nous avons été invité à manger et visiter les locaux.
+		\section{Acquis techniques}
+			Sur le plan technique, j'ai pu apprendre plus en détail le fonctionnement de l'entreprise Oracle et sa contribution à l'OpenJDK. Le JVM summit est une conférence permettant
+			aux collaborateurs de pouvoir échanger plus concrètement sur l'avenir de la plateforme Java, en pouvant débattre face à face.\\ Les conférences de haut niveau sur toutes les nouveautés de l'écosystème Java m'ont permises de me situer
+			dans mes travaux, et de comprendre comment présenter un travail dans le milieu informatique, que ce soit en conférence, ou au cours d'un repas en observant mon maître de stage.
+	\chapter{Finalisation et publication du résultat final}
+		L'un des buts du  \emph{backport} est de publier nos résultats dans une conférence académique. Pour cela, il reste encore trois points à terminer :
+		\section{Refactoring du \emph{backport}}
+			Le  \emph{backport} a subit nombre de modifications ad-hoc en très peu de temps. Pour faciliter le partage des sources, leur explication et maintenance, je compte mettre en place un script ant, 
+			ainsi qu'une documentation technique d'une nouvelle architecture, quelque peu plus soignée.
+		\section{Gestion des double et long}
+			Le premier des deux principaux problèmes restants à gérer est la gestion des double et des long. En effet, contrairement aux autres types primitifs, ceux-ci prennent deux slots 
+			au sein du \emph{bytecode} Java. La solution étudiée est le fait d'utiliser deux slots pour toutes les variables locales. \\Puis, comme la numérotation des paramètres d'une méthode est effectuée 
+			implicitement, maintenir une table de translation des slots pour chaque méthode et ajouter un préambule au début des méthodes permettant de replacer les variables de types 
+			instanciées par des types primitifs n'étant pas des long ou double.
+			% (Exemple d'image avec le résultat de la récriture)
+		\section{Gestion de l'héritage}
+			Le second des deux principaux problèmes restants est la gestion de l'héritage. D'une part afin de maintenir la compatibilité avec les anciennes sources, il est nécessaire que le code
+			généré par l'erasure soit présent dans le \emph{Front}. Sinon les sous-classe ne pourraient plus avoir accès aux champs de la classe mère (puisque ceux-ci auront été déplacés dans
+			la classe \emph{back}). D'autre part, la gestion d'un type paramétré {\tt any} héritant d'une classe. L'idée sera de déplacer l'ensemble du contenu de la classe mère dans la classe 
+			\emph{Back}.
+		\section{Publication et défense}
+			Enfin, le plus dur restant à venir, la compilation de tous ces acquis, et l'écriture de la publication qui sera à soumettre puis à défendre dans une conférence.
+			
+			
+		
+\addcontentsline{toc}{chapter}{Conclusion}
+\chapter*{Conclusion}
+Pour conclure, ce stage a pu répondre à toutes mes attentes du point de vue professionnel, d'insertion en laboratoire, mais surtout humain.
+J'ai pu apprendre ce qui n'aurait pas été possible ailleurs. Et les expériences, nombreuses, que j'ai vécu en peu de temps me confortent dans mon choix d'écrire une thèse 
+sous la tutelle de Rémi \bsc{Forax} et Julien \bsc{Cervelle}, au \bsc{LIGM}.\\
+L'enseignement principal que j'ai pu tirer de mon travail : est que ce que j'ignore est infini. 
+Et ceci ne doit pas m'empêcher d'apprendre. Je suis convaincu de vouloir me confronter à cela car je sais à présent à quoi m'en tenir.
+\\En ce qui concerne mes travaux restants, je comprends l'aspect crucial du stage d'insertion en laboratoire précédant la thèse.
+Pour les mener à bien, je réalise qu'il faut une cadence de travail régulière et du bon sens. \\Je suis impatient de publier mon premier article et de découvrir 
+les faits rendu possibles ou impossibles par la rédaction d'une thèse. \\C'est en cela que j'estime la valeur de ce stage de master 2.
+
+
+
+\appendix
+\addcontentsline{toc}{chapter}{Annexes}
+\chapter{\label{draft comparaisons} Comparaisons de \emph{generics} Java 7 à Java 10 (\emph{Projet Valhalla})}
+\includepdf[pages=-]{draft_differences.pdf} 
+					
+			
+\chapter{\label{archi1}Diagramme de classe de la récriture statique}
+					
+			\begin{figure}
+				\begin{center}
+					\includegraphics[scale=0.4]{architecture_backport} 
+				\end{center}
+				\caption{\label{archi1}Diagramme de classe de la récriture statique}
+			\end{figure}
+			
+\chapter{\label{archi2}Diagramme de classe de la récriture dynamique}
+			\begin{figure}
+				\begin{center}
+					\includegraphics[scale=0.4]{architecture_rt} 
+				\end{center}
+				\caption{Diagramme de classe de la récriture dynamique}
+			\end{figure}
+			
+%%%%%%%%%%%%%%%%
+\backmatter
+
+% Bibliographie
+\addcontentsline{toc}{chapter}{Bibliographie} 
+\bibliographystyle{alpha} % Le style est mis entre accolades.
+\bibliography{biblio} % mon fichier de base de données s'appelle biblio.bib
+
+%Ajouter d'autres sites si jamais (page du planning du JVM summit).
+%[#4Bibliographie](quiver-note-url/931658A9-CEF5-43B9-A447-A19EAD9FE37F)
+%(Fichiers en ligne / Sites web / Publications)
+
+%%%%%%%%%%%%%%%%
+\end{document}
