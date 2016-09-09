@@ -14,6 +14,7 @@
   * long/double methods 1/2
 * 09/16 Friday
   * long/double methods 2/2
+
 ---
 * 09/19 Monday
   * **[MEETING] Inheritance details**
