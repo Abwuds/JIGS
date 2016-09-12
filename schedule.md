@@ -2,6 +2,7 @@
   *  Schedule to 09/23
 * 09/12 Monday
   * Write usage commands
+  * Determine module dependances
   * Add complete build ants
 * 09/13 Tuesday
   * **[MEETING] on long/double management**
