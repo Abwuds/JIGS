@@ -17,12 +17,12 @@ public class SubstitutionTable extends Attribute {
     public SubstitutionTable() {
         super(NAME);
         vector = new ByteVector();
-        descriptors = new HashMap<>();
+        descriptors = new HashMap<Integer, Map.Entry<String, String>>();
     }
 
 
     public void putUTF8(int index, String owner, String descriptor) {
-        descriptors.put(index, new HashMap.SimpleEntry<>(descriptor, owner));
+        descriptors.put(index, new HashMap.SimpleEntry<String, String>(descriptor, owner));
         vector.putShort(index);
         vector.putUTF8(owner);
         vector.putUTF8(descriptor);
@@ -34,13 +34,13 @@ public class SubstitutionTable extends Attribute {
 
     public boolean contains(String descriptor, String owner) {
         // TODO test on owner AND descriptor since x/Object is replaced by t/Object.
-        return descriptors.containsValue(new HashMap.SimpleEntry<>(descriptor, owner));
+        return descriptors.containsValue(new HashMap.SimpleEntry<String, String>(descriptor, owner));
     }
 
     public int get(String desc, String owner) {
         // Since the contains test using index is used inside a loop inside ClassWriter#get method.
         // The index has been chosen to be the key.
-        AbstractMap.SimpleEntry<String, String> entry = new HashMap.SimpleEntry<>(desc, owner);
+        AbstractMap.SimpleEntry<String, String> entry = new HashMap.SimpleEntry<String, String>(desc, owner);
         for (Map.Entry<Integer,  Map.Entry<String, String>> e : descriptors.entrySet()) {
             if (e.getValue().equals(entry)) {
                 return e.getKey();
