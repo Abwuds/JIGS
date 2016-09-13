@@ -1,14 +1,20 @@
 * 09/09 Friday
-  *  Schedule to 09/23
+  *  ~~Schedule to 09/23~~
 * 09/12 Monday
-  * Write usage commands
-  * Determine module dependances
-  * Add complete build ants
+  * ~~Write usage commands~~
+  * ~~Determine module dependances~~
+  * ~~Add complete build ants~~
+  * ~~Extract backport from asm~~
+  * ~~asm no warning when compiling with javac 1.5~~
+  * ~~Backport no warning when compiling with javac 7~~
 * 09/13 Tuesday
   * **[MEETING] on long/double management**
     * **local variables**
     * **methods param**
-  * Refactoring + cleaning + documentation of RT#**Bootstrap methods**
+  * Refactoring of RT#**Bootstrap methods** and dependences
+  * Cleaning of RT#**Bootstrap methods**
+  * Documentation of RT#**Bootstrap methods**
+  * Preparation of long/double implementation
 * 09/14 Wednesday
   * Basic long/double implementation
 * 09/15 Thursday
