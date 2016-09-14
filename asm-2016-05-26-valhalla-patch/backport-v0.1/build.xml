@@ -6,7 +6,7 @@
 
 	<property name="build.dir" 	value="build"/>
 	<property name="classes.dir"	value="${build.dir}/classes"/>
-	<property name="jar.dir"	value="${build.dir}/jar"/>
+	<property name="dist.dir"	value="${build.dir}/dist"/>
 
 	<property name="asm.dir"	value="../asm"/>
 	<property name="asm.name"	value="asm-5.1"/>
@@ -17,14 +17,17 @@
 	</path>
 
 
+	<property name="main-class"	value="specialization.Rewriter"/>
+
 	<target name="help">
 		<echo message="The available targets are the following:" />
 		<echo message="  setup: set ups the project by compiling needed libraries into ${lib.dir}" />
 		<echo message="  compile-asm: compiles the patched asm into ${build.dir}" />
+		<echo message="  dist: compiles the dist into ${dist.dir}" />
 		<echo message="  compile: compiles the product into ${build.dir}" />
 		<echo message="  run: runs the backport on the given folder containing a Valhalla project to port." />
+		<echo message="      Usage : ant -Dfolder={Folder to rewrite} run" />
 		<echo message="  clean: removes all generated files." />
-		<echo message="  jar: creates all jars in ${out.dist.lib}" />
 		<echo message="  TODO test: run all tests" />
 	</target>
 
@@ -66,14 +69,29 @@
 		</javac>		
 	</target>
 
-
-	<target name="jar" depends="compile">
-		<mkdir dir="${jar.dir}"/>
-		<jar destfile="${jar.dir}/${ant.project.name}.jar" basedir="${classes.dir}">
+	<target name="dist" depends="compile">
+		<mkdir dir="${dist.dir}"/>
+		<jar destfile="${dist.dir}/${ant.project.name}.jar" basedir="${classes.dir}">
 			<manifest>
 				<attribute name="Main-Class" value="${main-class}"/>
 			</manifest>
 		</jar>
+		<!-- Copying rt classes into a folder -->
+		<copy todir="${dist.dir}/rt">
+			<fileset dir="${classes.dir}/rt"/>
+		</copy>
+	</target>
+	
+	<path id="application" location="${dist.dir}/${ant.project.name}.jar"/>
+	
+	<target name="run" depends="dist">
+		<java fork="true" classname="${main-class}">
+			<classpath>
+				<path refid="classpath"/>
+				<path refid="application"/>
+			</classpath>
+		      <arg value="${folder}"/>
+		</java>		
 	</target>
 </project>
 

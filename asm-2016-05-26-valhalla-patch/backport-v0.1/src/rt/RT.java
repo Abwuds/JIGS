@@ -33,7 +33,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
-import java.util.Base64;
 
 import java.io.IOException;
 import java.lang.invoke.*;
@@ -101,7 +100,7 @@ public class RT {
                 + "AAAAIQADAAEAAAAJuwACWSq3AAOwAAAAAQAJAAAABgABAAAABwAOAAAAAgAP"
                 + "AAIAEAAAAAIAEQAMAAAACgABAAIAEwALABk=";
         try {
-            byte[] array = Base64.getDecoder().decode(PROXY_CLASS);
+            byte[] array = MyBase64.getDecoder().decode(PROXY_CLASS);
             Field theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
             theUnsafe.setAccessible(true);
             Unsafe unsafe = (Unsafe) theUnsafe.get(null);
