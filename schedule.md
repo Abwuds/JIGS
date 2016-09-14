@@ -15,6 +15,7 @@
   * Cleaning of RT#**Bootstrap methods**
   * Documentation of RT#**Bootstrap methods**
   * Preparation of long/double implementation
+  * Fix issue of the copy of RT's classes from a jar
 * 09/14 Wednesday
   * Basic long/double implementation
 * 09/15 Thursday
