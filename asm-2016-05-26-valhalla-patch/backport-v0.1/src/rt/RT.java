@@ -46,8 +46,8 @@ import java.util.*;
 public class RT {
 
     public static final MethodType SPECIALIZED_CONSTRUCTOR_TYPE = MethodType.methodType(void.class, Void.class, Object.class);
-    private static final MethodHandle LOOKUP_CONSTRUCTOR_MH = initLookupConstructor();
     private static final Unsafe UNSAFE = initUnsafe();
+    private static final MethodHandle LOOKUP_CONSTRUCTOR_MH = initLookupConstructor();
     private static final String ANY_PACKAGE = BackClassVisitor.ANY_PACKAGE;
     private static final String BACK_FACTORY_NAME = BackClassVisitor.BACK_FACTORY_NAME;
 
@@ -64,12 +64,8 @@ public class RT {
     public static final MethodType TYPE_INVOKE_SPECIAL_FROM_BACK = MethodType.methodType(MethodHandle.class, MethodHandles.Lookup.class, String.class, MethodType.class, Object.class);
     public static final MethodType TYPE_INVOKE_INLINED_CALL = MethodType.methodType(MethodHandle.class, MethodHandles.Lookup.class, String.class, MethodType.class, Object.class);
 
-
     public static final MethodType BSMS_TYPE = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
-    public static final MethodType BSM_NEW = MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String.class);
     private static final MethodType INVOKE_FRONT_TYPE = MethodType.methodType(Object.class, MethodHandles.Lookup.class, MethodHandle.class, Class.class, Object[].class);
-    private static final MethodType GET_BACK_FIELD_TYPE = MethodType.methodType(MethodHandle.class, MethodHandles.Lookup.class, Class.class, String.class, Object.class);
-    private static final MethodType PUT_BACK_FIELD_TYPE = MethodType.methodType(MethodHandle.class, MethodHandles.Lookup.class, Class.class, String.class, Object.class);
     private static final MethodType INVOKE_CALL_TYPE = MethodType.methodType(Object.class, MethodHandles.Lookup.class, MethodType.class, String.class, Object.class, Object[].class);
     private static final ClassValue<byte[]> BACK_FACTORY = new ClassValue<byte[]>() {
         @Override
@@ -83,8 +79,9 @@ public class RT {
         }
     };
 
-
-    // Getting the lookup.
+    /**
+     * @return an adapted methodHandle to retrieve the lookup of any class.
+     */
     private static MethodHandle initLookupConstructor() {
         String PROXY_CLASS = "yv66vgAAADMAGgoABQASBwAUCgACABUHABYHABcBAAY8aW5pdD4BAAMoKVYB"
                 + "AARDb2RlAQAPTGluZU51bWJlclRhYmxlAQAGbG9va3VwAQAGTG9va3VwAQAM"
@@ -101,10 +98,7 @@ public class RT {
                 + "AAIAEAAAAAIAEQAMAAAACgABAAIAEwALABk=";
         try {
             byte[] array = MyBase64.getDecoder().decode(PROXY_CLASS);
-            Field theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
-            theUnsafe.setAccessible(true);
-            Unsafe unsafe = (Unsafe) theUnsafe.get(null);
-            Class<?> proxy = unsafe.defineAnonymousClass(MethodHandles.class, array, null);
+            Class<?> proxy = UNSAFE.defineAnonymousClass(MethodHandles.class, array, null);
             return MethodHandles.lookup().findStatic(proxy, "lookup", MethodType.methodType(Lookup.class, Class.class));
         } catch (Throwable throwable) {
             throwable.printStackTrace();
@@ -112,29 +106,69 @@ public class RT {
         return null;
     }
 
+    /**
+     * This bootstrap method returns an adapted callSite to create an instance of a Back Species class.
+     *
+     * @param lookup      lookup of the calling class
+     * @param name        debug name of the current bootstrap method
+     * @param type        type of the callSite
+     * @param owner       front class'name of the species requested
+     * @param genericName the name of the requested species, with its type variable instances. for example <code>Foo<I, Z></code>.
+     * @return the callSite allocating the instance of the specialized Back class.
+     * @throws Throwable
+     */
+    @SuppressWarnings("unused")
     public static CallSite bsm_newBackSpecies(MethodHandles.Lookup lookup, String name, MethodType type, String owner, String genericName) throws Throwable {
-        // System.out.println("BSM_BACK_SPECIES lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "]" + "], genericName = [" + genericName + "]");
         Class<?> frontClass = ClassLoader.getSystemClassLoader().loadClass(owner);
-        // Allocate specialized class - with object for the moment - and return one of its constructor.
-        MethodHandle mh = createBackSpecies(lookup, type, frontClass, genericName);
-        return new ConstantCallSite(mh);
+        return new ConstantCallSite(createBackSpecies(lookup, type, frontClass, genericName));
     }
 
-    public static CallSite bsm_inlinedBackCall(MethodHandles.Lookup lookup, String name, MethodType type) throws Throwable {
-        // System.out.println("BSM_INLINED_BACK_CALL : lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "]");
-        MethodHandle getBackMethod = lookup.findStatic(RT.class, "invokeInlinedCall", TYPE_INVOKE_INLINED_CALL);
-        // Setting the lookup, the method type.
-        getBackMethod = getBackMethod.bindTo(lookup).bindTo(type).bindTo(name);
-        return new ConstantCallSite(createInvoker(type.dropParameterTypes(0, 1), getBackMethod).asType(type));
+    /**
+     * This bootstrap method returns an adapted callSite to perform a delegate call on the Back Species instance of the previously placed
+     * front instance.
+     *
+     * @param lookup     lookup of the calling class
+     * @param methodName the name of the method invoked
+     * @param type       the signature of the method invoked
+     * @return the callSite allocating the instance of the specialized Back class.
+     * @throws Throwable
+     */
+    @SuppressWarnings("unused")
+    public static CallSite bsm_inlinedBackCall(MethodHandles.Lookup lookup, String methodName, MethodType type) throws Throwable {
+        MethodHandle mh = lookup.findStatic(RT.class, "invokeInlinedCall", TYPE_INVOKE_INLINED_CALL);
+        mh = mh.bindTo(lookup).bindTo(type).bindTo(methodName);
+        return new ConstantCallSite(invokerOf(type.dropParameterTypes(0, 1), mh).asType(type));
     }
 
+    /**
+     * This method returns an adapted methodHandle to perform a call of the method <code>methodName</code> of the
+     * Back species instance of the given Front instance <code>front</code>.
+     *
+     * @param lookup     lookup of the calling class
+     * @param methodName the name of the method invoked
+     * @param type       the signature of the method invoked
+     * @param front      the front instance having a Back species field on which the wanted method will be invoked.
+     * @return the methodHandle performing the call to the method of the Back species instance.
+     * @throws Throwable
+     */
+    @SuppressWarnings("unused")
+    // TODO try to put private here.
     public static MethodHandle invokeInlinedCall(MethodHandles.Lookup lookup, MethodType type, String methodName, Object front) throws Throwable {
-        System.out.println("invokeInlinedCall : lookup = [" + lookup + "], type = [" + type + "], methodName = [" + methodName + "], front = [" + front.getClass() + "]");
         return lookup.findStatic(getBack__(lookup, front).getClass(), methodName, type).bindTo(front);
     }
 
+    /**
+     * This bootstrap method returns an adapted callSite to delegate a call to the Back species instance of the enclosing Front
+     * instance.
+     *
+     * @param lookup lookup of the calling class
+     * @param name   debug name of the current bootstrap method
+     * @param type   the signature of the method invoked
+     * @return the callSite allocating the instance of the specialized Back class.
+     * @throws Throwable
+     */
+    @SuppressWarnings("unused")
     public static CallSite bsm_delegateBackCall(MethodHandles.Lookup lookup, String name, MethodType type) throws Throwable {
-        // System.out.println("BSM_DELEGATE_CALL : lookup = [" + lookup + "], name = [" + name + "], type = [" + type + "]");
         MethodHandle mh = lookup.findStatic(RT.class, "invokeCall", INVOKE_CALL_TYPE);
         // Dropping name, receiver to have the delegate method type (-2 for front receiver, delegate target name).
         mh = mh.bindTo(lookup).bindTo(type.dropParameterTypes(0, 2));
@@ -143,25 +177,46 @@ public class RT {
         return new ConstantCallSite(mh);
     }
 
-    // TODO directly put the method inside the call site and stop boxing more args and return type.
-    public static Object invokeCall(MethodHandles.Lookup lookup, MethodType type, String name, Object receiver, Object... args) throws Throwable {
+    // TODO remove this method to prevent the boxing of the return value and the arguments.
+    public static Object invokeCall(MethodHandles.Lookup lookup, MethodType type, String methodName, Object receiver, Object... args) throws Throwable {
         // System.out.println("invokeCall : lookup = [" + lookup + "], type = [" + type + "], name = [" + name + "], receiver = [" + receiver + "], args = [" + args + "]");
-        MethodHandle mh = lookup.findStatic(receiver.getClass(), name, type).asType(type).asSpreader(Object[].class, args.length);
+        MethodHandle mh = lookup.findStatic(receiver.getClass(), methodName, type).asType(type).asSpreader(Object[].class, args.length);
         return mh.invoke(args);
     }
 
-
     /**
-     * Called from something else than a back class, and invokes bsm_createAny by passing null to the requested front lookup.
+     * This bootstrap method returns an adapted callSite to create an instance of an Any class. It first creates the Back species class if needed.
+     * Then instantiate it and passes the reference as an argument during an instantiation of the Front - any - class.
+     * This method has to be called from outside a Back species instance. If not, the Back species instance's lookup will be used
+     * to instantiate the Front class, which is not possible since its host class is {@link Object}.
+     *
+     * @param lookup      lookup of the calling class
+     * @param name        debug name of the current bootstrap method
+     * @param erasedType  the erased type of the callSite
+     * @param genericName the name of the requested species, with its type variable instances. for example <code>Foo<I, Z></code>.
+     * @return the callSite allocating the instance of the specialized Back class.
+     * @throws Throwable
      */
+    @SuppressWarnings("unused")
     public static CallSite bsm_createAnyNoLookup(MethodHandles.Lookup lookup, String name, MethodType erasedType,
                                                  String genericName) throws Throwable {
         return bsm_createAny(lookup, name, erasedType, genericName, null);
     }
 
     /**
-     * If called from a back class, the frontLookup has already been bound. Otherwise (called from another class), frontLookup will be equal to null.
+     * This bootstrap method returns an adapted callSite to create an instance of an Any class. It first creates the Back species class if needed.
+     * Then instantiate it and passes the reference as an argument during an instantiation of the Front - any - class.
+     * If the front lookup is equal to null, the bootstrap default's lookup will be used.
+     *
+     * @param lookup      lookup of the calling class
+     * @param name        debug name of the current bootstrap method
+     * @param erasedType  the erased type of the callSite
+     * @param genericName the name of the requested species, with its type variable instances. for example <code>Foo<I, Z></code>.
+     * @param front       lookup of the front class used during an invocation from a Back species class instance.
+     * @return the callSite allocating the instance of the specialized Back class.
+     * @throws Throwable
      */
+    // TODO remove "name" parameter.
     public static CallSite bsm_createAny(MethodHandles.Lookup lookup, String name, MethodType erasedType,
                                          String genericName, MethodHandles.Lookup front) throws Throwable {
         // System.out.println("bsm_createAny : lookup = [" + lookup + "], name = [" + name + "], erasedType = [" + erasedType + "], genericName = [" + genericName + "], front = [" + front + "]");
@@ -176,59 +231,123 @@ public class RT {
     }
 
     /**
-     * Called from something else than a back class, and invokes bsm_getField by passing null to the requested front lookup.
+     * This bootstrap method returns an adapted callSite to get a field of a Front - any - class instance.
+     * Erased and not erased description are needed since an invocation of this very method from a Back species class can not
+     * know the real field type (due to {@link Object} being the back's host class.
+     *
+     * @param lookup        lookup of the calling class
+     * @param name          debug name of the current bootstrap method
+     * @param erasedType    the erased type of the callSite
+     * @param notErasedDesc the field's descriptor
+     * @return the callSite getting the requested field.
+     * @throws Throwable
      */
+    @SuppressWarnings("unused")
     public static CallSite bsm_getFieldNoLookup(MethodHandles.Lookup lookup, String name, MethodType erasedType, String notErasedDesc)
             throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException {
         return bsm_getField(lookup, name, erasedType, notErasedDesc, null);
     }
 
     /**
-     * If called from a back class, the frontLookup has already been bound. Otherwise (called from another class), frontLookup will be equal to zero.
+     * This bootstrap method returns an adapted callSite to get a field of a Front - any - class instance.
+     * Erased and not erased description are needed since an invocation of this very method from a Back species class can not
+     * know the real field type (due to {@link Object} being the back's host class.
+     * If the front lookup is equal to null, the bootstrap default's lookup will be used.
+     *
+     * @param lookup        lookup of the calling class
+     * @param name          the field's name
+     * @param erasedType    the erased type of the callSite
+     * @param notErasedDesc the field's descriptor
+     * @param front         lookup of the front class used during an invocation from a Back species class instance
+     * @return the callSite getting the requested field.
+     * @throws Throwable
      */
-    public static CallSite bsm_getField(MethodHandles.Lookup lookup, String name, MethodType erasedType,
-                                        String notErasedDesc, MethodHandles.Lookup front)
+    @SuppressWarnings("unused")
+    public static CallSite bsm_getField(MethodHandles.Lookup lookup, String name, MethodType erasedType, String notErasedDesc, MethodHandles.Lookup front)
             throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException {
-        // System.out.println("BSM_GET_FIELD : lookup = [" + lookup + "], name = [" + name + "], erasedType = [" + erasedType + "], notErasedDesc = [" + notErasedDesc + "], front = [" + front + "]");
         MethodHandles.Lookup l = front == null ? lookup : front;
-
-        // Loading the field class.
         Class<?> fieldClass = erasedType.returnType();
         MethodHandle mh = l.findStatic(RT.class, "getField", TYPE_GETFIELD);
         mh = mh.bindTo(lookup).bindTo(name).bindTo(fieldClass);
-        return new ConstantCallSite(createInvoker(erasedType.dropParameterTypes(0, 1), mh));
+        return new ConstantCallSite(invokerOf(erasedType.dropParameterTypes(0, 1), mh));
     }
 
+    /**
+     * This method returns an adapted methodHandle to get a field of the Front - any - class instance <code>front</code>.
+     * Erased and not erased description are needed since an invocation of this very method from a Back species class can not
+     * know the real field type (due to {@link Object} being the back's host class.
+     * If the front lookup is equal to null, the bootstrap default's lookup will be used.
+     *
+     * @param lookup     lookup of the calling class
+     * @param name       the field's name
+     * @param fieldClass the field's class
+     * @param front      lookup of the front class used during an invocation from a Back species class instance
+     * @return the callSite getting the requested field.
+     * @throws Throwable
+     */
+    @SuppressWarnings("unused")
     public static MethodHandle getField(MethodHandles.Lookup lookup, String name, Class<?> fieldClass, Object front) throws Throwable {
-        // System.out.println("getField : lookup = [" + lookup + "], name = [" + name + "], fieldClass = [" + fieldClass + "], front = [" + front + "]");
         Object back__ = getBack__(lookup, front);
         Lookup backLookup = computeLookup(back__.getClass());
-        // System.out.println("Back : " + back__);
         return backLookup.findGetter(back__.getClass(), name, fieldClass).bindTo(back__);
     }
 
     /**
-     * Called from something else than a back class, and invokes bsm_putField by passing null to the requested front lookup.
+     * This bootstrap method returns an adapted callSite to put a field of a Front - any - class instance.
+     * Erased and not erased description are needed since an invocation of this very method from a Back species class can not
+     * know the real field type (due to {@link Object} being the back's host class.
+     *
+     * @param lookup        lookup of the calling class
+     * @param name          debug name of the current bootstrap method
+     * @param erasedType    the erased type of the callSite
+     * @param notErasedDesc the field's descriptor
+     * @return the callSite putting the requested field.
+     * @throws Throwable
      */
+    @SuppressWarnings("unused")
     public static CallSite bsm_putFieldNoLookup(MethodHandles.Lookup lookup, String name, MethodType erasedType, String notErasedDesc)
             throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException {
         return bsm_putField(lookup, name, erasedType, notErasedDesc, null);
     }
 
     /**
-     * If called from a back class, the frontLookup has already been bound. Otherwise (called from another class), frontLookup will be equal to zero.
+     * This bootstrap method returns an adapted callSite to put a field of a Front - any - class instance.
+     * Erased and not erased description are needed since an invocation of this very method from a Back species class can not
+     * know the real field type (due to {@link Object} being the back's host class.
+     * If the front lookup is equal to null, the bootstrap default's lookup will be used.
+     *
+     * @param lookup        lookup of the calling class
+     * @param name          the field's name
+     * @param erasedType    the erased type of the callSite
+     * @param notErasedDesc the field's descriptor
+     * @param front         lookup of the front class used during an invocation from a Back species class instance
+     * @return the callSite putting the requested field.
+     * @throws Throwable
      */
-    public static CallSite bsm_putField(MethodHandles.Lookup lookup, String name, MethodType erasedType,
-                                        String notErasedDesc, MethodHandles.Lookup front)
+    @SuppressWarnings("unused")
+    public static CallSite bsm_putField(MethodHandles.Lookup lookup, String name, MethodType erasedType, String notErasedDesc, MethodHandles.Lookup front)
             throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException {
-        // System.out.println("bsm_putField : lookup = [" + lookup + "], name = [" + name + "], erasedType = [" + erasedType + "], notErasedDesc = [" + notErasedDesc + "], front = [" + front + "]");
         MethodHandles.Lookup l = front == null ? lookup : front;
         Class<?> fieldClass = erasedType.parameterType(1);
         MethodHandle mh = l.findStatic(RT.class, "putField", TYPE_PUTFIELD);
         mh = mh.bindTo(l).bindTo(name).bindTo(fieldClass);
-        return new ConstantCallSite(createInvoker(erasedType.dropParameterTypes(0, 1), mh));
+        return new ConstantCallSite(invokerOf(erasedType.dropParameterTypes(0, 1), mh));
     }
 
+    /**
+     * This method returns an adapted methodHandle to put a field of the Front - any - class instance <code>front</code>.
+     * Erased and not erased description are needed since an invocation of this very method from a Back species class can not
+     * know the real field type (due to {@link Object} being the back's host class.
+     * If the front lookup is equal to null, the bootstrap default's lookup will be used.
+     *
+     * @param lookup     lookup of the calling class
+     * @param name       the field's name
+     * @param fieldClass the field's class
+     * @param front      lookup of the front class used during an invocation from a Back species class instance
+     * @return the callSite putting the requested field.
+     * @throws Throwable
+     */
+    @SuppressWarnings("unused")
     public static MethodHandle putField(MethodHandles.Lookup lookup, String name, Class<?> fieldClass, Object front) throws Throwable {
         Object back__ = getBack__(lookup, front);
         Lookup backLookup = computeLookup(back__.getClass());
@@ -236,13 +355,26 @@ public class RT {
     }
 
     /**
-     * If called from a back class, the frontLookup has already been bound. Otherwise (called from another class), frontLookup will be equal to zero.
+     * This bootstrap method returns an adapted callSite to perform an invoke special inside a Back species instance.
+     * Since it only has erased types, this bsm is needed to target the correctly typed method from the back instance.
+     *
+     * @param lookup        lookup of the calling class
+     * @param methodName    the method's methodName
+     * @param erasedType    the erased type of the callSite
+     * @param notErasedDesc the method's descriptor
+     * @param front         the front lookup needed to find methods
+     * @return the callSite invoking the method wanted.
+     * @throws ClassNotFoundException
+     * @throws NoSuchMethodException
+     * @throws IllegalAccessException if the front lookup is null.
      */
-    public static CallSite bsm_invokeSpecialFromBack(MethodHandles.Lookup lookup, String name, MethodType erasedType,
-                                                 String notErasedDesc, MethodHandles.Lookup front)
+    @SuppressWarnings("unused")
+    public static CallSite bsm_invokeSpecialFromBack(MethodHandles.Lookup lookup, String methodName, MethodType erasedType,
+                                                     String notErasedDesc, MethodHandles.Lookup front)
             throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException {
-        System.out.println("BSM_INVOKE_SPECIAL_FROM_BACK : lookup = [" + lookup + "], name = [" + name + "], erasedType = [" + erasedType + "], notErasedDesc = [" + notErasedDesc + "], front = [" + front + "]");
-        if (front == null) { throw new IllegalStateException("Front lookup can not be null during special invocations from a back class."); }
+        if (front == null) {
+            throw new IllegalStateException("Front lookup can not be null during special invocations from a back class.");
+        }
 
         MethodHandle mh;
         // Determining if the receiver is a typeVar or a parameterized type.
@@ -257,44 +389,52 @@ public class RT {
         }
 
         MethodType mt = MethodType.fromMethodDescriptorString(notErasedDesc, front.lookupClass().getClassLoader());
-        mh = MethodHandles.insertArguments(mh, 0, front, name, mt);
-        return new ConstantCallSite(createInvoker(erasedType.dropParameterTypes(0, 1), mh));
+        mh = MethodHandles.insertArguments(mh, 0, front, methodName, mt);
+        return new ConstantCallSite(invokerOf(erasedType.dropParameterTypes(0, 1), mh));
     }
 
-    public static MethodHandle invokeSpecialFromBack(Lookup lookup, String method, MethodType type, Object receiver)
+    /**
+     * This method returns an adapted methodHandle to perform an invoke special inside a Back species instance.
+     * Since it only has erased types, this bsm is needed to target the correctly typed method from the back instance.
+     *
+     * @param lookup     lookup of the calling class
+     * @param methodName the method's name
+     * @param methodType the method's type
+     * @param receiver   the method's receiver
+     * @return the methodHandle invoking the method wanted.
+     * @throws NoSuchMethodException
+     * @throws IllegalAccessException if the front lookup is null.
+     */
+    @SuppressWarnings("unused")
+    public static MethodHandle invokeSpecialFromBack(Lookup lookup, String methodName, MethodType methodType, Object receiver)
             throws NoSuchMethodException, IllegalAccessException {
-        System.out.println("invokeSpecialFromBack : lookup = [" + lookup + "], method = [" + method + "], type = [" + type + "], receiver = [" + receiver + "]");
-        Class<?> aClass = receiver.getClass();
-        return lookup.findSpecial(lookup.lookupClass(), method, type, aClass).bindTo(receiver);
+        return lookup.findSpecial(lookup.lookupClass(), methodName, methodType, receiver.getClass()).bindTo(receiver);
     }
 
+    /* TODO Not used yet used
+    @SuppressWarnings("unused")
     public static MethodHandle invokeSpecialFromBackOnParameterizedType(Lookup lookup, String method, MethodType type, Object receiver)
             throws NoSuchMethodException, IllegalAccessException {
         Class<?> aClass = receiver.getClass();
         System.out.println("Runtime class : " + aClass);
         return lookup.findSpecial(lookup.lookupClass(), method, type, aClass).bindTo(receiver);
     }
-
-    /*
-    public static CallSite bsm_getBackField(MethodHandles.Lookup frontLookup, String name, MethodType type) throws Throwable {
-        MethodHandle getterMH = frontLookup.findStatic(RT.class, "getBackField", GET_BACK_FIELD_TYPE);
-        getterMH = getterMH.bindTo(frontLookup).bindTo(type.returnType()).bindTo(name);
-        return new ConstantCallSite(createInvoker(type.dropParameterTypes(0, 1), getterMH));
-    }
-
-    public static CallSite bsm_putBackField(MethodHandles.Lookup lookup, String name, MethodType type) throws Throwable {
-        MethodHandle setterMH = lookup.findStatic(RT.class, "putBackField", PUT_BACK_FIELD_TYPE);
-        setterMH = setterMH.bindTo(lookup).bindTo(type.parameterType(1)).bindTo(name); // The field type is the parameter 1.
-        return new ConstantCallSite(createInvoker(type.dropParameterTypes(0, 1), setterMH));
-    }
 */
 
     /**
-     * Invoke the _back__ field of the FrontClass and then invoke the FrontClass by passing it the _back__ field created.
+     * This method calls the constructor <code>backConstructor</code> with the arguments <code>args</code> to instantiate a
+     * Back species class instance and then creates an instance of the class <code>frontClass</code> by giving it the
+     * Back species instance newly created.
+     *
+     * @param lookup          the lookup of the enclosing class of the requested invocation
+     * @param backConstructor the constructor of the Back species class to invoke
+     * @param frontClass      the Front class to instantiate
+     * @param args            the arguments to pass during the call of <code>backConstructor</code>
+     * @return the newly created Front instance.
+     * @throws Throwable
      */
-    // TODO remove the args from this signature to remove boxing.
+    @SuppressWarnings("unused")
     public static Object createFrontInstance(MethodHandles.Lookup lookup, MethodHandle backConstructor, Class<?> frontClass, Object... args) throws Throwable {
-        // System.out.println("createFrontInstance lookup = [" + lookup + "], backConstructor = [" + backConstructor + "], frontClass = [" + frontClass + "], args = [" + args + "]");
         Object back = backConstructor.asSpreader(Object[].class, args.length).invoke(args);
         return lookup.findConstructor(frontClass, SPECIALIZED_CONSTRUCTOR_TYPE).bindTo(null).bindTo(back).invoke();
     }
@@ -303,42 +443,33 @@ public class RT {
      * Creates a {@link MethodHandle} applying the given {@link MethodHandle resolver} - which will find the good _back__ method -
      * to the arguments starting at the position 0 to return a method handle invoked with the remaining arguments.
      */
-    private static MethodHandle createInvoker(MethodType type, MethodHandle resolver) {
+    private static MethodHandle invokerOf(MethodType type, MethodHandle resolver) {
         MethodHandle target = MethodHandles.exactInvoker(type);
         return MethodHandles.collectArguments(target, 0, resolver);
     }
 
-    public static MethodHandle getBackField(MethodHandles.Lookup lookup, Class<?> fieldType, String name, Object owner)
-            throws Throwable {
-        Object backField = getBack__(lookup, owner);
-        return lookup.findGetter(backField.getClass(), name, fieldType).bindTo(backField);
-    }
-
-    public static MethodHandle putBackField(MethodHandles.Lookup lookup, Class<?> fieldType, String name, Object owner)
-            throws Throwable {
-        Object backField = getBack__(lookup, owner);
-        return lookup.findSetter(backField.getClass(), name, fieldType).bindTo(backField);
-    }
-
+    /**
+     * This method creates an adapted methodHandle to create an instance of a requested Back species class. If the requested
+     * Back species class does not already exist, it is created from the FrontName$Back.class blueprint code, first specialized
+     * thanks to the given <code>genericName</code>.
+     *
+     * @param frontClassLookup the lookup of the Front class
+     * @param type             the type of the constructor used to instantiate the Back species class
+     * @param frontClass       the Front class
+     * @param genericName      the Front class'type variables instantiation. For example Foo<I, Z>
+     * @return the methodHandle creating the Back species instance.
+     * @throws NoSuchFieldException
+     * @throws IllegalAccessException
+     * @throws NoSuchMethodException
+     * @throws ClassNotFoundException
+     */
     private static MethodHandle createBackSpecies(MethodHandles.Lookup frontClassLookup, MethodType type, Class<?> frontClass, String genericName)
             throws NoSuchFieldException, IllegalAccessException, NoSuchMethodException, ClassNotFoundException {
         // TODO BUG : Use a value which is a HashMap storing the String specialization and the corresponding class.
-        byte[] backCode = BACK_FACTORY.get(frontClass);
-
-
-        // TODO the first lookup is not the "front lookup" when allocating from a back instance. So we have to pass 2 lookup the normal and the front to the calling methods : bsm_new and bsm_newBackSpecies
-        // TODO get the TX types and a classLoader using frontClassLookup.getClass.getClassLoader + Type.parse(genericName) !
-        // System.out.println("RT#createBackSpecies : frontClassLookup = [" + frontClassLookup + "], type = [" + type + "], frontClass = [" + frontClass + "]" + " Generic name = [" + genericName + "]");
-        // Reading the specialization attributes.
         // TODO store the Substitution table in a couple values for the key class in classValue so it is not read every time. Not needed, because bootstrap are not called too much.
+        byte[] backCode = BACK_FACTORY.get(frontClass);
         SubstitutionTable substitutionTable = SubstitutionTableReader.read(backCode);
-
-        // System.out.println("After the substitutionTable : " + substitutionTable);
-
-
-        // Creating substitution pool.
         String[] classes = Type.getParameterizedTypeValues(genericName);
-        // System.out.println("Class : " + Arrays.toString(classes));
         Object[] pool = new Object[substitutionTable.getMax() + 1];
         for (Map.Entry<Integer, Map.Entry<String, String>> descs : substitutionTable.getDescriptors().entrySet()) {
             Integer index = descs.getKey();
@@ -348,50 +479,76 @@ public class RT {
 
             if (!owner.equals(BackClassVisitor.RT_METHOD_HANDLE_TYPE)) {
                 pool[index] = Type.specializeDescriptor(descriptor, classes);
-                // System.out.println("Index : " + index + "  Value : " + owner + " :: " + pool[index]);
                 continue;
             }
-
-            if (descriptor.equals(BackClassVisitor.HANDLE_RT_BSM_NEW)) {
-                // Preparing the method handle for the invoke call with Object varargs.
-                MethodHandle bsm_createAny = frontClassLookup.findStatic(RT.class, "bsm_createAny", TYPE_BSM_CREATE_ANY);
-                pool[index] = MethodHandles.insertArguments(bsm_createAny, 4, frontClassLookup).asSpreader(Object[].class, 4).asType(MethodType.methodType(Object.class, Object[].class));
-            } else if (descriptor.equals(BackClassVisitor.HANDLE_RT_BSM_GET_FIELD)) {
-                // Preparing the method handle for the invoke call with Object varargs.
-                MethodHandle bsm_getField = frontClassLookup.findStatic(RT.class, "bsm_getField", TYPE_BSM_GETFIELD);
-                pool[index] = MethodHandles.insertArguments(bsm_getField, 4, frontClassLookup).asSpreader(Object[].class, 4).asType(MethodType.methodType(Object.class, Object[].class));
-            } else if (descriptor.equals(BackClassVisitor.HANDLE_RT_BSM_PUT_FIELD)) {
-                // Preparing the method handle for the invoke call with Object varargs.
-                MethodHandle bsm_putField = frontClassLookup.findStatic(RT.class, "bsm_putField", TYPE_BSM_PUTFIELD);
-                pool[index] = MethodHandles.insertArguments(bsm_putField, 4, frontClassLookup).asSpreader(Object[].class, 4).asType(MethodType.methodType(Object.class, Object[].class));
-             } else if (descriptor.equals(BackClassVisitor.HANDLE_RT_BSM_INVOKE_SPECIAL_FROM_BACK)) {
-                // Preparing the method handle for the invoke call with Object varargs.
-                MethodHandle bsm_invokeFromBack = frontClassLookup.findStatic(RT.class, "bsm_invokeSpecialFromBack", TYPE_BSM_INVOKE_SPECIAL_FROM_BACK);
-                pool[index] = MethodHandles.insertArguments(bsm_invokeFromBack, 4, frontClassLookup).asSpreader(Object[].class, 4).asType(MethodType.methodType(Object.class, Object[].class));
-            } else if (descriptor.equals(BackClassVisitor.HANDLE_RT_METAFACTORY)) {
-                // Preparing the method handle for the invoke call with Object varargs.
-                MethodHandle bsm_metafactory = frontClassLookup.findStatic(RT.class, "metafactory", TYPE_METAFACTORY);
-                // Inserting the frontLookup and dropping the "name" dummy argument received.
-                pool[index] = MethodHandles.insertArguments(bsm_metafactory, 3, frontClassLookup).asSpreader(Object[].class, 4).asType(MethodType.methodType(Object.class, Object[].class));
+            switch (descriptor) {
+                case BackClassVisitor.HANDLE_RT_BSM_NEW:
+                    pool[index] = patchMethodHandleInConstantPool(frontClassLookup, "bsm_createAny", TYPE_BSM_CREATE_ANY, 4);
+                    break;
+                case BackClassVisitor.HANDLE_RT_BSM_GET_FIELD:
+                    pool[index] = patchMethodHandleInConstantPool(frontClassLookup, "bsm_getField", TYPE_BSM_GETFIELD, 4);
+                    break;
+                case BackClassVisitor.HANDLE_RT_BSM_PUT_FIELD:
+                    pool[index] = patchMethodHandleInConstantPool(frontClassLookup, "bsm_putField", TYPE_BSM_PUTFIELD, 4);
+                    break;
+                case BackClassVisitor.HANDLE_RT_BSM_INVOKE_SPECIAL_FROM_BACK:
+                    pool[index] = patchMethodHandleInConstantPool(frontClassLookup, "bsm_invokeSpecialFromBack", TYPE_BSM_INVOKE_SPECIAL_FROM_BACK, 4);
+                    break;
+                case BackClassVisitor.HANDLE_RT_METAFACTORY:
+                    pool[index] = patchMethodHandleInConstantPool(frontClassLookup, "metafactory", TYPE_METAFACTORY, 3);
+                    break;
             }
         }
-
-        // Passing Object.class
         Class<?> backClass = UNSAFE.defineAnonymousClass(Object.class, backCode, pool);
         MethodHandle constructor = frontClassLookup.findConstructor(backClass, type.changeReturnType(void.class));
-        // We set the front class lookup parameter, and we want to cast the result to an Object instead of the plain anonymous BackClass.
-        return constructor.asType(type.changeReturnType(Object.class));
+        return constructor.asType(type.changeReturnType(Object.class)); // The return type is considered as a plain Object.
     }
 
+    /**
+     * This method returns the requested methodHandle. The methodHandle created has the given <code>lookup</code> bound.
+     *
+     * @param lookup         the lookup to perform find and bind to the resulting methodHandle
+     * @param methodName     the method's name
+     * @param methodType     the method's type
+     * @param lookupPosition the lookup's position at which it is inserted
+     * @throws NoSuchMethodException
+     * @throws IllegalAccessException
+     */
+    private static MethodHandle patchMethodHandleInConstantPool(Lookup lookup, String methodName, MethodType methodType, int lookupPosition)
+            throws NoSuchMethodException, IllegalAccessException {
+        MethodHandle mh = lookup.findStatic(RT.class, methodName, methodType);
+        return MethodHandles.insertArguments(mh, lookupPosition, lookup).asSpreader(Object[].class, 4).
+                asType(MethodType.methodType(Object.class, Object[].class));
+    }
 
+    /**
+     * Returns the back field of a Front - any - class instance.
+     *
+     * @param lookup the lookup to find the field's getter
+     * @param owner  the field's owner
+     * @return the Back species instance found.
+     * @throws Throwable
+     */
     private static Object getBack__(MethodHandles.Lookup lookup, Object owner) throws Throwable {
         return lookup.findGetter(owner.getClass(), FrontClassVisitor.BACK_FIELD, Object.class).invoke(owner);
     }
 
+    /**
+     * Computes the lookup of the given <code>type</code>.
+     *
+     * @param type the lookup's type class
+     * @return the lookup computed.
+     * @throws Throwable
+     */
     private static Lookup computeLookup(Class<?> type) throws Throwable {
         return (Lookup) LOOKUP_CONSTRUCTOR_MH.invokeExact(type);
     }
 
+    /**
+     * Initializes the Unsafe field from the class {@link Unsafe}. It is set accessible.
+     *
+     * @return the initialized Unsafe field.
+     */
     private static Unsafe initUnsafe() {
         try {
             Class<?> unsafeClass = Unsafe.class;
