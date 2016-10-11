@@ -13,12 +13,13 @@ public class BackClassVisitor extends ClassVisitor {
     public static final String BACK_FACTORY_NAME = "$BackFactory";
     public static final String RT_METHOD_HANDLE_TYPE = "RTMethodHandle";
     public static final String HANDLE_RT_BSM_NEW = "handle_rt_bsm_new";
-    public static final String HANDLE_RT_BSM_INVOKE_SPECIAL_FROM_BACK = "handle_rt_bsm_invoke_special";
+    public static final String HANDLE_RT_BSM_INVOKE_VIRTUAL_FROM_BACK = "handle_rt_bsm_invoke_special_from_back";
     public static final String HANDLE_RT_BSM_GET_FIELD = "handle_rt_bsm_getField";
     public static final String HANDLE_RT_BSM_PUT_FIELD = "handle_rt_bsm_putField";
     public static final String HANDLE_RT_METAFACTORY = "handle_rt_metafactory";
     public static final String BSM_RT_BRIDGE = "bsm_rtBridge";
-    public static final String BSM_RT_BRIDGE_DESC = "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/String;)Ljava/lang/invoke/CallSite;";
+    public static final String BSM_RT_BRIDGE_DESC = "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/" +
+            "MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/String;)Ljava/lang/invoke/CallSite;";
 
     // Sets when visiting the class prototype.
     private String name;
@@ -31,12 +32,13 @@ public class BackClassVisitor extends ClassVisitor {
 
     @Override
     public void visitEnd() {
+
         super.visitEnd();
         // Telling the substitution table contained inside the ClassWriter to register placeholder referencing method handles
         // of the RT package at runtime.
         ClassWriter cw = (ClassWriter) this.cv;
         cw.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_NEW);
-        cw.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_INVOKE_SPECIAL_FROM_BACK);
+        cw.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_INVOKE_VIRTUAL_FROM_BACK);
         cw.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_GET_FIELD);
         cw.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_BSM_PUT_FIELD);
         cw.copyConstantPoolPlaceholderToSubstitutionTable(RT_METHOD_HANDLE_TYPE, HANDLE_RT_METAFACTORY);
@@ -93,6 +95,7 @@ public class BackClassVisitor extends ClassVisitor {
         MethodVisitor mv = super.visitMethod(Opcodes.ACC_PRIVATE + Opcodes.ACC_STATIC, BSM_RT_BRIDGE, BSM_RT_BRIDGE_DESC,
                 null, null);
         mv.visitCode();
+
         // Loading the MethodHandle taking Object varargs.
         mv.visitVarInsn(Opcodes.ALOAD, 3);
 

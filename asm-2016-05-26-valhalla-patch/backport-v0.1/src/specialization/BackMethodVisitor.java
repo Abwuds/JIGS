@@ -230,16 +230,15 @@ class BackMethodVisitor extends MethodVisitor {
                                 final String name, final String desc, final boolean itf) {
 
         // From the back class, every method invocation is an invoke dynamic.
-        System.out.println("visitMethodInsn : opcode = [" + opcode + "], owner = [" + owner + "], name = ["
-                + name + "], desc = [" + desc + "], itf = [" + itf + "]");
+
         // Virtual invocation
         if (opcode == Opcodes.INVOKEVIRTUAL) {
             // Is a ParameterizedType or an Object.
             String normalizedOwner;
-            if (Type.isParameterizedType(owner)) { normalizedOwner = Type.rawDesc(owner); }
+            if (Type.isParameterizedType(owner)) { normalizedOwner = owner + ';';/*Type.rawDesc(owner);*/ }
             else { normalizedOwner = 'L' + owner + ';'; }
             visitInvokeDynamicInsn(name, Type.eraseNotJavaLangMethod(insertReceiver("Ljava/lang/Object;", desc)), bsmRTBridge,
-                    BackClassVisitor.HANDLE_RT_BSM_INVOKE_SPECIAL_FROM_BACK, insertReceiver(normalizedOwner, desc));
+                    BackClassVisitor.HANDLE_RT_BSM_INVOKE_VIRTUAL_FROM_BACK, insertReceiver(normalizedOwner, desc));
             return;
         }
 
