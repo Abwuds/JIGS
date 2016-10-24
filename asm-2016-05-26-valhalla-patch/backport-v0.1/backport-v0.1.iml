@@ -10,7 +10,7 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/asm-5.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib/asm-debug-all-5.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
