@@ -74,7 +74,8 @@ public class BackClassVisitor extends ClassVisitor {
             // Inserting the front name. Erasure of : Type.getType('L' + frontName + ';')
             methodDescriptor = insertMethodArgumentType(desc, Type.getType(Object.class));
         }
-        return new BackMethodVisitor(api, name, frontName, this.name, super.visitMethod(methodAccess, name, methodDescriptor, null, exceptions));
+        System.out.println("STATIC INVOCATION : access = [" + access + "], name = [" + name + "], desc = [" + desc + "], signature = [" + signature + "], exceptions = [" + exceptions + "]");
+        return new BackMethodVisitor(api, name, frontName, this.name, methodDescriptor, super.visitMethod(methodAccess, name, methodDescriptor, null, exceptions));
     }
 
     public String getName() {

@@ -170,7 +170,7 @@ class BackMethodVisitor extends MethodVisitor {
     private boolean isInstallingANewArray;
     private Label end;
 
-    BackMethodVisitor(int api, String methodName, String frontOwner, String owner, MethodVisitor mv) {
+    BackMethodVisitor(int api, String methodName, String frontOwner, String owner, String descriptor, MethodVisitor mv) {
         super(api, mv);
         this.methodName = methodName;
         this.frontOwner = frontOwner;
@@ -195,6 +195,8 @@ class BackMethodVisitor extends MethodVisitor {
         };
 
         invokeAnyAdapter = new InvokeAnyAdapter(owner, methodName, invokeFieldAdapter, this);
+        // Computation of the shiftMap.
+        System.out.println(ShiftMap.createShiftMap(Type.getType("(T0/Ljava/lang/Object;T1/Ljava/lang/Object;IT2/Ljava/lang/Object;F)V")));
     }
 
     /**
@@ -244,7 +246,6 @@ class BackMethodVisitor extends MethodVisitor {
 
         // Static invocation
         if (opcode == Opcodes.INVOKESTATIC) {
-
            // return;
         }
 
