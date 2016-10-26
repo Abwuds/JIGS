@@ -1,0 +1,78 @@
+Programmation of the method parameters expansion algorithm :
+
+Questions :
+	Do I have to change load / store stuff too ?
+	(I think I will have to change them at least to be considered as doubles and longs)
+
+Input :
+	A method taking any-parameterized type.
+Output : 
+	A patch generated at the top of the method. This patch moving parameters to shift any-type variables inside
+	double and longs (not parameterized types which are normal always Objects).
+
+	shift_any_type_vars_parameters(String descriptor, ShiftMap shifts) {
+		params <— extract_parameters(descriptor)
+		method_size <— number_of_parameters(params)
+		any_counts <— number_of_any_parameters_in(params, 0, method_size - 1) // 0 Is useless because we always te front instance in the back class which is a Parameterized type. // The last parameter never influences the expansion		any_largest_size_sum <— PRIMITIVE_MAX_SIZE * any_counts
+
+		instances  = generate_all_instances(params) // Generates all instances representing the instantiations possible of the any values (1 or 2 if small primitive type, or a large one)
+		for c from any_counts to any_largest_size_sum : // From the cumulated size with all at 1 to all at 2
+			shift_offset <— any_largest_size_sum - c
+			for tuple in instances :
+				for i in tuple.size - 1… 0 :
+					p <—  tuple[i]:
+					if p == 1 : shift_offset <— shift_offset —;
+					if shift_offset == 0 : break;
+					shifts.put(key = i,
+							Map(shift_offset,
+								    runtime_key = encode_base3(tuple)))
+	}
+
+
+	dump_shift_header(ShiftMap shifts, MethodWriter mw) {
+		for e in shifts.enty():
+			var <— e.key()
+			for ee in e.enty():
+				offset <— ee.key()
+				tuples <— ee.value()
+				// Writing the code under the if_condition.
+				mw.visit_if_condition(compute_equal_to_one(tuples), move_param(var, offset))
+	}
+
+
+
+Where K is a placeholder for the current instantiation.
+The constant strings can be replaced by K if it contains K.
+
+if (K == "11010") {
+	dec j, 3
+}
+
+if (K == "11020_12010_21010") {
+	dec j, 2
+}
+
+if (K == "12020_21020_22010") {
+	dec j, 1
+}
+
+if (K == "11010_11020") {
+	dec v, 2
+	dec i, 2
+}
+
+if (K == "12010_12020_21010_21020") {
+	dec v, 1
+	dec i, 1
+}
+
+if (K == "11010_11020_12010_12020") {
+	dec u, 1
+}
+
+- Transform every DUP 1 -> 2 when talking to TypeVars (every time double slot)
+- Transform every XLOAD X -> XLOAD X + off when talking to known variable slots
+- Transform every if ("I" == Type) { iload X; } --> { iload X + off } considering the unique solution "22020"
+
+Use the constant caractere.
+
