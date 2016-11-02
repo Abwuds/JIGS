@@ -9,6 +9,8 @@ import rt.Opcodes;
 
 import java.util.*;
 
+import static specialization.ShiftMap.*;
+
 /**
  * Created by Jefferson Mangue on 12/06/2016.
  */
@@ -196,7 +198,9 @@ class BackMethodVisitor extends MethodVisitor {
 
         invokeAnyAdapter = new InvokeAnyAdapter(owner, methodName, invokeFieldAdapter, this);
         // Computation of the shiftMap.
-        System.out.println(ShiftMap.createShiftMap(Type.getType("(T0/Ljava/lang/Object;T1/Ljava/lang/Object;IT2/Ljava/lang/Object;F)V")));
+        ShiftMap shiftMap = createShiftMap(Type.getType("(T0/Ljava/lang/Object;T1/Ljava/lang/Object;IT2/Ljava/lang/Object;F)V"));
+        System.out.println(shiftMap);
+        System.out.println(ShiftMapDumper.dumpJavaCode(shiftMap));
     }
 
     /**
@@ -237,8 +241,11 @@ class BackMethodVisitor extends MethodVisitor {
         if (opcode == Opcodes.INVOKEVIRTUAL) {
             // Is a ParameterizedType or an Object.
             String normalizedOwner;
-            if (Type.isParameterizedType(owner)) { normalizedOwner = owner + ';';/*Type.rawDesc(owner);*/ }
-            else { normalizedOwner = 'L' + owner + ';'; }
+            if (Type.isParameterizedType(owner)) {
+                normalizedOwner = owner + ';';/*Type.rawDesc(owner);*/
+            } else {
+                normalizedOwner = 'L' + owner + ';';
+            }
             visitInvokeDynamicInsn(name, Type.eraseNotJavaLangMethod(insertReceiver("Ljava/lang/Object;", desc)), bsmRTBridge,
                     BackClassVisitor.HANDLE_RT_BSM_INVOKE_VIRTUAL_FROM_BACK, insertReceiver(normalizedOwner, desc));
             return;
@@ -246,9 +253,8 @@ class BackMethodVisitor extends MethodVisitor {
 
         // Static invocation
         if (opcode == Opcodes.INVOKESTATIC) {
-           // return;
+            // return;
         }
-
 
 
         if (!invokeAnyAdapter.visitMethodInsn(opcode, owner, name, desc, itf, true)) {
@@ -261,7 +267,9 @@ class BackMethodVisitor extends MethodVisitor {
         Type[] argumentTypes = type.getArgumentTypes();
         Type[] args = new Type[argumentTypes.length + 1];
         args[0] = Type.getType(receiver);
-        for (int i = 0; i < argumentTypes.length; i++) { args[i + 1] = argumentTypes[i]; }
+        for (int i = 0; i < argumentTypes.length; i++) {
+            args[i + 1] = argumentTypes[i];
+        }
         return Type.getMethodDescriptor(type.getReturnType(), args);
     }
 
@@ -270,7 +278,9 @@ class BackMethodVisitor extends MethodVisitor {
         if (!invokeAnyAdapter.visitFieldInsn(opcode, owner, name, desc)) {
             // Erasing all description contained in this class.
             owner = Type.rawName(owner);
-            if (owner.equals(this.frontOwner)) { owner = this.owner; }
+            if (owner.equals(this.frontOwner)) {
+                owner = this.owner;
+            }
             super.visitFieldInsn(opcode, owner, name, Type.eraseNotJavaLangReference(desc));
         }
     }
@@ -311,10 +321,9 @@ class BackMethodVisitor extends MethodVisitor {
             visitLdcInsn(key);
             visitLdcTypedString("Type test on : " + name.substring(0, 2), name); // Test on TX.
 
-            // TODO '==' instead of equals.
-            visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z", false);
             Label label = new Label();
-            visitJumpInsn(Opcodes.IFEQ, label);
+            visitJumpInsn(Opcodes.IF_ACMPNE, label);
+
             switch (typedOpcode) {
                 case 42: // Opcodes.ALOAD_0:
                 case 43: // Opcodes.ALOAD_1:

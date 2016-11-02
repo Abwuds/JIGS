@@ -3,10 +3,7 @@ package specialization;
 
 import org.objectweb.asm.Type;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A {@link ShiftMap} contains every shift offsets used to shift method's arguments which need
@@ -16,9 +13,9 @@ import java.util.Map;
  */
 public class ShiftMap {
 
-    private final HashMap<Integer, ArrayList<Integer>>[] data;
+    private final HashMap<Integer, ArrayList<AnyTernaryTuple>>[] data;
 
-    private ShiftMap(HashMap<Integer, ArrayList<Integer>>[] data) {
+    private ShiftMap(HashMap<Integer, ArrayList<AnyTernaryTuple>>[] data) {
         this.data = data;
     }
 
@@ -83,6 +80,10 @@ public class ShiftMap {
             return anySize;
         }
 
+        int[] getTuple() {
+            return tuple;
+        }
+
         private int computeAnySize(int[] tuple) {
             int result = 0;
             // The last parameter never count in this computation.
@@ -94,9 +95,8 @@ public class ShiftMap {
 
         @Override
         public String toString() {
-            return "Tuple : [ base3 : " + base3 + ", anySize : " + anySize + " tuple : " + Arrays.toString(tuple) + " ]";
+            return "Tuple : [ base3 : " + base3 + "]"; // ", anySize : " + anySize + " tuple : " + Arrays.toString(tuple) + " ]";
         }
-
     }
 
     /**
@@ -115,7 +115,7 @@ public class ShiftMap {
         Type[] params = methodDescriptor.getArgumentTypes();
         int anyCount = numberOfUsefulAnyParameters(params); // Summing all any except the last one which involve no shifts.
         int largestAnySum = 2 * anyCount; // Summing all important any by their max size (2 for doubles/longs)
-        HashMap<Integer, ArrayList<Integer>>[] data = initHashMap(params);
+        HashMap<Integer, ArrayList<AnyTernaryTuple>>[] data = initHashMap(params);
         ArrayList<AnyTernaryTuple> instances = generateAllInstances(params);
         System.out.println(instances);
 
@@ -137,9 +137,9 @@ public class ShiftMap {
         return new ShiftMap(data);
     }
 
-    private static HashMap<Integer, ArrayList<Integer>>[] initHashMap(Type[] params) {
+    private static HashMap<Integer, ArrayList<AnyTernaryTuple>>[] initHashMap(Type[] params) {
         int size = params.length;
-        HashMap<Integer, ArrayList<Integer>>[] hashMaps = new HashMap[size];
+        HashMap<Integer, ArrayList<AnyTernaryTuple>>[] hashMaps = new HashMap[size];
         for (int i = 0; i < size; i++) {
             hashMaps[i] = new HashMap<>();
         }
@@ -152,8 +152,8 @@ public class ShiftMap {
         StringBuilder sb = new StringBuilder("ShiftMap : \n");
         for (int i = 0; i < data.length; i++) {
             sb.append("\tShift of param : ").append(i).append(" :\n");
-            HashMap<Integer, ArrayList<Integer>> m = data[i];
-            for (Map.Entry<Integer, ArrayList<Integer>> e : m.entrySet()) {
+            HashMap<Integer, ArrayList<AnyTernaryTuple>> m = data[i];
+            for (Map.Entry<Integer, ArrayList<AnyTernaryTuple>> e : m.entrySet()) {
                 sb.append("\t\tMove ").append(e.getKey()).append(" for : ").append(e.getValue());
             }
             sb.append("\n");
@@ -161,18 +161,18 @@ public class ShiftMap {
         return sb.toString();
     }
 
-    private static void putOffsetInMap(HashMap<Integer, ArrayList<Integer>>[] data, int paramPos, int shiftOffset, AnyTernaryTuple tuple) {
-        HashMap<Integer, ArrayList<Integer>> offsets = data[paramPos];
+    private static void putOffsetInMap(HashMap<Integer, ArrayList<AnyTernaryTuple>>[] data, int paramPos, int shiftOffset, AnyTernaryTuple tuple) {
+        HashMap<Integer, ArrayList<AnyTernaryTuple>> offsets = data[paramPos];
         if (offsets == null) {
             offsets = new HashMap<>();
             data[paramPos] = offsets;
         }
-        ArrayList<Integer> base3IDs = offsets.get(shiftOffset);
+        ArrayList<AnyTernaryTuple> base3IDs = offsets.get(shiftOffset);
         if (base3IDs == null) {
             base3IDs = new ArrayList<>();
             offsets.put(shiftOffset, base3IDs);
         }
-        base3IDs.add(tuple.getBase3());
+        base3IDs.add(tuple);
     }
 
     /**
@@ -231,5 +231,33 @@ public class ShiftMap {
             count += params[i].getSort() == Type.TYPE_VAR ? 1 : 0;
         }
         return count;
+    }
+
+    /**
+     * Dumps a {@link ShiftMap} using ASM.
+     * Created by Jefferson Mangue on 24/10/2016.
+     */
+    public static class ShiftMapDumper {
+
+        public static String dumpJavaCode(ShiftMap map) {
+            Objects.requireNonNull(map);
+            StringBuilder sb = new StringBuilder("MethodHeader : \n");
+            HashMap<Integer, ArrayList<AnyTernaryTuple>>[] data = map.data;
+            for (int i = 0; i < data.length; i++) {
+                HashMap<Integer, ArrayList<AnyTernaryTuple>> offsets = data[i];
+                for (Map.Entry<Integer, ArrayList<AnyTernaryTuple>> e : offsets.entrySet()) {
+                    sb.append("if (");
+                    String separator = "";
+                    for (AnyTernaryTuple tuple : e.getValue()) {
+                        sb.append(separator).append(Arrays.toString(tuple.getTuple()));
+                        separator = " v ";
+                    }
+                    sb.append(") {\n\tdec(param[").append(i).append("], ").append(e.getKey()).append(')').append("\n}\n");
+                }
+            }
+            return sb.toString();
+        }
+
+        // TODO dump on a visitor.
     }
 }
