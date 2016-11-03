@@ -38,79 +38,7 @@ class BackMethodVisitor extends MethodVisitor {
                 new AbstractMap.SimpleEntry<>("J", Opcodes.LLOAD),
                 new AbstractMap.SimpleEntry<>("F", Opcodes.FLOAD),
                 new AbstractMap.SimpleEntry<>("D", Opcodes.DLOAD)));
-        INSTRS.put(Opcodes.ALOAD_0, Arrays.asList(
-                new AbstractMap.SimpleEntry<>("I", Opcodes.ILOAD),
-                new AbstractMap.SimpleEntry<>("B", Opcodes.ILOAD),
-                new AbstractMap.SimpleEntry<>("S", Opcodes.ILOAD),
-                new AbstractMap.SimpleEntry<>("C", Opcodes.ILOAD),
-                new AbstractMap.SimpleEntry<>("Z", Opcodes.ILOAD),
-                new AbstractMap.SimpleEntry<>("J", Opcodes.LLOAD),
-                new AbstractMap.SimpleEntry<>("F", Opcodes.FLOAD),
-                new AbstractMap.SimpleEntry<>("D", Opcodes.DLOAD)));
-        INSTRS.put(Opcodes.ALOAD_1, Arrays.asList(
-                new AbstractMap.SimpleEntry<>("I", Opcodes.ILOAD),
-                new AbstractMap.SimpleEntry<>("B", Opcodes.ILOAD),
-                new AbstractMap.SimpleEntry<>("S", Opcodes.ILOAD),
-                new AbstractMap.SimpleEntry<>("C", Opcodes.ILOAD),
-                new AbstractMap.SimpleEntry<>("Z", Opcodes.ILOAD),
-                new AbstractMap.SimpleEntry<>("J", Opcodes.LLOAD),
-                new AbstractMap.SimpleEntry<>("F", Opcodes.FLOAD),
-                new AbstractMap.SimpleEntry<>("D", Opcodes.DLOAD)));
-        INSTRS.put(Opcodes.ALOAD_2, Arrays.asList(
-                new AbstractMap.SimpleEntry<>("I", Opcodes.ILOAD),
-                new AbstractMap.SimpleEntry<>("B", Opcodes.ILOAD),
-                new AbstractMap.SimpleEntry<>("S", Opcodes.ILOAD),
-                new AbstractMap.SimpleEntry<>("C", Opcodes.ILOAD),
-                new AbstractMap.SimpleEntry<>("Z", Opcodes.ILOAD),
-                new AbstractMap.SimpleEntry<>("J", Opcodes.LLOAD),
-                new AbstractMap.SimpleEntry<>("F", Opcodes.FLOAD),
-                new AbstractMap.SimpleEntry<>("D", Opcodes.DLOAD)));
-        INSTRS.put(Opcodes.ALOAD_3, Arrays.asList(
-                new AbstractMap.SimpleEntry<>("I", Opcodes.ILOAD),
-                new AbstractMap.SimpleEntry<>("B", Opcodes.ILOAD),
-                new AbstractMap.SimpleEntry<>("S", Opcodes.ILOAD),
-                new AbstractMap.SimpleEntry<>("C", Opcodes.ILOAD),
-                new AbstractMap.SimpleEntry<>("Z", Opcodes.ILOAD),
-                new AbstractMap.SimpleEntry<>("J", Opcodes.LLOAD),
-                new AbstractMap.SimpleEntry<>("F", Opcodes.FLOAD),
-                new AbstractMap.SimpleEntry<>("D", Opcodes.DLOAD)));
         INSTRS.put(Opcodes.ASTORE, Arrays.asList(
-                new AbstractMap.SimpleEntry<>("I", Opcodes.ISTORE),
-                new AbstractMap.SimpleEntry<>("B", Opcodes.ISTORE),
-                new AbstractMap.SimpleEntry<>("S", Opcodes.ISTORE),
-                new AbstractMap.SimpleEntry<>("C", Opcodes.ISTORE),
-                new AbstractMap.SimpleEntry<>("Z", Opcodes.ISTORE),
-                new AbstractMap.SimpleEntry<>("J", Opcodes.LSTORE),
-                new AbstractMap.SimpleEntry<>("F", Opcodes.FSTORE),
-                new AbstractMap.SimpleEntry<>("D", Opcodes.DSTORE)));
-        INSTRS.put(Opcodes.ASTORE_0, Arrays.asList(
-                new AbstractMap.SimpleEntry<>("I", Opcodes.ISTORE),
-                new AbstractMap.SimpleEntry<>("B", Opcodes.ISTORE),
-                new AbstractMap.SimpleEntry<>("S", Opcodes.ISTORE),
-                new AbstractMap.SimpleEntry<>("C", Opcodes.ISTORE),
-                new AbstractMap.SimpleEntry<>("Z", Opcodes.ISTORE),
-                new AbstractMap.SimpleEntry<>("J", Opcodes.LSTORE),
-                new AbstractMap.SimpleEntry<>("F", Opcodes.FSTORE),
-                new AbstractMap.SimpleEntry<>("D", Opcodes.DSTORE)));
-        INSTRS.put(Opcodes.ASTORE_1, Arrays.asList(
-                new AbstractMap.SimpleEntry<>("I", Opcodes.ISTORE),
-                new AbstractMap.SimpleEntry<>("B", Opcodes.ISTORE),
-                new AbstractMap.SimpleEntry<>("S", Opcodes.ISTORE),
-                new AbstractMap.SimpleEntry<>("C", Opcodes.ISTORE),
-                new AbstractMap.SimpleEntry<>("Z", Opcodes.ISTORE),
-                new AbstractMap.SimpleEntry<>("J", Opcodes.LSTORE),
-                new AbstractMap.SimpleEntry<>("F", Opcodes.FSTORE),
-                new AbstractMap.SimpleEntry<>("D", Opcodes.DSTORE)));
-        INSTRS.put(Opcodes.ASTORE_2, Arrays.asList(
-                new AbstractMap.SimpleEntry<>("I", Opcodes.ISTORE),
-                new AbstractMap.SimpleEntry<>("B", Opcodes.ISTORE),
-                new AbstractMap.SimpleEntry<>("S", Opcodes.ISTORE),
-                new AbstractMap.SimpleEntry<>("C", Opcodes.ISTORE),
-                new AbstractMap.SimpleEntry<>("Z", Opcodes.ISTORE),
-                new AbstractMap.SimpleEntry<>("J", Opcodes.LSTORE),
-                new AbstractMap.SimpleEntry<>("F", Opcodes.FSTORE),
-                new AbstractMap.SimpleEntry<>("D", Opcodes.DSTORE)));
-        INSTRS.put(Opcodes.ASTORE_3, Arrays.asList(
                 new AbstractMap.SimpleEntry<>("I", Opcodes.ISTORE),
                 new AbstractMap.SimpleEntry<>("B", Opcodes.ISTORE),
                 new AbstractMap.SimpleEntry<>("S", Opcodes.ISTORE),
@@ -214,7 +142,7 @@ class BackMethodVisitor extends MethodVisitor {
      */
     private void writeHeader() {
         System.out.println(shiftMap);
-        System.out.println(ShiftMapDumper.dumpJavaCode(shiftMap));
+        System.out.println("Debug dump : " + ShiftMapDumper.dumpJavaDebugCode(shiftMap) + "\nend");
     }
 
     /**
@@ -309,19 +237,8 @@ class BackMethodVisitor extends MethodVisitor {
         super.visitInvokeDynamicInsn(name, desc, bsm, bsmArgs);
     }
 
-    private void noReplacedTyped(String name, int typedOpcode) {
-        super.visitTypedInsn(name, typedOpcode);
-        // TODO replace this by the switch of typed opcode.
-        if (typedOpcode <= Opcodes.ALOAD_0 || typedOpcode <= Opcodes.ALOAD_3) {
-            visitVarInsn(Opcodes.ALOAD, typedOpcode - Opcodes.ALOAD_0);
-            return;
-        }
-        visitInsn(typedOpcode);
-    }
-
     @Override
-    public void visitTypedInsn(String name, int typedOpcode) {
-        // noReplacedTyped(name, typedOpcode);
+    public void visitTypedTypeInsnWithParameter(String name, int typedOpcode, int parameter) {
 
         end = new Label();
         List<AbstractMap.SimpleEntry<String, Integer>> tests = INSTRS.get(typedOpcode);
@@ -331,39 +248,29 @@ class BackMethodVisitor extends MethodVisitor {
 
         for (Map.Entry<String, Integer> test : tests) {
             String key = test.getKey();
-            int newOpcode = test.getValue();
             visitLdcInsn(key);
             visitLdcTypedString("Type test on : " + name.substring(0, 2), name); // Test on TX.
 
             Label label = new Label();
             visitJumpInsn(Opcodes.IF_ACMPNE, label);
 
+            int newOpcode = test.getValue();
             switch (typedOpcode) {
-                case 42: // Opcodes.ALOAD_0:
-                case 43: // Opcodes.ALOAD_1:
-                case 44: // Opcodes.ALOAD_2:
-                case 45: // Opcodes.ALOAD_3:
-                    visitVarInsn(newOpcode, typedOpcode - Opcodes.ALOAD_0);
+                case Opcodes.ALOAD:
+                case Opcodes.ASTORE:
+                    visitVarInsn(newOpcode, parameter);
                     break;
-                case 75: //Opcodes.ASTORE_0:
-                case 76: //Opcodes.ASTORE_1:
-                case 77: //Opcodes.ASTORE_2:
-                case 78: //Opcodes.ASTORE_3:
-                    visitVarInsn(newOpcode, typedOpcode - Opcodes.ASTORE_0);
-                    break;
-                case 83: // Opcodes.AASTORE:
-                case 50: // Opcodes.AALOAD:
+                case Opcodes.AASTORE:
+                case Opcodes.AALOAD:
+                case Opcodes.ARETURN:
                     visitInsn(newOpcode);
                     break;
-                case 176: // Opcodes.ARETURN:
-                    visitInsn(newOpcode);
-                    break;
-                case 189: // Opcodes.ANEWARRAY:
+                case Opcodes.ANEWARRAY:
                     visitIntInsn(Opcodes.NEWARRAY, newOpcode);
                     break;
                 default:
                     // TODO ACONST_NULL, AASTORE, AALOAD.
-                    System.err.println("BackMethodVisitor#visitTypedInsn : TypedCode not handled : " + typedOpcode);
+                    System.err.println("BackMethodVisitor#visitTypedTypeInsnWithParameter : TypedCode not handled : " + typedOpcode);
                     break;
             }
             visitJumpInsn(Opcodes.GOTO, end);
@@ -379,8 +286,37 @@ class BackMethodVisitor extends MethodVisitor {
             // Visiting the following CHECKCAST and visitLabel(end) inside the BackMethodVisitor#visitTypeIns to not
             // Put the end label before the following CHECKCAST, and also retrieve right informations for it.
         } else {
-            visitInsn(typedOpcode);
+            if (parameter == -1) {
+                visitInsn(typedOpcode);
+            } else {
+                visitVarInsn(typedOpcode, parameter);
+            }
             visitLabel(end);
+        }
+    }
+
+    @Override
+    public void visitTypedInsn(String name, int typedOpcode) {
+        switch (typedOpcode) {
+            case Opcodes.ALOAD_0:
+            case Opcodes.ALOAD_1:
+            case Opcodes.ALOAD_2:
+            case Opcodes.ALOAD_3: {
+                int parameter = typedOpcode - Opcodes.ALOAD_0;
+                visitTypedTypeInsnWithParameter(name, Opcodes.ALOAD, parameter);
+                break;
+            }
+            case Opcodes.ASTORE_0:
+            case Opcodes.ASTORE_1:
+            case Opcodes.ASTORE_2:
+            case Opcodes.ASTORE_3: {
+                int parameter = typedOpcode - Opcodes.ASTORE_0;
+                visitTypedTypeInsnWithParameter(name, Opcodes.ASTORE, parameter);
+                break;
+            }
+            default:
+                visitTypedTypeInsnWithParameter(name, typedOpcode, -1);
+                break;
         }
     }
 

@@ -1,6 +1,8 @@
 package specialization;
 
 
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
 import java.util.*;
@@ -95,7 +97,7 @@ public class ShiftMap {
 
         @Override
         public String toString() {
-            return "Tuple : [ base3 : " + base3 + "]"; // ", anySize : " + anySize + " tuple : " + Arrays.toString(tuple) + " ]";
+            return "Tuple : [ " + Arrays.toString(tuple) + "]"; // ", anySize : " + anySize + " tuple : " + Arrays.toString(tuple) + " ]";
         }
     }
 
@@ -114,16 +116,16 @@ public class ShiftMap {
 
         Type[] params = methodDescriptor.getArgumentTypes();
         int anyCount = numberOfUsefulAnyParameters(params); // Summing all any except the last one which involve no shifts.
-        int largestAnySum = 2 * anyCount; // Summing all important any by their max size (2 for doubles/longs)
+        int largestAnySize = 2 * anyCount; // Summing all important any by their max size (2 for doubles/longs)
         HashMap<Integer, ArrayList<AnyTernaryTuple>>[] data = initHashMap(params);
         ArrayList<AnyTernaryTuple> instances = generateAllInstances(params);
         System.out.println(instances);
 
 
         for (AnyTernaryTuple tuple : instances) {
-            int shiftOffset = largestAnySum - tuple.getAnySize();
-            System.out.println("For tuple : " + tuple + " Moving : " + shiftOffset + " with largestAnySum : " + largestAnySum);
-            for (int paramPos = tuple.size() - 1; paramPos >= 0; paramPos--) {
+            int shiftOffset = largestAnySize - tuple.getAnySize();
+            System.out.println("For tuple : " + tuple + " Moving at most of : " + shiftOffset + " offsets giving a largest any size of : " + largestAnySize);
+            for (int paramPos = tuple.size() - 1; paramPos >= 0 && shiftOffset > 0; paramPos--) {
                 if (tuple.get(paramPos) == 1) {
                     shiftOffset--;
                 }
@@ -237,9 +239,9 @@ public class ShiftMap {
      * Dumps a {@link ShiftMap} using ASM.
      * Created by Jefferson Mangue on 24/10/2016.
      */
-    public static class ShiftMapDumper {
+    static class ShiftMapDumper {
 
-        public static String dumpJavaCode(ShiftMap map) {
+        static String dumpJavaDebugCode(ShiftMap map) {
             Objects.requireNonNull(map);
             StringBuilder sb = new StringBuilder("MethodHeader : \n");
             HashMap<Integer, ArrayList<AnyTernaryTuple>>[] data = map.data;
@@ -258,6 +260,15 @@ public class ShiftMap {
             return sb.toString();
         }
 
-        // TODO dump on a visitor.
+        static void writeHeader(ShiftMap map, MethodVisitor visitor) {
+            Label end = new Label();
+
+            HashMap<Integer, ArrayList<AnyTernaryTuple>>[] data = map.data;
+            for (HashMap<Integer, ArrayList<AnyTernaryTuple>> offsets : data) {
+                for (Map.Entry<Integer, ArrayList<AnyTernaryTuple>> e : offsets.entrySet()) {
+                    // TODO
+                }
+            }
+        }
     }
 }
