@@ -6,13 +6,13 @@ import java.util.AbstractMap;
 public class EqualatorMain {
 
     public static void main(String[] args) {
-        Holder<int> h = new Holder<int>(3);
-        Holder<int> h2 = new Holder<int>(3);
-        Equalator<int> eq = new Equalator<int>(h, h2);
+        Holder<double> h = new Holder<double>(4.2);
+        Holder<double> h2 = new Holder<double>(4.2);
+        Equalator<double> eq = new Equalator<double>(h, h2);
         System.out.println(Boolean.toString(eq.isEquals()));
         h.f();
 
-        QuadrupleHolder<int, float, byte, char> quadrupleHolder = new QuadrupleHolder<int, float, byte, char>(1, 2.2f, (byte)3, 'a');
+        QuadrupleHolder<double, float, byte, char> quadrupleHolder = new QuadrupleHolder<double, float, byte, char>(6.6, 2.2f, (byte)3, 'a');
         quadrupleHolder.print();
     }
 }
