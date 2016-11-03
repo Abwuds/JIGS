@@ -167,16 +167,26 @@ class BackMethodVisitor extends MethodVisitor {
     private final String owner;
     private final InvokeAnyAdapter invokeAnyAdapter;
     private final Handle bsmRTBridge;
+    private final ShiftMap shiftMap;
 
     // Variable for the anewarray substitution.
     private boolean isInstallingANewArray;
     private Label end;
 
-    BackMethodVisitor(int api, String methodName, String frontOwner, String owner, String descriptor, MethodVisitor mv) {
+
+    static BackMethodVisitor createBackMethodVisitor(int api, String methodName, String frontOwner, String owner, String descriptor, MethodVisitor mv) {
+        // ShiftMap shiftMap = createShiftMap(Type.getType("(T0/Ljava/lang/Object;T1/Ljava/lang/Object;IT2/Ljava/lang/Object;F)V"));
+        BackMethodVisitor methodVisitor = new BackMethodVisitor(api, methodName, frontOwner, owner, createShiftMap(Type.getType(descriptor)), mv);
+        methodVisitor.writeHeader();
+        return methodVisitor;
+    }
+
+    private BackMethodVisitor(int api, String methodName, String frontOwner, String owner, ShiftMap shiftMap, MethodVisitor mv) {
         super(api, mv);
         this.methodName = methodName;
         this.frontOwner = frontOwner;
         this.owner = owner;
+        this.shiftMap = shiftMap;
         bsmRTBridge = new Handle(Opcodes.H_INVOKESTATIC, owner, BackClassVisitor.BSM_RT_BRIDGE, BackClassVisitor.BSM_RT_BRIDGE_DESC, false);
 
         InvokeAnyAdapter.InvokeFieldAdapter invokeFieldAdapter = new InvokeAnyAdapter.InvokeFieldAdapter() {
@@ -197,8 +207,12 @@ class BackMethodVisitor extends MethodVisitor {
         };
 
         invokeAnyAdapter = new InvokeAnyAdapter(owner, methodName, invokeFieldAdapter, this);
-        // Computation of the shiftMap.
-        ShiftMap shiftMap = createShiftMap(Type.getType("(T0/Ljava/lang/Object;T1/Ljava/lang/Object;IT2/Ljava/lang/Object;F)V"));
+    }
+
+    /**
+     * Appends the shift header allowing the shift of small sized parameters in the descriptor.
+     */
+    private void writeHeader() {
         System.out.println(shiftMap);
         System.out.println(ShiftMapDumper.dumpJavaCode(shiftMap));
     }
@@ -375,5 +389,4 @@ class BackMethodVisitor extends MethodVisitor {
         mv.visitLdcInsn(msg);
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
     }
-
 }

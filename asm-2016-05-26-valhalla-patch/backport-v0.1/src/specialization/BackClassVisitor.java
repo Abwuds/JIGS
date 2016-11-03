@@ -75,7 +75,7 @@ public class BackClassVisitor extends ClassVisitor {
             methodDescriptor = insertMethodArgumentType(desc, Type.getType(Object.class));
         }
         System.out.println("STATIC INVOCATION : access = [" + access + "], name = [" + name + "], desc = [" + desc + "], signature = [" + signature + "], exceptions = [" + exceptions + "]");
-        return new BackMethodVisitor(api, name, frontName, this.name, methodDescriptor, super.visitMethod(methodAccess, name, methodDescriptor, null, exceptions));
+        return BackMethodVisitor.createBackMethodVisitor(api, name, frontName, this.name, methodDescriptor, super.visitMethod(methodAccess, name, methodDescriptor, null, exceptions));
     }
 
     public String getName() {
