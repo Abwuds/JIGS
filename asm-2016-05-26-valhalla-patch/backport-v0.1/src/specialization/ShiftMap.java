@@ -264,9 +264,10 @@ public class ShiftMap {
             Label end = new Label();
 
             HashMap<Integer, ArrayList<AnyTernaryTuple>>[] data = map.data;
-            for (HashMap<Integer, ArrayList<AnyTernaryTuple>> offsets : data) {
-                for (Map.Entry<Integer, ArrayList<AnyTernaryTuple>> e : offsets.entrySet()) {
-                    // TODO
+            for (int i = data.length - 1; i >= 0; i--) {
+                    System.out.println("Parameter : " + i);
+                for (Map.Entry<Integer, ArrayList<AnyTernaryTuple>> e : data[i].entrySet()) {
+                    System.out.println("Shift : " + e.getKey() + " at : " + e.getValue());
                 }
             }
         }

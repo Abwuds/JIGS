@@ -142,7 +142,7 @@ class BackMethodVisitor extends MethodVisitor {
      */
     private void writeHeader() {
         System.out.println(shiftMap);
-        System.out.println("Debug dump : " + ShiftMapDumper.dumpJavaDebugCode(shiftMap) + "\nend");
+        ShiftMapDumper.writeHeader(shiftMap, this);
     }
 
     /**
