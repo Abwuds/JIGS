@@ -466,7 +466,7 @@ class MethodWriter extends MethodVisitor {
         // Translating the descriptor into valid Java 8- descriptor.
         // And registering the UTF8 if typed with TypeVar.
         String retroDesc = Type.translateMethodDescriptor(desc);
-        this.desc = cw.newTypedUTF8(name, desc);
+        this.desc = cw.newPlaceHolderOrBasicUTF8(name, desc);
         this.descriptor = retroDesc;
         if (ClassReader.SIGNATURES) {
             this.signature = signature;
@@ -823,7 +823,7 @@ class MethodWriter extends MethodVisitor {
     @Override
     public void visitTypedTypeInsn(final int opcode, final String owner, final String desc) {
         lastCodeOffset = code.length;
-        Item i = cw.newTypedClassItem(owner, desc);
+        Item i = cw.newPlaceHolderClassItem(owner, desc);
         // Label currentBlock = this.currentBlock;
         if (currentBlock != null) {
             if (compute == FRAMES) {
@@ -1148,9 +1148,10 @@ class MethodWriter extends MethodVisitor {
     }
 
     @Override
-    public void visitLdcTypedString(final String owner, final String cst) {
+    public void visitLdcPlaceHolderString(final String owner, final String cst) {
         lastCodeOffset = code.length;
-        Item i = cw.newTypedStringItem(owner, cst);
+        System.out.println("visitLdcPlaceHolderString : owner = [" + owner + "], cst = [" + cst + "]");
+        Item i = cw.newPlaceHolderStringItem(owner, cst);
         // Label currentBlock = this.currentBlock;
         if (currentBlock != null) {
             if (compute == FRAMES) {

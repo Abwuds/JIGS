@@ -4,6 +4,7 @@ package specialization;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
+import rt.Opcodes;
 
 import java.util.*;
 
@@ -16,9 +17,14 @@ import java.util.*;
 public class ShiftMap {
 
     private final HashMap<Integer, ArrayList<AnyTernaryTuple>>[] data;
+    /**
+     * Either the i_eth parameter is any or not in the method's descriptor.
+     */
+    private final boolean[] isAny;
 
-    private ShiftMap(HashMap<Integer, ArrayList<AnyTernaryTuple>>[] data) {
+    private ShiftMap(HashMap<Integer, ArrayList<AnyTernaryTuple>>[] data, boolean[] isAny) {
         this.data = data;
+        this.isAny = isAny;
     }
 
     /**
@@ -33,12 +39,14 @@ public class ShiftMap {
         private final int[] tuple;
         private final int base3;
         private final int anySize;
+        private final String encode;
 
         AnyTernaryTuple(int[] tuple) {
             checkTuple(tuple);
             this.tuple = tuple;
             this.base3 = computeBase3(tuple);
             this.anySize = computeAnySize(tuple);
+            this.encode = computeEncode(tuple);
         }
 
         /**
@@ -50,6 +58,14 @@ public class ShiftMap {
                     throw new IllegalArgumentException("The tuple passed has to contain only elements in {0, 1, 2}.");
                 }
             }
+        }
+
+        private String computeEncode(int[] tuple) {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < tuple.length; i++) {
+                sb.append(tuple[i]);
+            }
+            return sb.toString();
         }
 
         /**
@@ -99,6 +115,10 @@ public class ShiftMap {
         public String toString() {
             return "Tuple : [ " + Arrays.toString(tuple) + "]"; // ", anySize : " + anySize + " tuple : " + Arrays.toString(tuple) + " ]";
         }
+
+        public String getEncode() {
+            return encode;
+        }
     }
 
     /**
@@ -113,13 +133,26 @@ public class ShiftMap {
             throw new IllegalArgumentException("The argument methodDescriptor has to be a METHOD instead of" +
                     methodDescriptor);
         }
-
         Type[] params = methodDescriptor.getArgumentTypes();
+        boolean[] isAny = computeIsAny(params);
+
+        HashMap<Integer, ArrayList<AnyTernaryTuple>>[] data = computeShiftMapOffsets(params, methodDescriptor);
+        return new ShiftMap(data, isAny);
+    }
+
+    public static boolean[] computeIsAny(Type[] params) {
+        boolean[] isAny = new boolean[params.length];
+        for (int i = 0; i < params.length; i++) {
+            isAny[i] = params[i].isTypeVar();
+        }
+        return isAny;
+    }
+
+    public static HashMap<Integer, ArrayList<AnyTernaryTuple>>[] computeShiftMapOffsets(Type[] params, Type methodDescriptor) {
         int anyCount = numberOfUsefulAnyParameters(params); // Summing all any except the last one which involve no shifts.
         int largestAnySize = 2 * anyCount; // Summing all important any by their max size (2 for doubles/longs)
         HashMap<Integer, ArrayList<AnyTernaryTuple>>[] data = initHashMap(params);
         ArrayList<AnyTernaryTuple> instances = generateAllInstances(params);
-        System.out.println(instances);
 
 
         for (AnyTernaryTuple tuple : instances) {
@@ -136,7 +169,7 @@ public class ShiftMap {
 
             }
         }
-        return new ShiftMap(data);
+        return data;
     }
 
     private static HashMap<Integer, ArrayList<AnyTernaryTuple>>[] initHashMap(Type[] params) {
@@ -265,11 +298,34 @@ public class ShiftMap {
 
             HashMap<Integer, ArrayList<AnyTernaryTuple>>[] data = map.data;
             for (int i = data.length - 1; i >= 0; i--) {
-                    System.out.println("Parameter : " + i);
                 for (Map.Entry<Integer, ArrayList<AnyTernaryTuple>> e : data[i].entrySet()) {
-                    System.out.println("Shift : " + e.getKey() + " at : " + e.getValue());
+                    // Offset and instantiations for this offset.
+                    ArrayList<AnyTernaryTuple> instantiations = e.getValue();
+                    Integer offset = e.getKey();
+                    // Loading condition between the instantiation placeholder and the instantiation string.
+                    visitor.visitLdcPlaceHolderString(BackClassVisitor.RT_METHOD_INSTANTIATION_TYPE, "INSTANTIATION"); // Test on TX.
+                    visitor.visitLdcPlaceHolderString(BackClassVisitor.RT_METHOD_INSTANTIATIONS_TEST_TYPE, computeInstantiations(instantiations));
+                    Label label = new Label();
+                    visitor.visitJumpInsn(Opcodes.IF_ACMPNE, label);
+                    // Doing.
+                    boolean isAny = map.isAny[i];
+                    // The name does not matter.
+                    visitor.visitTypedTypeInsnWithParameter("T" + i, Opcodes.ALOAD, i);
+                    visitor.visitTypedTypeInsnWithParameter("T" + i, Opcodes.ASTORE, i);
+                    // Else.
+                    visitor.visitLabel(label);
                 }
             }
+        }
+
+        private static String computeInstantiations(ArrayList<AnyTernaryTuple> tuples) {
+            StringBuilder sb = new StringBuilder();
+            String separator = "";
+            for (AnyTernaryTuple tuple : tuples) {
+                sb.append(separator).append(tuple.getEncode());
+                separator = "_";
+            }
+            return sb.toString();
         }
     }
 }
