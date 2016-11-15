@@ -2,7 +2,6 @@ package specialization;
 
 
 import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import rt.Opcodes;
 
@@ -21,10 +20,18 @@ public class ShiftMap {
      * Either the i_eth parameter is any or not in the method's descriptor.
      */
     private final boolean[] isAny;
+    private final String methodName;
+    private final String methodDescriptor;
+    private final String[] descriptors;
+    private final HashMap<Integer, Integer> finalOffsets;
 
-    private ShiftMap(HashMap<Integer, ArrayList<AnyTernaryTuple>>[] data, boolean[] isAny) {
+    private ShiftMap(HashMap<Integer, ArrayList<AnyTernaryTuple>>[] data, boolean[] isAny, String methodName, String[] descriptors, String methodDescriptor, HashMap<Integer, Integer> finalOffsets) {
         this.data = data;
         this.isAny = isAny;
+        this.methodName = methodName;
+        this.methodDescriptor = methodDescriptor;
+        this.descriptors = descriptors;
+        this.finalOffsets = finalOffsets;
     }
 
     /**
@@ -116,7 +123,7 @@ public class ShiftMap {
             return "Tuple : [ " + Arrays.toString(tuple) + "]"; // ", anySize : " + anySize + " tuple : " + Arrays.toString(tuple) + " ]";
         }
 
-        public String getEncode() {
+        String getEncode() {
             return encode;
         }
     }
@@ -127,7 +134,8 @@ public class ShiftMap {
      * @param methodDescriptor the method descriptor which has to be of TYPE.METHOD.
      * @return the {@link ShiftMap} requested, correctly parameterized.
      */
-    public static ShiftMap createShiftMap(Type methodDescriptor) {
+    static ShiftMap createShiftMap(String methodName, Type methodDescriptor, boolean isStatic) {
+        System.out.println("Shifmap for method : " + methodName + " desc : " + methodDescriptor);
         // Checking types.
         if (methodDescriptor.getSort() != Type.METHOD) {
             throw new IllegalArgumentException("The argument methodDescriptor has to be a METHOD instead of" +
@@ -136,11 +144,39 @@ public class ShiftMap {
         Type[] params = methodDescriptor.getArgumentTypes();
         boolean[] isAny = computeIsAny(params);
 
-        HashMap<Integer, ArrayList<AnyTernaryTuple>>[] data = computeShiftMapOffsets(params, methodDescriptor);
-        return new ShiftMap(data, isAny);
+        HashMap<Integer, ArrayList<AnyTernaryTuple>>[] data = computeShiftMapOffsets(params);
+        String[] descriptors = new String[params.length];
+        for (int i = 0; i < params.length; i++) {
+            descriptors[i] = params[i].getDescriptor();
+        }
+
+        // Computing final offsets of each parameter having an old offset.
+        HashMap<Integer, Integer> finalOffsets = new HashMap<>();
+        // Param 0 in method of a Backfactory class is always the front this. Otherwise, (<init>) it has to start by 1,1.
+        int offset = isStatic ? 0 : 1;
+        int oldOffsets = isStatic ? 0 : 1;
+        for (Type param : params) {
+            finalOffsets.put(oldOffsets, offset);
+            switch (param.getSort()) {
+                case Type.TYPE_VAR:
+                    oldOffsets += 1;
+                    offset += 2;
+                    break;
+                case Type.DOUBLE:
+                case Type.LONG:
+                    oldOffsets += 2;
+                    offset += 2;
+                    break;
+                default:
+                    oldOffsets += 1;
+                    offset += 1;
+                    break;
+            }
+        }
+        return new ShiftMap(data, isAny, methodName, descriptors, methodDescriptor.getDescriptor(), finalOffsets);
     }
 
-    public static boolean[] computeIsAny(Type[] params) {
+    private static boolean[] computeIsAny(Type[] params) {
         boolean[] isAny = new boolean[params.length];
         for (int i = 0; i < params.length; i++) {
             isAny[i] = params[i].isTypeVar();
@@ -148,7 +184,7 @@ public class ShiftMap {
         return isAny;
     }
 
-    public static HashMap<Integer, ArrayList<AnyTernaryTuple>>[] computeShiftMapOffsets(Type[] params, Type methodDescriptor) {
+    private static HashMap<Integer, ArrayList<AnyTernaryTuple>>[] computeShiftMapOffsets(Type[] params) {
         int anyCount = numberOfUsefulAnyParameters(params); // Summing all any except the last one which involve no shifts.
         int largestAnySize = 2 * anyCount; // Summing all important any by their max size (2 for doubles/longs)
         HashMap<Integer, ArrayList<AnyTernaryTuple>>[] data = initHashMap(params);
@@ -159,7 +195,8 @@ public class ShiftMap {
             int shiftOffset = largestAnySize - tuple.getAnySize();
             System.out.println("For tuple : " + tuple + " Moving at most of : " + shiftOffset + " offsets giving a largest any size of : " + largestAnySize);
             for (int paramPos = tuple.size() - 1; paramPos >= 0 && shiftOffset > 0; paramPos--) {
-                if (tuple.get(paramPos) == 1) {
+                // Decreasing the shift value. The last parameter does not count in the decrease step.
+                if (paramPos < tuple.size() - 1 && tuple.get(paramPos) == 1) {
                     shiftOffset--;
                 }
                 if (shiftOffset == 0) {
@@ -181,6 +218,14 @@ public class ShiftMap {
         return hashMaps;
     }
 
+
+    int getNewParameterShifted(int parameter) {
+        if (!finalOffsets.containsKey(parameter)) {
+            throw new IllegalStateException("Shiftmap of method : " + methodName + " does not contain key : " + parameter +
+                    " current offsets : " + finalOffsets);
+        }
+        return finalOffsets.get(parameter);
+    }
 
     @Override
     public String toString() {
@@ -230,7 +275,7 @@ public class ShiftMap {
      *
      * @param params   the list of parameters to instantiate.
      * @param tuples   the list filled which will contain every instantiation.
-     * @param instance the current instance filled. It will be duplicated for each TypeVariable contained in params.
+     * @param instance the current instance filled. It will be duplicated for each TypeVariable contained in descriptors.
      * @param index    the current index of the recursion.
      */
     private static void generateInstance(Type[] params, ArrayList<AnyTernaryTuple> tuples, int[] instance, int index) {
@@ -257,7 +302,7 @@ public class ShiftMap {
 
     /**
      * @param params
-     * @return the number of anyfied parameters useful, that are taking in account when shifting parameters inside the params list.
+     * @return the number of anyfied parameters useful, that are taking in account when shifting parameters inside the descriptors list.
      * The last parameter is not useful since it does not involve in any shift.
      */
     private static int numberOfUsefulAnyParameters(Type[] params) {
@@ -293,8 +338,8 @@ public class ShiftMap {
             return sb.toString();
         }
 
-        static void writeHeader(ShiftMap map, MethodVisitor visitor) {
-            Label end = new Label();
+        static void writeHeader(ShiftMap map, BackMethodVisitor visitor) {
+            // Label end = new Label();
 
             HashMap<Integer, ArrayList<AnyTernaryTuple>>[] data = map.data;
             for (int i = data.length - 1; i >= 0; i--) {
@@ -303,19 +348,29 @@ public class ShiftMap {
                     ArrayList<AnyTernaryTuple> instantiations = e.getValue();
                     Integer offset = e.getKey();
                     // Loading condition between the instantiation placeholder and the instantiation string.
-                    visitor.visitLdcPlaceHolderString(BackClassVisitor.RT_METHOD_INSTANTIATION_TYPE, "INSTANTIATION"); // Test on TX.
-                    visitor.visitLdcPlaceHolderString(BackClassVisitor.RT_METHOD_INSTANTIATIONS_TEST_TYPE, computeInstantiations(instantiations));
+                    // The key in the substitutionMap, the constant value to show in the class, the value in the substitutionMap, either this is a TypeVar manipulation or not.
+                    visitor.visitLdcPlaceHolderString(BackClassVisitor.RT_METHOD_INSTANTIATION_TYPE_KEY, "INSTANTIATION", map.methodName + '_' + map.methodDescriptor, false); // Test on TX.
+                    String instantiation = computeInstantiations(instantiations);
+                    visitor.visitLdcPlaceHolderString(BackClassVisitor.RT_METHOD_INSTANTIATIONS_TYPE_TESTS, instantiation, map.methodName + '_' + instantiation, false);
                     Label label = new Label();
                     visitor.visitJumpInsn(Opcodes.IF_ACMPNE, label);
-                    // Doing.
-                    boolean isAny = map.isAny[i];
-                    // The name does not matter.
-                    visitor.visitTypedTypeInsnWithParameter("T" + i, Opcodes.ALOAD, i);
-                    visitor.visitTypedTypeInsnWithParameter("T" + i, Opcodes.ASTORE, i);
+                    // Parameter index.
+                    int j = i + 1;
+                    if (map.isAny[i]) {
+                        String descriptor = map.descriptors[i];
+                        // Visiting any parameter.
+                        visitor.visitTypeVarSpecialization(descriptor, Opcodes.ALOAD, map.getNewParameterShifted(j) - offset);
+                        visitor.visitTypeVarSpecialization(descriptor, Opcodes.ASTORE, map.getNewParameterShifted(j));
+                    } else {
+                        // Visiting non any parameter.
+                        visitor.visitVarInsn(Opcodes.ALOAD, j);
+                        visitor.visitVarInsn(Opcodes.ASTORE, j + offset);
+                    }
                     // Else.
                     visitor.visitLabel(label);
                 }
             }
+            // visitor.visitLabel(end);
         }
 
         private static String computeInstantiations(ArrayList<AnyTernaryTuple> tuples) {

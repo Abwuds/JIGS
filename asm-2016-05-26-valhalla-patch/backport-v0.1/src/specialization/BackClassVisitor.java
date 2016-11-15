@@ -77,7 +77,7 @@ public class BackClassVisitor extends ClassVisitor {
             // Inserting the front name. Erasure of : Type.getType('L' + frontName + ';')
             methodDescriptor = insertMethodArgumentType(desc, Type.getType(Object.class));
         }
-        return BackMethodVisitor.createBackMethodVisitor(api, name, frontName, this.name, methodDescriptor, super.visitMethod(methodAccess, name, methodDescriptor, null, exceptions));
+        return BackMethodVisitor.createBackMethodVisitor(api, name, frontName, this.name, methodDescriptor, methodAccess, super.visitMethod(methodAccess, name, methodDescriptor, null, exceptions));
     }
 
     public String getName() {

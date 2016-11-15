@@ -102,9 +102,9 @@ class BackMethodVisitor extends MethodVisitor {
     private Label end;
 
 
-    static BackMethodVisitor createBackMethodVisitor(int api, String methodName, String frontOwner, String owner, String descriptor, MethodVisitor mv) {
-        // ShiftMap shiftMap = createShiftMap(Type.getType("(T0/Ljava/lang/Object;T1/Ljava/lang/Object;IT2/Ljava/lang/Object;F)V"));
-        return new BackMethodVisitor(api, methodName, frontOwner, owner, createShiftMap(methodName, Type.getType(descriptor)), mv);
+    static BackMethodVisitor createBackMethodVisitor(int api, String methodName, String frontOwner, String owner, String descriptor, int methodAccess, MethodVisitor mv) {
+        ShiftMap shiftMap = createShiftMap(methodName, Type.getType(descriptor), (methodAccess & Opcodes.ACC_STATIC) > 0);
+        return new BackMethodVisitor(api, methodName, frontOwner, owner, shiftMap, mv);
     }
 
     private BackMethodVisitor(int api, String methodName, String frontOwner, String owner, ShiftMap shiftMap, MethodVisitor mv) {

@@ -1154,7 +1154,6 @@ public class ClassWriter extends ClassVisitor {
      */
     public int newPossiblyTypedUTF8(final String owner, final String value) {
         // Getting the current descriptor index.
-        System.out.println("OWNER : " + owner + " TYPE : " + value);
         Type type = Type.getType(value);
         // Translating the descriptor (can be a parameterized type too).
         String desc = Type.translateType(type);
