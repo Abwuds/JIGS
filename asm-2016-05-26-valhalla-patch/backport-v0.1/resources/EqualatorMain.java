@@ -14,6 +14,8 @@ public class EqualatorMain {
 
         DoubleHolder<double, byte> d = new DoubleHolder<double, byte>(55.5, (byte) 3);
         d.print();
+        double res = d.add(3.3, 2.2);
+        System.out.println("Returned by add : " + res);
         QuadrupleHolder<float, double, byte, char> quadrupleHolder = new QuadrupleHolder<float, double, byte, char>(6.6f, 2.3, (byte)7, 'b');
         quadrupleHolder.print();
     }

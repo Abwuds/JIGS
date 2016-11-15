@@ -9,7 +9,8 @@ import rt.Opcodes;
 
 import java.util.*;
 
-import static specialization.ShiftMap.*;
+import static specialization.ShiftMap.ShiftMapDumper;
+import static specialization.ShiftMap.createShiftMap;
 
 /**
  * Created by Jefferson Mangue on 12/06/2016.
@@ -95,6 +96,7 @@ class BackMethodVisitor extends MethodVisitor {
     private final String owner;
     private final InvokeAnyAdapter invokeAnyAdapter;
     private final Handle bsmRTBridge;
+    private final boolean isStatic;
     private final ShiftMap shiftMap;
 
     // Variable for the anewarray substitution.
@@ -103,15 +105,27 @@ class BackMethodVisitor extends MethodVisitor {
 
 
     static BackMethodVisitor createBackMethodVisitor(int api, String methodName, String frontOwner, String owner, String descriptor, int methodAccess, MethodVisitor mv) {
-        ShiftMap shiftMap = createShiftMap(methodName, Type.getType(descriptor), (methodAccess & Opcodes.ACC_STATIC) > 0);
-        return new BackMethodVisitor(api, methodName, frontOwner, owner, shiftMap, mv);
+        boolean isStatic = (methodAccess & Opcodes.ACC_STATIC) > 0;
+        ShiftMap shiftMap = createShiftMap(methodName, Type.getType(descriptor), isStatic);
+        return new BackMethodVisitor(api, methodName, frontOwner, owner,  isStatic, shiftMap, mv);
     }
 
-    private BackMethodVisitor(int api, String methodName, String frontOwner, String owner, ShiftMap shiftMap, MethodVisitor mv) {
+    @Override
+    public void visitCode() {
+        super.visitCode();
+        if (isStatic) {
+            // This is made in the call of super(); for the constructor (which is the only non static
+            // back class method).
+            writeHeader();
+        }
+    }
+
+    private BackMethodVisitor(int api, String methodName, String frontOwner, String owner, boolean isStatic, ShiftMap shiftMap, MethodVisitor mv) {
         super(api, mv);
         this.methodName = methodName;
         this.frontOwner = frontOwner;
         this.owner = owner;
+        this.isStatic = isStatic;
         this.shiftMap = shiftMap;
         bsmRTBridge = new Handle(Opcodes.H_INVOKESTATIC, owner, BackClassVisitor.BSM_RT_BRIDGE, BackClassVisitor.BSM_RT_BRIDGE_DESC, false);
 
@@ -196,6 +210,7 @@ class BackMethodVisitor extends MethodVisitor {
             // return;
         }
 
+        // After the call of super(); writing down the method's header shifting parameters.
         if (opcode == Opcodes.INVOKESPECIAL) {
             super.visitMethodInsn(opcode, owner, name, desc, itf);
             writeHeader();
@@ -241,9 +256,42 @@ class BackMethodVisitor extends MethodVisitor {
     }
 
     @Override
+    public void visitVarInsn(int opcode, int var) {
+        // Visiting normal local variable.
+        // Switching the offset
+        boolean isLarge = false;
+        switch (opcode) {
+            case Opcodes.LLOAD:
+            case Opcodes.DLOAD:
+            case Opcodes.LSTORE:
+            case Opcodes.DSTORE:
+                isLarge = true;
+                break;
+        }
+        var = shiftMap.getNewParameterShifted(var, isLarge);
+        superVisitVarInsn(opcode, var);
+    }
+
+    /**
+     * Allowing to call this method passing through the var shift without being affected.
+     */
+    public void superVisitVarInsn(int opcode, int var) {
+        super.visitVarInsn(opcode, var);
+    }
+
+    @Override
+    public void visitLocalVariable(String name, String desc, String signature, Label start, Label end, int index) {
+        super.visitLocalVariable(name, desc, signature, start, end, index);
+    }
+
+    @Override
     public void visitTypedTypeInsnWithParameter(String name, int typedOpcode, int parameter) {
-        // TODO shift the parameter according the shiftMap
-        parameter = shiftMap.getNewParameterShifted(parameter);
+        // Shifting the parameter according the shiftMap
+        // Local instruction of type LOAD/STORE
+        if (typedOpcode != Opcodes.ANEWARRAY) {
+            // Any parameter get. It is always considered as large slot variable.
+            parameter = shiftMap.getNewParameterShifted(parameter, true);
+        }
         visitTypeVarSpecialization(name, typedOpcode, parameter);
     }
 
@@ -292,7 +340,7 @@ class BackMethodVisitor extends MethodVisitor {
             switch (typedOpcode) {
                 case Opcodes.ALOAD:
                 case Opcodes.ASTORE:
-                    visitVarInsn(newOpcode, parameter);
+                    superVisitVarInsn(newOpcode, parameter);
                     break;
                 case Opcodes.AASTORE:
                 case Opcodes.AALOAD:
@@ -323,7 +371,7 @@ class BackMethodVisitor extends MethodVisitor {
             if (parameter == -1) {
                 visitInsn(typedOpcode);
             } else {
-                visitVarInsn(typedOpcode, parameter);
+                superVisitVarInsn(typedOpcode, parameter);
             }
             visitLabel(end);
         }

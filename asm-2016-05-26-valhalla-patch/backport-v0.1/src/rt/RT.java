@@ -526,7 +526,7 @@ public class RT {
                     String methodDescriptor = split[1];
                     String key = methodInstanciations.get(methodName);
                     if (key == null) {
-                        throw new IllegalStateException("The instantiation key for method : " + methodName + " does not exist : " + descriptor);
+                        throw new IllegalStateException("The instantiation key for method : " + methodName + " does not exist : " + descriptor + " map : " + methodInstanciations);
                     }
                     pool[index] = methodDescriptor.contains(key) ? key : methodDescriptor;
                     break;

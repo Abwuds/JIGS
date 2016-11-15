@@ -1,10 +1,11 @@
 package specialization;
 
+import com.sun.tools.doclets.internal.toolkit.*;
 import org.objectweb.asm.*;
+import org.objectweb.asm.ClassWriter;
 import rt.Opcodes;
 
 /**
- *
  * Created by Jefferson Mangue on 09/06/2016.
  */
 public class BackClassVisitor extends ClassVisitor {
@@ -89,12 +90,15 @@ public class BackClassVisitor extends ClassVisitor {
         Type[] argumentTypes = mType.getArgumentTypes();
         Type[] parameterTypes = new Type[argumentTypes.length + 1];
         parameterTypes[0] = insertedType;
-        for (int i = 1; i < parameterTypes.length; i++) { parameterTypes[i] = argumentTypes[i - 1]; }
+        for (int i = 1; i < parameterTypes.length; i++) {
+            parameterTypes[i] = argumentTypes[i - 1];
+        }
         return Type.getMethodDescriptor(mType.getReturnType(), parameterTypes);
     }
 
     private void visitBSMRTBridge() {
         // Visiting the inner bootstrap method.
+        // This is the method writer here.
         MethodVisitor mv = super.visitMethod(Opcodes.ACC_PRIVATE + Opcodes.ACC_STATIC, BSM_RT_BRIDGE, BSM_RT_BRIDGE_DESC,
                 null, null);
         mv.visitCode();

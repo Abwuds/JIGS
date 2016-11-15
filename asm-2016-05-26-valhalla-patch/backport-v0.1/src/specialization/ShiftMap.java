@@ -23,9 +23,10 @@ public class ShiftMap {
     private final String methodName;
     private final String methodDescriptor;
     private final String[] descriptors;
-    private final HashMap<Integer, Integer> finalOffsets;
+    private final LinkedHashMap<Integer, Map.Entry<Integer, Boolean>> finalOffsets;
 
-    private ShiftMap(HashMap<Integer, ArrayList<AnyTernaryTuple>>[] data, boolean[] isAny, String methodName, String[] descriptors, String methodDescriptor, HashMap<Integer, Integer> finalOffsets) {
+    private ShiftMap(HashMap<Integer, ArrayList<AnyTernaryTuple>>[] data, boolean[] isAny, String methodName, String[] descriptors,
+                     String methodDescriptor, LinkedHashMap<Integer, Map.Entry<Integer, Boolean>> finalOffsets) {
         this.data = data;
         this.isAny = isAny;
         this.methodName = methodName;
@@ -128,6 +129,7 @@ public class ShiftMap {
         }
     }
 
+
     /**
      * Creates an instance of {@link ShiftMap} according to the given method descriptor.
      *
@@ -150,24 +152,32 @@ public class ShiftMap {
             descriptors[i] = params[i].getDescriptor();
         }
 
-        // Computing final offsets of each parameter having an old offset.
-        HashMap<Integer, Integer> finalOffsets = new HashMap<>();
+        // Computing final offsets of each parameter having an old offset. True if large, false otherwise.
+        LinkedHashMap<Integer, Map.Entry<Integer, Boolean>> finalOffsets = new LinkedHashMap<>();
         // Param 0 in method of a Backfactory class is always the front this. Otherwise, (<init>) it has to start by 1,1.
-        int offset = isStatic ? 0 : 1;
-        int oldOffsets = isStatic ? 0 : 1;
+        int offset = 0;
+        int oldOffsets = 0;
+        // If this is not a static method, this is not in params list, we have to put an artificial one.
+        if (!isStatic) {
+            finalOffsets.put(0, new AbstractMap.SimpleEntry<>(0, false));
+            offset += 1;
+            oldOffsets += 1;
+        }
         for (Type param : params) {
-            finalOffsets.put(oldOffsets, offset);
             switch (param.getSort()) {
                 case Type.TYPE_VAR:
+                    finalOffsets.put(oldOffsets, new AbstractMap.SimpleEntry<>(offset, true));
                     oldOffsets += 1;
                     offset += 2;
                     break;
                 case Type.DOUBLE:
                 case Type.LONG:
+                    finalOffsets.put(oldOffsets, new AbstractMap.SimpleEntry<>(offset, true));
                     oldOffsets += 2;
                     offset += 2;
                     break;
                 default:
+                    finalOffsets.put(oldOffsets, new AbstractMap.SimpleEntry<>(offset, false));
                     oldOffsets += 1;
                     offset += 1;
                     break;
@@ -219,12 +229,26 @@ public class ShiftMap {
     }
 
 
-    int getNewParameterShifted(int parameter) {
-        if (!finalOffsets.containsKey(parameter)) {
-            throw new IllegalStateException("Shiftmap of method : " + methodName + " does not contain key : " + parameter +
-                    " current offsets : " + finalOffsets);
+    int getNewParameterShifted(int parameter, boolean isLarge) {
+        // Security because certain visit method uses the index -1 to mean "no index".
+        if (parameter <= -1) {
+            return parameter;
         }
-        return finalOffsets.get(parameter);
+        if (!finalOffsets.containsKey(parameter)) {
+            System.err.println("Computing new offset for the parameter : " + parameter + " for the method : "
+                    + methodName + " in the current map : " + finalOffsets);
+            // Computing the new value :
+            Iterator<Map.Entry<Integer, Boolean>> it = finalOffsets.values().iterator();
+            Map.Entry<Integer, Boolean> last = null;
+            while (it.hasNext()) {
+                last = it.next();
+            }
+            if (last == null) {
+                throw new IllegalStateException("Last element can not be null for the method : " + methodName + " in the map : " + finalOffsets);
+            }
+            finalOffsets.put(parameter, new AbstractMap.SimpleEntry<>(last.getKey() + (last.getValue() ? 2 : 1), isLarge));
+        }
+        return finalOffsets.get(parameter).getKey();
     }
 
     @Override
@@ -349,9 +373,10 @@ public class ShiftMap {
                     Integer offset = e.getKey();
                     // Loading condition between the instantiation placeholder and the instantiation string.
                     // The key in the substitutionMap, the constant value to show in the class, the value in the substitutionMap, either this is a TypeVar manipulation or not.
-                    visitor.visitLdcPlaceHolderString(BackClassVisitor.RT_METHOD_INSTANTIATION_TYPE_KEY, "INSTANTIATION", map.methodName + '_' + map.methodDescriptor, false); // Test on TX.
+                    String methodPrefix = map.methodName + '_';
+                    visitor.visitLdcPlaceHolderString(BackClassVisitor.RT_METHOD_INSTANTIATION_TYPE_KEY, methodPrefix + "INSTANTIATION", methodPrefix + map.methodDescriptor, false); // Test on TX.
                     String instantiation = computeInstantiations(instantiations);
-                    visitor.visitLdcPlaceHolderString(BackClassVisitor.RT_METHOD_INSTANTIATIONS_TYPE_TESTS, instantiation, map.methodName + '_' + instantiation, false);
+                    visitor.visitLdcPlaceHolderString(BackClassVisitor.RT_METHOD_INSTANTIATIONS_TYPE_TESTS, methodPrefix + instantiation, methodPrefix + instantiation, false);
                     Label label = new Label();
                     visitor.visitJumpInsn(Opcodes.IF_ACMPNE, label);
                     // Parameter index.
@@ -359,12 +384,12 @@ public class ShiftMap {
                     if (map.isAny[i]) {
                         String descriptor = map.descriptors[i];
                         // Visiting any parameter.
-                        visitor.visitTypeVarSpecialization(descriptor, Opcodes.ALOAD, map.getNewParameterShifted(j) - offset);
-                        visitor.visitTypeVarSpecialization(descriptor, Opcodes.ASTORE, map.getNewParameterShifted(j));
+                        visitor.visitTypeVarSpecialization(descriptor, Opcodes.ALOAD, map.getNewParameterShifted(j, true) - offset);
+                        visitor.visitTypeVarSpecialization(descriptor, Opcodes.ASTORE, map.getNewParameterShifted(j, true));
                     } else {
                         // Visiting non any parameter.
-                        visitor.visitVarInsn(Opcodes.ALOAD, j);
-                        visitor.visitVarInsn(Opcodes.ASTORE, j + offset);
+                        visitor.superVisitVarInsn(Opcodes.ALOAD, j);
+                        visitor.superVisitVarInsn(Opcodes.ASTORE, j + offset);
                     }
                     // Else.
                     visitor.visitLabel(label);
