@@ -1129,18 +1129,13 @@ public class ClassWriter extends ClassVisitor {
      * @param value the String value.
      * @return the index of a new or already existing UTF8 item.
      */
-    int newPlaceHolderUTF8(final String owner, final String value) {
-        // If the TypeVar has already been registered, returning its index.
+    int newPlaceHolderUTF8(final String owner, final String value, final String cpValue) {
         if (substitutionTable.contains(value, owner)) {
             return substitutionTable.get(value, owner);
         }
-        // TODO test is Type.getType is valid and get the desc from this.
-        // Translating the descriptor (can be a parameterized type too).
-        String desc = Type.translateType(Type.getType(value)); // Can be an error.
-
 
         // Forcing the creation of a new UTF8 constant for this particular TypeVar.
-        pool.putByte(UTF8).putUTF8(desc);
+        pool.putByte(UTF8).putUTF8(cpValue);
         Item result = new Item(index++, key);
         put(result);
         // Adding the value to the substitutionTable.
@@ -1157,7 +1152,7 @@ public class ClassWriter extends ClassVisitor {
      * @param value the String value.
      * @return the index of a new or already existing UTF8 item.
      */
-    public int newPlaceHolderOrBasicUTF8(final String owner, final String value) {
+    public int newPossiblyTypedUTF8(final String owner, final String value) {
         // Getting the current descriptor index.
         System.out.println("OWNER : " + owner + " TYPE : " + value);
         Type type = Type.getType(value);
@@ -1167,7 +1162,7 @@ public class ClassWriter extends ClassVisitor {
         if (!Type.hasTypeVar(type)) {
             return newUTF8(desc);
         }
-        return newPlaceHolderUTF8(owner, value);
+        return newPlaceHolderUTF8(owner, value, desc);
     }
 
     /**
@@ -1214,7 +1209,7 @@ public class ClassWriter extends ClassVisitor {
         key2.set(CLASS, value, null, null);
         Item result = get(key2);
         if (result == null) {
-            pool.put12(CLASS, newPlaceHolderOrBasicUTF8(owner, value));
+            pool.put12(CLASS, newPossiblyTypedUTF8(owner, value));
             result = new Item(index++, key2);
             put(result);
         }
@@ -1618,14 +1613,18 @@ public class ClassWriter extends ClassVisitor {
      * The UTF8 constant written is considered has a place holder string
      * and will be registered inside the current {@link SubstitutionTable}.
      *
-     * @param value the String value.
+     * @param cst the String cst.
      * @return a new or already existing string item.
      */
-    Item newPlaceHolderStringItem(final String owner, final String value) {
-        key2.set(STR, value, null, null);
+    Item newPlaceHolderStringItem(final String owner, final String cst, final String metaValue, boolean isTypeVar) {
+        key2.set(STR, cst, null, null);
         Item result = get(key2);
         if (result == null) {
-            pool.put12(STR, newPlaceHolderOrBasicUTF8(owner, value));
+            if (isTypeVar) {
+                pool.put12(STR, newPossiblyTypedUTF8(owner, cst));
+            } else {
+                pool.put12(STR, newPlaceHolderUTF8(owner, metaValue, cst));
+            }
             result = new Item(index++, key2);
             put(result);
         }
@@ -1676,7 +1675,7 @@ public class ClassWriter extends ClassVisitor {
         key2.set(NAME_TYPE, name, desc, null);
         Item result = get(key2);
         if (result == null) {
-            put122(NAME_TYPE, newUTF8(name), newPlaceHolderOrBasicUTF8(name, desc)); //newUTF8(desc));
+            put122(NAME_TYPE, newUTF8(name), newPossiblyTypedUTF8(name, desc)); //newUTF8(desc));
             result = new Item(index++, key2);
             put(result);
         }

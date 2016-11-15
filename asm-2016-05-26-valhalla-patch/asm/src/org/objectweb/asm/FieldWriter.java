@@ -131,7 +131,7 @@ final class FieldWriter extends FieldVisitor {
         // Translating the descriptor into valid Java 8- descriptor.
         // substitutionTable;
         // String retroDesc = Type.typeToObject(Type.getType(desc)).toString();
-        this.desc = cw.newPlaceHolderOrBasicUTF8(name, desc);
+        this.desc = cw.newPossiblyTypedUTF8(name, desc);
         if (ClassReader.SIGNATURES && signature != null) {
             this.signature = cw.newUTF8(signature);
         }

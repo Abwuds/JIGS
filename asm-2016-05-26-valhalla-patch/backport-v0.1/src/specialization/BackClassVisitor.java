@@ -12,6 +12,9 @@ public class BackClassVisitor extends ClassVisitor {
     public static final String ANY_PACKAGE = ""; // "any/";
     public static final String BACK_FACTORY_NAME = "$BackFactory";
     public static final String RT_METHOD_HANDLE_TYPE = "RTMethodHandle";
+    public static final String RT_SPECIALIZABLE_DESCRIPTOR_TYPE = "RTMethodDescriptor";
+    public static final String RT_METHOD_INSTANTIATION_TYPE_KEY = "RTMethodInstantiationTyKey";
+    public static final String RT_METHOD_INSTANTIATIONS_TYPE_TESTS = "RTMethodInstantiationsTypeTests"; // 11010_110100_ ...
     public static final String HANDLE_RT_BSM_NEW = "handle_rt_bsm_new";
     public static final String HANDLE_RT_BSM_INVOKE_VIRTUAL_FROM_BACK = "handle_rt_bsm_invoke_special_from_back";
     public static final String HANDLE_RT_BSM_GET_FIELD = "handle_rt_bsm_getField";
@@ -74,7 +77,6 @@ public class BackClassVisitor extends ClassVisitor {
             // Inserting the front name. Erasure of : Type.getType('L' + frontName + ';')
             methodDescriptor = insertMethodArgumentType(desc, Type.getType(Object.class));
         }
-        System.out.println("STATIC INVOCATION : access = [" + access + "], name = [" + name + "], desc = [" + desc + "], signature = [" + signature + "], exceptions = [" + exceptions + "]");
         return BackMethodVisitor.createBackMethodVisitor(api, name, frontName, this.name, methodDescriptor, super.visitMethod(methodAccess, name, methodDescriptor, null, exceptions));
     }
 

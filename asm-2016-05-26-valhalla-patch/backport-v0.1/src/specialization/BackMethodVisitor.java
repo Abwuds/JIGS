@@ -98,15 +98,13 @@ class BackMethodVisitor extends MethodVisitor {
     private final ShiftMap shiftMap;
 
     // Variable for the anewarray substitution.
-    private boolean isInstallingANewArray;
+    private boolean isInstallingTypedANewArray;
     private Label end;
 
 
     static BackMethodVisitor createBackMethodVisitor(int api, String methodName, String frontOwner, String owner, String descriptor, MethodVisitor mv) {
         // ShiftMap shiftMap = createShiftMap(Type.getType("(T0/Ljava/lang/Object;T1/Ljava/lang/Object;IT2/Ljava/lang/Object;F)V"));
-        BackMethodVisitor methodVisitor = new BackMethodVisitor(api, methodName, frontOwner, owner, createShiftMap(Type.getType(descriptor)), mv);
-        methodVisitor.writeHeader();
-        return methodVisitor;
+        return new BackMethodVisitor(api, methodName, frontOwner, owner, createShiftMap(methodName, Type.getType(descriptor)), mv);
     }
 
     private BackMethodVisitor(int api, String methodName, String frontOwner, String owner, ShiftMap shiftMap, MethodVisitor mv) {
@@ -141,7 +139,7 @@ class BackMethodVisitor extends MethodVisitor {
      * Appends the shift header allowing the shift of small sized parameters in the descriptor.
      */
     private void writeHeader() {
-        System.out.println(shiftMap);
+        //System.out.println(shiftMap);
         ShiftMapDumper.writeHeader(shiftMap, this);
     }
 
@@ -154,10 +152,10 @@ class BackMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitTypeInsn(int opcode, String type) {
-        if (opcode == Opcodes.CHECKCAST && isInstallingANewArray) {
+        if (opcode == Opcodes.CHECKCAST && isInstallingTypedANewArray) {
             visitTypedTypeInsn(Opcodes.CHECKCAST, "CHECKCAST ON " + type.substring(0, 2), type);
             visitLabel(end);
-            isInstallingANewArray = false;
+            isInstallingTypedANewArray = false;
             return;
         }
         if (!invokeAnyAdapter.visitTypeInsn(opcode, type)) {
@@ -198,6 +196,11 @@ class BackMethodVisitor extends MethodVisitor {
             // return;
         }
 
+        if (opcode == Opcodes.INVOKESPECIAL) {
+            super.visitMethodInsn(opcode, owner, name, desc, itf);
+            writeHeader();
+            return;
+        }
 
         if (!invokeAnyAdapter.visitMethodInsn(opcode, owner, name, desc, itf, true)) {
             super.visitMethodInsn(opcode, owner, name, desc, itf);
@@ -239,7 +242,38 @@ class BackMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitTypedTypeInsnWithParameter(String name, int typedOpcode, int parameter) {
+        // TODO shift the parameter according the shiftMap
+        parameter = shiftMap.getNewParameterShifted(parameter);
+        visitTypeVarSpecialization(name, typedOpcode, parameter);
+    }
 
+
+    @Override
+    public void visitTypedInsn(String name, int typedOpcode) {
+        switch (typedOpcode) {
+            case Opcodes.ALOAD_0:
+            case Opcodes.ALOAD_1:
+            case Opcodes.ALOAD_2:
+            case Opcodes.ALOAD_3: {
+                int parameter = typedOpcode - Opcodes.ALOAD_0;
+                visitTypedTypeInsnWithParameter(name, Opcodes.ALOAD, parameter);
+                break;
+            }
+            case Opcodes.ASTORE_0:
+            case Opcodes.ASTORE_1:
+            case Opcodes.ASTORE_2:
+            case Opcodes.ASTORE_3: {
+                int parameter = typedOpcode - Opcodes.ASTORE_0;
+                visitTypedTypeInsnWithParameter(name, Opcodes.ASTORE, parameter);
+                break;
+            }
+            default:
+                visitTypedTypeInsnWithParameter(name, typedOpcode, -1);
+                break;
+        }
+    }
+
+    void visitTypeVarSpecialization(String name, int typedOpcode, int parameter) {
         end = new Label();
         List<AbstractMap.SimpleEntry<String, Integer>> tests = INSTRS.get(typedOpcode);
         if (tests == null) {
@@ -249,7 +283,7 @@ class BackMethodVisitor extends MethodVisitor {
         for (Map.Entry<String, Integer> test : tests) {
             String key = test.getKey();
             visitLdcInsn(key);
-            visitLdcTypedString("Type test on : " + name.substring(0, 2), name); // Test on TX.
+            visitLdcPlaceHolderString(BackClassVisitor.RT_SPECIALIZABLE_DESCRIPTOR_TYPE, name, null, true); // Test on TX.
 
             Label label = new Label();
             visitJumpInsn(Opcodes.IF_ACMPNE, label);
@@ -279,9 +313,9 @@ class BackMethodVisitor extends MethodVisitor {
 
         // If none of them worked, doing the original then.
         printASMMsg("Choosing : " + name + " Type[Object] : " + typedOpcode, this);
-        // TODO MULTIANEWARRAY !!
+        // TODO Handle MULTIANEWARRAY !!
         if (typedOpcode == Opcodes.ANEWARRAY) {
-            isInstallingANewArray = true;
+            isInstallingTypedANewArray = true;
             visitTypedTypeInsn(Opcodes.ANEWARRAY, "ANEWARRAY ON : " + name.substring(0, 2), name);
             // Visiting the following CHECKCAST and visitLabel(end) inside the BackMethodVisitor#visitTypeIns to not
             // Put the end label before the following CHECKCAST, and also retrieve right informations for it.
@@ -295,32 +329,7 @@ class BackMethodVisitor extends MethodVisitor {
         }
     }
 
-    @Override
-    public void visitTypedInsn(String name, int typedOpcode) {
-        switch (typedOpcode) {
-            case Opcodes.ALOAD_0:
-            case Opcodes.ALOAD_1:
-            case Opcodes.ALOAD_2:
-            case Opcodes.ALOAD_3: {
-                int parameter = typedOpcode - Opcodes.ALOAD_0;
-                visitTypedTypeInsnWithParameter(name, Opcodes.ALOAD, parameter);
-                break;
-            }
-            case Opcodes.ASTORE_0:
-            case Opcodes.ASTORE_1:
-            case Opcodes.ASTORE_2:
-            case Opcodes.ASTORE_3: {
-                int parameter = typedOpcode - Opcodes.ASTORE_0;
-                visitTypedTypeInsnWithParameter(name, Opcodes.ASTORE, parameter);
-                break;
-            }
-            default:
-                visitTypedTypeInsnWithParameter(name, typedOpcode, -1);
-                break;
-        }
-    }
-
-    public static void printASMMsg(String msg, MethodVisitor mv) {
+    private static void printASMMsg(String msg, MethodVisitor mv) {
         mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
         mv.visitLdcInsn(msg);
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);

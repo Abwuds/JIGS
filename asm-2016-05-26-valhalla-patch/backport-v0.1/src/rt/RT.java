@@ -463,43 +463,105 @@ public class RT {
      */
     private static MethodHandle createBackSpecies(MethodHandles.Lookup frontClassLookup, MethodType type, Class<?> frontClass, String genericName)
             throws NoSuchFieldException, IllegalAccessException, NoSuchMethodException, ClassNotFoundException {
+        System.out.println("createBackSpecies#frontClassLookup = [" + frontClassLookup + "], type = [" + type + "], frontClass = [" + frontClass + "], genericName = [" + genericName + "]");
         // TODO BUG : Use a value which is a HashMap storing the String specialization and the corresponding class.
         // TODO store the Substitution table in a couple values for the key class in classValue so it is not read every time. Not needed, because bootstrap are not called too much.
         byte[] backCode = BACK_FACTORY.get(frontClass);
         SubstitutionTable substitutionTable = SubstitutionTableReader.read(backCode);
         String[] classes = Type.getParameterizedTypeValues(genericName);
         Object[] pool = new Object[substitutionTable.getMax() + 1];
+        // Contains the computed instantiation of a given method name.
+        HashMap<String, String> methodInstanciations = new HashMap<>();
+
         for (Map.Entry<Integer, Map.Entry<String, String>> descs : substitutionTable.getDescriptors().entrySet()) {
             Integer index = descs.getKey();
             Map.Entry<String, String> ownerAndDescriptor = descs.getValue();
             String owner = ownerAndDescriptor.getKey();
             String descriptor = ownerAndDescriptor.getValue();
 
-            if (!owner.equals(BackClassVisitor.RT_METHOD_HANDLE_TYPE)) {
-                pool[index] = Type.specializeDescriptor(descriptor, classes);
-                continue;
-            }
-            switch (descriptor) {
-                case BackClassVisitor.HANDLE_RT_BSM_NEW:
-                    pool[index] = patchMethodHandleInConstantPool(frontClassLookup, "bsm_createAny", TYPE_BSM_CREATE_ANY, 4);
+            // Processing key instantiations
+            // TODO prevent this double iteration please.
+            switch (owner) {
+                case BackClassVisitor.RT_METHOD_INSTANTIATION_TYPE_KEY: {
+                    String[] split = descriptor.split("_", 2);
+                    if (split.length != 2) {
+                        throw new IllegalStateException("The key has to contain the method's name : " + descriptor);
+                    }
+                    String methodName = split[0];
+                    String methodDescriptor = split[1];
+                    String oldValue = methodInstanciations.get(methodName);
+                    if (oldValue != null) {
+                        throw new IllegalStateException("The method key for : " + methodName + " has already been computed : " + oldValue);
+                    }
+                    String instantiation = Type.instantiateMethodDescriptor(methodDescriptor, classes);
+                    methodInstanciations.put(methodName, instantiation);
+                    pool[index] = instantiation;
+                    System.out.println("aaOwner : " + owner + " of descriptor : " + descriptor + " Mapped to : " + pool[index]);
                     break;
-                case BackClassVisitor.HANDLE_RT_BSM_GET_FIELD:
-                    pool[index] = patchMethodHandleInConstantPool(frontClassLookup, "bsm_getField", TYPE_BSM_GETFIELD, 4);
-                    break;
-                case BackClassVisitor.HANDLE_RT_BSM_PUT_FIELD:
-                    pool[index] = patchMethodHandleInConstantPool(frontClassLookup, "bsm_putField", TYPE_BSM_PUTFIELD, 4);
-                    break;
-                case BackClassVisitor.HANDLE_RT_BSM_INVOKE_VIRTUAL_FROM_BACK:
-                    pool[index] = patchMethodHandleInConstantPool(frontClassLookup, "bsm_invokeVirtualFromBack", TYPE_BSM_INVOKE_VIRTUAL_FROM_BACK, 4);
-                    break;
-                case BackClassVisitor.HANDLE_RT_METAFACTORY:
-                    pool[index] = patchMethodHandleInConstantPool(frontClassLookup, "metafactory", TYPE_METAFACTORY, 3);
+                }
+                default:
                     break;
             }
         }
+
+        for (Map.Entry<Integer, Map.Entry<String, String>> descs : substitutionTable.getDescriptors().entrySet()) {
+            Integer index = descs.getKey();
+            Map.Entry<String, String> ownerAndDescriptor = descs.getValue();
+            String owner = ownerAndDescriptor.getKey();
+            String descriptor = ownerAndDescriptor.getValue();
+
+            switch (owner) {
+                default:
+                case BackClassVisitor.RT_SPECIALIZABLE_DESCRIPTOR_TYPE:
+                    pool[index] = Type.specializeDescriptor(descriptor, classes);
+                    break;
+                case BackClassVisitor.RT_METHOD_INSTANTIATION_TYPE_KEY:
+                    continue;
+                case BackClassVisitor.RT_METHOD_INSTANTIATIONS_TYPE_TESTS: {
+                    String[] split = descriptor.split("_", 2);
+                    if (split.length != 2) {
+                        throw new IllegalStateException("The key has to contain the method's name : " + descriptor);
+                    }
+                    String methodName = split[0];
+                    String methodDescriptor = split[1];
+                    String key = methodInstanciations.get(methodName);
+                    if (key == null) {
+                        throw new IllegalStateException("The instantiation key for method : " + methodName + " does not exist : " + descriptor);
+                    }
+                    pool[index] = methodDescriptor.contains(key) ? key : methodDescriptor;
+                    break;
+                }
+                case BackClassVisitor.RT_METHOD_HANDLE_TYPE:
+                    insertMethodHandleWithLookupPatched(frontClassLookup, pool, index, descriptor);
+                    break;
+            }
+            System.out.println("Owner : " + owner + " of descriptor : " + descriptor + " Mapped to : " + pool[index]);
+
+        }
+        System.out.println(Arrays.toString(pool));
         Class<?> backClass = UNSAFE.defineAnonymousClass(Object.class, backCode, pool);
         MethodHandle constructor = frontClassLookup.findConstructor(backClass, type.changeReturnType(void.class));
         return constructor.asType(type.changeReturnType(Object.class)); // The return type is considered as a plain Object.
+    }
+
+    private static void insertMethodHandleWithLookupPatched(Lookup frontClassLookup, Object[] pool, Integer index, String descriptor) throws NoSuchMethodException, IllegalAccessException {
+        switch (descriptor) {
+            case BackClassVisitor.HANDLE_RT_BSM_NEW:
+                pool[index] = patchMethodHandleInConstantPool(frontClassLookup, "bsm_createAny", TYPE_BSM_CREATE_ANY, 4);
+                break;
+            case BackClassVisitor.HANDLE_RT_BSM_GET_FIELD:
+                pool[index] = patchMethodHandleInConstantPool(frontClassLookup, "bsm_getField", TYPE_BSM_GETFIELD, 4);
+                break;
+            case BackClassVisitor.HANDLE_RT_BSM_PUT_FIELD:
+                pool[index] = patchMethodHandleInConstantPool(frontClassLookup, "bsm_putField", TYPE_BSM_PUTFIELD, 4);
+                break;
+            case BackClassVisitor.HANDLE_RT_BSM_INVOKE_VIRTUAL_FROM_BACK:
+                pool[index] = patchMethodHandleInConstantPool(frontClassLookup, "bsm_invokeVirtualFromBack", TYPE_BSM_INVOKE_VIRTUAL_FROM_BACK, 4);
+                break;
+            case BackClassVisitor.HANDLE_RT_METAFACTORY:
+                pool[index] = patchMethodHandleInConstantPool(frontClassLookup, "metafactory", TYPE_METAFACTORY, 3);
+                break;
+        }
     }
 
     /**

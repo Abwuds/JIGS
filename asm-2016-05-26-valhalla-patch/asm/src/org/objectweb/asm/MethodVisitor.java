@@ -626,9 +626,9 @@ public abstract class MethodVisitor {
         }
     }
 
-    public void visitLdcPlaceHolderString(final String owner, final String cst) {
+    public void visitLdcPlaceHolderString(final String owner, final String cst, final String metaValue, final boolean typeVar) {
         if (mv != null) {
-            mv.visitLdcPlaceHolderString(owner, cst);
+            mv.visitLdcPlaceHolderString(owner, cst, metaValue, typeVar);
         }
     }
 
